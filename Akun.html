@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RumahDesign3D — Akun</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/cloud.js"></script>
+<style>
+:root{--bg:#0d0f14;--surface:#161820;--surface2:#1e2029;--border:#2a2d3a;--accent:#f5a623;--accent2:#e8523a;--green:#3ecf8e;--blue:#4a9eff;--violet:#a78bfa;--text:#e8eaf0;--text2:#8b8fa8;--text3:#5a5e72;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 20% 10%,rgba(245,166,35,0.08),transparent 45%),radial-gradient(circle at 85% 90%,rgba(74,158,255,0.07),transparent 45%);pointer-events:none;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;position:relative;z-index:2;}
+.logo{display:flex;align-items:center;gap:9px;font-family:'Space Mono',monospace;font-weight:700;font-size:16px;text-decoration:none;color:var(--text);}
+.logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.logo span{color:var(--accent);}
+.topbar a.back{color:var(--text2);text-decoration:none;font-size:13px;font-weight:600;}
+.topbar a.back:hover{color:var(--accent);}
+
+.wrap{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;padding:30px 20px 60px;min-height:calc(100vh - 130px);}
+
+/* AUTH CARD */
+.auth-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:30px 28px;box-shadow:0 20px 60px rgba(0,0,0,0.4);}
+.auth-tabs{display:flex;gap:4px;background:var(--bg);border-radius:11px;padding:4px;margin-bottom:24px;}
+.auth-tab{flex:1;padding:9px;border:none;background:transparent;color:var(--text2);font-family:inherit;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;transition:all .18s;}
+.auth-tab.active{background:var(--surface2);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3);}
+.auth-h{font-size:21px;font-weight:800;margin-bottom:5px;}
+.auth-sub{font-size:13px;color:var(--text2);margin-bottom:22px;line-height:1.5;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;}
+.field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:inherit;font-size:14px;padding:11px 13px;outline:none;transition:border-color .2s;}
+.field input:focus{border-color:var(--accent);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn-primary{width:100%;padding:13px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;margin-top:6px;transition:opacity .15s;}
+.btn-primary:hover{opacity:.9;}
+.btn-google{width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:border-color .2s;}
+.btn-google:hover{border-color:var(--text3);}
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--text3);font-size:11px;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.auth-foot{font-size:11px;color:var(--text3);text-align:center;margin-top:18px;line-height:1.6;}
+.auth-foot a{color:var(--violet);text-decoration:none;}
+.forgot{font-size:12px;color:var(--violet);text-decoration:none;float:right;}
+.checkrow{display:flex;align-items:flex-start;gap:8px;font-size:11.5px;color:var(--text2);line-height:1.5;margin:4px 0 6px;}
+.checkrow input{margin-top:2px;accent-color:var(--accent);}
+.checkrow a{color:var(--violet);text-decoration:none;}
+.demo-note{font-size:10.5px;color:var(--text3);text-align:center;margin-top:14px;background:var(--bg);border-radius:8px;padding:9px;line-height:1.5;}
+.hidden{display:none;}
+
+/* DASHBOARD */
+.dash{width:100%;max-width:880px;}
+.dash-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:14px;}
+.dash-hi{font-size:24px;font-weight:800;}
+.dash-hi span{color:var(--accent);}
+.dash-sub{font-size:13px;color:var(--text2);margin-top:2px;}
+.dash-logout{padding:9px 16px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);color:var(--text2);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;}
+.dash-logout:hover{border-color:var(--accent2);color:var(--accent2);}
+.dash-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;}
+.card-h{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:14px;}
+.plan-pill{display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:20px;border:1.5px solid var(--accent);color:var(--accent);font-size:13px;font-weight:700;margin-bottom:14px;}
+.plan-info-row{display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border);}
+.plan-info-row span:last-child{font-family:'Space Mono',monospace;font-weight:600;}
+.dash-btn{display:block;width:100%;text-align:center;padding:11px;border-radius:9px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-top:14px;text-decoration:none;}
+.dash-btn.ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border);margin-top:8px;}
+.proj-item{display:flex;align-items:center;gap:12px;padding:11px;border-radius:10px;background:var(--bg);margin-bottom:8px;}
+.proj-thumb{width:46px;height:46px;border-radius:8px;background:linear-gradient(135deg,var(--surface2),var(--bg));border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.proj-name{font-size:13px;font-weight:700;}
+.proj-meta{font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:1px;}
+.proj-open{margin-left:auto;font-size:12px;color:var(--violet);text-decoration:none;font-weight:600;}
+.stat-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;}
+.stat{background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:13px;text-align:center;}
+.stat-v{font-size:22px;font-weight:800;font-family:'Space Mono',monospace;color:var(--accent);}
+.stat-k{font-size:10px;color:var(--text3);margin-top:2px;}
+@media(max-width:720px){.dash-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="logo" href="index.html"><span class="logo-icon">🏠</span>Rumah<span>Design</span>3D</a>
+  <a class="back" href="index.html">← Kembali ke aplikasi</a>
+</div>
+
+<div class="wrap">
+  <!-- SUPABASE SETUP (tampil hanya jika cloud belum dikonfigurasi) -->
+  <div class="auth-card hidden" id="cloudSetup" style="max-width:440px;">
+    <div class="auth-h">☁ Aktifkan Cloud</div>
+    <div class="auth-sub">Tempel <b>Project URL</b> &amp; <b>anon public key</b> dari Supabase untuk menyalakan login asli &amp; simpan proyek di cloud. Tersimpan di browser ini — tidak perlu mengedit file.</div>
+    <div class="field"><label>Project URL</label><input id="sbUrl" placeholder="https://abcdxyz.supabase.co"></div>
+    <div class="field"><label>anon public key</label><input id="sbKey" placeholder="eyJhbGciOi..."></div>
+    <button class="btn-primary" onclick="saveSupabaseCfg()">Aktifkan &amp; Muat Ulang</button>
+    <div class="auth-foot" style="margin-top:14px;">Langkah lengkap (gratis, ±5 menit) ada di <b>SETUP-SERVER.md</b>: daftar Supabase → jalankan <b>supabase-schema.sql</b> → salin URL &amp; anon key dari <b>Project Settings → API</b>.</div>
+    <div class="demo-note" id="sbStat">🔒 anon key memang aman dipasang di frontend (data dilindungi RLS). <b>Jangan</b> pakai <i>service_role</i> key di sini.</div>
+  </div>
+
+  <!-- AUTH -->
+  <div class="auth-card" id="authCard">
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="showAuth('login')">Masuk</button>
+      <button class="auth-tab" id="tabReg" onclick="showAuth('register')">Daftar</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="loginForm">
+      <div class="auth-h">Selamat datang kembali 👋</div>
+      <div class="auth-sub">Masuk untuk mengakses proyek & langganan Anda.</div>
+      <button class="btn-google" onclick="demoLogin('Google')"><span>🔵</span> Lanjut dengan Google</button>
+      <div class="divider">atau email</div>
+      <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="nama@email.com"></div>
+      <div class="field"><label>Kata sandi <a class="forgot" href="#" onclick="alert('Demo: tautan reset password akan dikirim ke email');return false;">Lupa?</a></label><input type="password" id="loginPass" placeholder="••••••••"></div>
+      <button class="btn-primary" onclick="demoLogin()">Masuk</button>
+      <div class="auth-foot">Belum punya akun? <a href="#" onclick="showAuth('register');return false;">Daftar gratis</a></div>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="registerForm" class="hidden">
+      <div class="auth-h">Buat akun gratis 🚀</div>
+      <div class="auth-sub">Mulai mendesain rumah dalam hitungan menit.</div>
+      <button class="btn-google" onclick="demoLogin('Google')"><span>🔵</span> Daftar dengan Google</button>
+      <div class="divider">atau email</div>
+      <div class="field"><label>Nama lengkap</label><input id="regName" placeholder="Budi Santoso"></div>
+      <div class="field"><label>Email</label><input type="email" id="regEmail" placeholder="nama@email.com"></div>
+      <div class="row2">
+        <div class="field"><label>Kata sandi</label><input type="password" id="regPass" placeholder="••••••••"></div>
+        <div class="field"><label>No. HP</label><input id="regPhone" placeholder="0812..."></div>
+      </div>
+      <label class="checkrow"><input type="checkbox" id="regAgree"> <span>Saya setuju dengan <a href="Syarat & Ketentuan.html" target="_blank">Syarat & Ketentuan</a> dan <a href="Kebijakan Privasi.html" target="_blank">Kebijakan Privasi</a>.</span></label>
+      <button class="btn-primary" onclick="demoRegister()">Daftar Sekarang</button>
+      <div class="auth-foot">Sudah punya akun? <a href="#" onclick="showAuth('login');return false;">Masuk</a></div>
+    </div>
+
+    <div class="demo-note" id="authDemoNote">🔒 Mode <b>demo</b> — cloud belum aktif, jadi login apa pun masuk ke dashboard contoh &amp; proyek tersimpan di browser ini saja. Mau login asli + simpan ke cloud? Klik <a href="#" onclick="showCloudSetup();return false;" style="color:var(--violet);">Aktifkan Cloud</a>.</div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="dash hidden" id="dashboard">
+    <div class="dash-head">
+      <div>
+        <div class="dash-hi">Halo, <span id="dashName">Budi</span> 👋</div>
+        <div class="dash-sub" id="dashEmail">budi@email.com</div>
+      </div>
+      <button class="dash-logout" onclick="demoLogout()">Keluar</button>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat"><div class="stat-v">3</div><div class="stat-k">Proyek</div></div>
+      <div class="stat"><div class="stat-v">⭐ Pro</div><div class="stat-k">Paket aktif</div></div>
+      <div class="stat"><div class="stat-v">28</div><div class="stat-k">Hari tersisa</div></div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="card">
+        <div class="card-h">Proyek Saya</div>
+        <div class="proj-item"><div class="proj-thumb">🏠</div><div><div class="proj-name">Rumah Tipe 45 — Bpk. Andi</div><div class="proj-meta">2 lantai · 90 m² · diubah 2 hari lalu</div></div><a class="proj-open" href="Floor Planner 2.0.html">Buka →</a></div>
+        <div class="proj-item"><div class="proj-thumb">🏘️</div><div><div class="proj-name">Perumahan Griya Asri</div><div class="proj-meta">40 unit Tipe 36 · diubah 5 hari lalu</div></div><a class="proj-open" href="Floor Planner 2.0.html">Buka →</a></div>
+        <div class="proj-item"><div class="proj-thumb">🏡</div><div><div class="proj-name">Renovasi Dapur — Ibu Sari</div><div class="proj-meta">1 lantai · 60 m² · diubah 1 minggu lalu</div></div><a class="proj-open" href="Floor Planner 2.0.html">Buka →</a></div>
+        <a class="dash-btn" href="Floor Planner 2.0.html">+ Proyek Baru</a>
+      </div>
+
+      <div class="card">
+        <div class="card-h">Langganan</div>
+        <div class="plan-pill" id="dashPlanPill">⭐ Pro</div>
+        <div class="plan-info-row"><span>Status</span><span style="color:var(--green)">Aktif</span></div>
+        <div class="plan-info-row"><span>Siklus</span><span id="dashCycle">Bulanan</span></div>
+        <div class="plan-info-row"><span>Berlaku s/d</span><span id="dashExpiry">6 Jul 2026</span></div>
+        <div class="plan-info-row"><span>Tagihan berikutnya</span><span id="dashNext">Rp 109.890</span></div>
+        <a class="dash-btn" href="Floor Planner 2.0.html">Kelola Paket</a>
+        <button class="dash-btn ghost" onclick="alert('Demo: riwayat invoice & metode pembayaran akan tampil di sini')">Riwayat Pembayaran</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CLOUD_ON = !!(window.Cloud && Cloud.init && Cloud.init());
+
+// ---- Supabase in-app setup ----
+function showCloudSetup(){
+  const c = document.getElementById('cloudSetup');
+  const a = document.getElementById('authCard');
+  if (a) a.classList.add('hidden');
+  if (c) {
+    c.classList.remove('hidden');
+    try {
+      const cfg = JSON.parse(localStorage.getItem('rumah3d_supabase_cfg')||'null');
+      if (cfg){ document.getElementById('sbUrl').value = cfg.url||''; document.getElementById('sbKey').value = cfg.key||''; }
+    } catch(e){}
+    document.getElementById('sbUrl').focus();
+  }
+}
+function saveSupabaseCfg(){
+  const url = (document.getElementById('sbUrl').value||'').trim();
+  const key = (document.getElementById('sbKey').value||'').trim();
+  const stat = document.getElementById('sbStat');
+  if (!/^https:\/\/.+\.supabase\.co\/?$/.test(url)) { stat.innerHTML = '⚠️ Project URL tidak valid. Contoh: <b>https://abcdxyz.supabase.co</b>'; stat.style.color='var(--accent2)'; return; }
+  if (key.length < 30 || !key.startsWith('ey')) { stat.innerHTML = '⚠️ anon key tidak valid (biasanya teks panjang diawali <b>ey…</b>).'; stat.style.color='var(--accent2)'; return; }
+  try {
+    localStorage.setItem('rumah3d_supabase_cfg', JSON.stringify({ url: url.replace(/\/$/,''), key }));
+    stat.innerHTML = '✅ Tersimpan. Memuat ulang…'; stat.style.color='var(--green)';
+    setTimeout(()=>location.reload(), 700);
+  } catch(e){ stat.innerHTML = '⚠️ Gagal menyimpan: '+e.message; stat.style.color='var(--accent2)'; }
+}
+
+// Jika cloud belum aktif, tonjolkan kartu setup; auth demo tetap bisa diakses.
+if (!CLOUD_ON) {
+  document.addEventListener('DOMContentLoaded', ()=>{ /* keep auth visible; setup reachable via link */ });
+}
+
+function showAuth(which){
+  document.getElementById('loginForm').classList.toggle('hidden', which!=='login');
+  document.getElementById('registerForm').classList.toggle('hidden', which!=='register');
+  document.getElementById('tabLogin').classList.toggle('active', which==='login');
+  document.getElementById('tabReg').classList.toggle('active', which==='register');
+}
+
+// If a real session already exists, jump straight to dashboard
+if (CLOUD_ON) {
+  Cloud.onChange(user => { if (user) enterDashboard(Cloud.displayName(), user.email); });
+}
+
+async function demoLogin(provider){
+  if (CLOUD_ON && provider === 'Google') { try { await Cloud.signInWithGoogle(); } catch(e){ alert('Login Google gagal: '+e.message); } return; }
+  if (CLOUD_ON) {
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass = document.getElementById('loginPass').value;
+    if (!email || !pass) { alert('Isi email & kata sandi.'); return; }
+    try { await Cloud.signIn(email, pass); /* onChange → dashboard */ }
+    catch(e){ alert('Gagal masuk: ' + e.message); }
+    return;
+  }
+  // demo fallback
+  const email = document.getElementById('loginEmail').value.trim() || 'budi@email.com';
+  enterDashboard(email.split('@')[0], email);
+}
+
+async function demoRegister(){
+  if(!document.getElementById('regAgree').checked){ alert('Centang persetujuan S&K dulu ya.'); return; }
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const pass = document.getElementById('regPass').value;
+  const phone = document.getElementById('regPhone').value.trim();
+  if (CLOUD_ON) {
+    if (!name || !email || !pass) { alert('Lengkapi nama, email & kata sandi.'); return; }
+    try {
+      await Cloud.signUp(name, email, pass, phone);
+      alert('Pendaftaran berhasil! Cek email Anda untuk verifikasi (jika diaktifkan), lalu masuk.');
+      showAuth('login');
+    } catch(e){ alert('Gagal daftar: ' + e.message); }
+    return;
+  }
+  // demo fallback
+  enterDashboard((name||'Pengguna Baru').split(' ')[0], email||'user@email.com');
+}
+
+function enterDashboard(name, email){
+  document.getElementById('authCard').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('dashName').textContent = (name||'Pengguna').charAt(0).toUpperCase()+(name||'Pengguna').slice(1);
+  document.getElementById('dashEmail').textContent = email||'';
+  // status langganan: dari cloud bila ada, else dari localStorage lokal
+  const names={free:'🆓 Free',pro:'⭐ Pro',dev:'👑 Developer'};
+  if (CLOUD_ON && Cloud.isLoggedIn()) {
+    Cloud.getSubscription().then(sub => {
+      const plan = sub?.plan || localStorage.getItem('rumah3d_user_plan') || 'free';
+      document.getElementById('dashPlanPill').textContent = names[plan]||'🆓 Free';
+      if (sub) {
+        document.getElementById('dashCycle').textContent = sub.cycle==='year'?'Tahunan':'Bulanan';
+        if (sub.expires_at) document.getElementById('dashExpiry').textContent = new Date(sub.expires_at).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+      }
+    }).catch(()=>{});
+    loadCloudProjectsList();
+  } else {
+    try{
+      const sub = JSON.parse(localStorage.getItem('rumah3d_subscription')||'null');
+      const plan = localStorage.getItem('rumah3d_user_plan')||'free';
+      document.getElementById('dashPlanPill').textContent = names[plan]||'🆓 Free';
+      if(sub){
+        document.getElementById('dashCycle').textContent = sub.cycle==='year'?'Tahunan':'Bulanan';
+        document.getElementById('dashExpiry').textContent = new Date(sub.expiresAt).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+        document.getElementById('dashNext').textContent = 'Rp '+Number(sub.paid).toLocaleString('id');
+      }
+    }catch(e){}
+  }
+}
+
+async function loadCloudProjectsList(){
+  try{
+    const list = await Cloud.listProjects();
+    const wrap = document.querySelector('#dashboard .card');
+    if (!list) return;
+    const items = wrap.querySelectorAll('.proj-item'); items.forEach(i=>i.remove());
+    const btn = wrap.querySelector('.dash-btn');
+    if (!list.length) { btn.insertAdjacentHTML('beforebegin','<div style="font-size:12.5px;color:var(--text3);padding:6px 0 10px;">Belum ada proyek. Mulai proyek baru.</div>'); return; }
+    list.forEach(p=>{
+      btn.insertAdjacentHTML('beforebegin', `<div class="proj-item"><div class="proj-thumb">🏠</div><div><div class="proj-name">${(p.name||'Tanpa nama').replace(/[<>]/g,'')}</div><div class="proj-meta">${new Date(p.updated_at).toLocaleDateString('id-ID')}</div></div><a class="proj-open" href="Floor Planner 2.0.html">Buka →</a></div>`);
+    });
+  }catch(e){}
+}
+
+async function demoLogout(){
+  if (CLOUD_ON) { try { await Cloud.signOut(); } catch(e){} }
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('authCard').classList.remove('hidden');
+  showAuth('login');
+}
+</script>
+</body>
+</html>

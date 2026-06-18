@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#161820">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RumahDesign3D">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>RumahDesign3D — Floor Planner 2.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/cloud.js"></script>
+<link rel="stylesheet" href="styles.css?v=9">
+<style>
+  /* Inline safety net — guarantees fit even if external CSS is cached/stale */
+  html, body { overflow: hidden !important; max-width: 100vw !important; }
+  .app-body { min-width: 0; }
+  .center-col { min-width: 0 !important; }
+  @media (min-width: 861px) {
+    .right-panel { width: clamp(196px, 19vw, 290px) !important; flex-shrink: 0; }
+  }
+</style>
+</head>
+<body>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" fill="#0d0f14"/>
+    <rect x="30" y="42" width="40" height="30" rx="2" fill="none" stroke="#f5a623" stroke-width="2.5"/>
+    <path d="M26 44 L50 26 L74 44" fill="none" stroke="#e8523a" stroke-width="2.5" stroke-linejoin="round"/>
+    <rect x="44" y="56" width="12" height="16" fill="#f5a623"/>
+  </svg>
+</template>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏠</div>
+    Rumah<span>Design</span>3D
+    <span class="ver-badge">2.0</span>
+  </div>
+
+  <div class="header-tabs">
+    <button class="tab-btn active" id="vtab-2d" onclick="setView('2d')">▦ Denah 2D</button>
+    <button class="tab-btn" id="vtab-3d" onclick="setView('3d')">🎲 Preview 3D</button>
+    <button class="tab-btn" id="vtab-rab" onclick="setView('rab')">📋 RAB</button>
+  </div>
+
+  <div class="header-actions">
+    <button class="btn-sm icon-btn" onclick="undo()" title="Undo (Ctrl+Z)">↩</button>
+    <button class="btn-sm icon-btn" onclick="redo()" title="Redo (Ctrl+Y)">↪</button>
+    <div class="sep-v"></div>
+    <button class="btn-sm" onclick="newProject()" title="Mulai proyek baru (kanvas kosong)">🆕 Baru</button>
+    <button class="btn-sm" onclick="saveProject()" title="Simpan (Ctrl+S)">💾 Simpan</button>
+    <button class="btn-sm" onclick="saveAndNew()" title="Simpan lalu kosongkan kanvas">💾 Simpan & Baru</button>
+    <button class="btn-sm" onclick="loadProject()" title="Muat proyek tersimpan">📂 Muat</button>
+    <button class="btn-sm" id="btnCloud" onclick="openCloudProjects()" title="Proyek tersimpan di cloud" style="display:none;">☁ Cloud</button>
+
+    <button class="btn-ai" onclick="openAIStudio()" title="AI Powered House Designer">✨ AI Studio</button>
+
+    <button class="plan-badge" id="planBadge" onclick="openPlanModal()" title="Paket Anda — klik untuk lihat / upgrade"></button>
+    <a class="btn-sm icon-btn" href="Akun.html" title="Akun saya" style="text-decoration:none; display:inline-flex; align-items:center;">👤</a>
+
+    <div class="menu-wrap">
+      <button class="btn-primary" onclick="toggleExportMenu(event)">📤 Ekspor ▾</button>
+      <div class="dropdown" id="exportMenu">
+        <div class="dropdown-label">Gambar Denah</div>
+        <button onclick="exportImage('png')">🖼 Ekspor PNG</button>
+        <button onclick="exportImage('jpg')">🖼 Ekspor JPG</button>
+        <button onclick="exportPDF()" data-feat="pdf">📄 Ekspor PDF (Denah + RAB)</button>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-label">Gambar Kerja & CAD</div>
+        <button onclick="openDrawings()" data-feat="drawings">📐 Gambar Kerja (Denah/Tampak/Potongan)</button>
+        <button onclick="exportDXF()" data-feat="dxf">📂 Ekspor DXF (AutoCAD/DraftSight)</button>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-label">Data Proyek</div>
+        <button onclick="exportProject()">📦 Ekspor Proyek (.json)</button>
+        <button onclick="importProject()">📥 Impor Proyek</button>
+        <button onclick="exportRABExcel()">📊 RAB ke CSV</button>
+        <div class="dropdown-sep"></div>
+        <button class="danger" onclick="clearAll()">🗑 Reset Semua</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="app-body">
+
+  <!-- LEFT TOOLBAR -->
+  <div class="toolbar">
+    <div class="tool-group-label">EDIT</div>
+    <button class="tool-btn active" id="tool-select" onclick="setTool('select')">↖<span class="tool-tip">Pilih · V</span></button>
+    <button class="tool-btn" id="tool-swall" onclick="setTool('swall')">🧱<span class="tool-tip">Smart Wall · S</span></button>
+    <button class="tool-btn" id="tool-room" onclick="setTool('room')">⬛<span class="tool-tip">Ruangan · R</span></button>
+    <button class="tool-btn" id="tool-wall" onclick="setTool('wall')">─<span class="tool-tip">Garis Bantu · W</span></button>
+    <button class="tool-btn" id="tool-door" onclick="setTool('door')">🚪<span class="tool-tip">Pintu · D</span></button>
+    <button class="tool-btn" id="tool-window" onclick="setTool('window')">🪟<span class="tool-tip">Jendela · J</span></button>
+
+    <div class="tool-sep"></div>
+    <div class="tool-group-label">SITE</div>
+    <button class="tool-btn" id="tool-land" data-feat="siteplan" onclick="setTool('land')">⬡<span class="tool-tip">Bentuk Tanah</span></button>
+    <button class="tool-btn" id="tool-carport" data-feat="siteplan" onclick="setTool('carport')">🚗<span class="tool-tip">Carport</span></button>
+    <button class="tool-btn" id="tool-garden" data-feat="siteplan" onclick="setTool('garden')">🌳<span class="tool-tip">Taman</span></button>
+    <button class="tool-btn" id="tool-pool" data-feat="siteplan" onclick="setTool('pool')">💧<span class="tool-tip">Kolam</span></button>
+
+    <div class="tool-sep"></div>
+    <div class="tool-group-label">MEP</div>
+    <button class="tool-btn" id="tool-elec" onclick="openMep('elec')">🔌<span class="tool-tip">Listrik</span></button>
+    <button class="tool-btn" id="tool-plumb" onclick="openMep('plumb')">🚰<span class="tool-tip">Plumbing</span></button>
+
+    <div class="tool-sep"></div>
+    <button class="tool-btn" onclick="setView('3d')">🎲<span class="tool-tip">Lihat 3D</span></button>
+  </div>
+
+  <!-- CENTER COLUMN -->
+  <div class="center-col">
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="floorCanvas"></canvas>
+
+      <!-- COMPASS -->
+      <div class="compass" id="compass" title="Tarik untuk memutar arah utara">
+        <div class="compass-dial" id="compassDial">
+          <div class="compass-needle"></div>
+          <span class="compass-n">N</span>
+          <span class="compass-e">E</span>
+          <span class="compass-s">S</span>
+          <span class="compass-w">W</span>
+        </div>
+        <div class="compass-deg" id="compassDeg">0°</div>
+      </div>
+
+      <div class="scale-indicator" id="scaleIndicator">1px = 5cm · Zoom 100%</div>
+
+      <div class="furn-infobar" id="furnInfobar">
+        <span id="furnInfoName" class="furn-infobar-name"></span>
+        <button class="furn-infobar-btn" onclick="rotateFurn()">↻ Putar</button>
+        <button class="furn-infobar-btn del" onclick="deleteFurn()">🗑 Hapus</button>
+      </div>
+
+      <div class="canvas-hint" id="canvasHint">
+        Pilih tool <b>Ruangan</b> lalu klik-drag untuk menggambar
+      </div>
+
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoom(1.2)">+</button>
+        <button class="zoom-btn" onclick="zoom(0.8)">−</button>
+        <button class="zoom-btn" onclick="resetZoom()" style="font-size:13px" title="Pas ke layar">⊙</button>
+      </div>
+    </div>
+
+    <!-- FLOOR BAR -->
+    <div class="floor-bar">
+      <div class="floor-bar-label">LANTAI</div>
+      <div class="floor-tabs" id="floorTabs"></div>
+      <div class="floor-bar-actions">
+        <label class="ghost-toggle" title="Tampilkan lantai bawah sebagai bayangan untuk penyelarasan">
+          <input type="checkbox" id="ghostToggle" onchange="render()"> <span>Bayangan</span>
+        </label>
+        <button class="floor-act" data-feat="multifloor" onclick="addFloor()" title="Tambah lantai">+ Lantai</button>
+        <button class="floor-act" data-feat="multifloor" onclick="duplicateFloor()" title="Gandakan lantai aktif (dengan isi)">⧉ Duplikat</button>
+        <button class="floor-act" data-feat="multifloor" onclick="copyFloorLayout()" title="Salin denah lantai aktif sebagai dasar lantai baru kosong">⎘ Salin</button>
+        <button class="floor-act danger" onclick="deleteFloor()" title="Hapus lantai aktif">🗑</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="panel-tabs" id="panelTabs">
+      <div class="ptab active" data-panel="rooms" onclick="switchPanel('rooms')">Ruangan</div>
+      <div class="ptab" data-panel="site" onclick="switchPanel('site')">Site</div>
+      <div class="ptab" data-panel="roof" onclick="switchPanel('roof')">Atap</div>
+      <div class="ptab" data-panel="props" onclick="switchPanel('props')">Material</div>
+      <div class="ptab" data-panel="mep" data-feat="mep" onclick="switchPanel('mep')">MEP</div>
+      <div class="ptab" data-panel="furn" onclick="switchPanel('furn')">Furnitur</div>
+    </div>
+
+    <!-- ROOMS VIEW -->
+    <div class="panel-view active" id="pv-rooms">
+      <div class="panel-section">
+        <div class="panel-title">Lantai Aktif</div>
+        <div class="active-floor-card" id="activeFloorCard"></div>
+      </div>
+      <div class="panel-section" id="wallPanel"></div>
+      <div class="panel-section">
+        <div class="panel-title">Daftar Ruangan</div>
+        <div id="roomList"></div>
+        <div class="add-room-row">
+          <select class="select-sm" id="newRoomType">
+            <option value="Ruang Tamu">Ruang Tamu</option>
+            <option value="Kamar Tidur">Kamar Tidur</option>
+            <option value="Dapur">Dapur</option>
+            <option value="Kamar Mandi">Kamar Mandi</option>
+            <option value="Ruang Makan">Ruang Makan</option>
+            <option value="Garasi">Garasi</option>
+            <option value="Teras">Teras</option>
+            <option value="Gudang">Gudang</option>
+          </select>
+          <button class="btn-add" onclick="addRoomFromPanel()">+ Tambah</button>
+        </div>
+      </div>
+      <div class="panel-section auto-dim-box">
+        <div class="panel-title">Auto Alignment</div>
+        <div class="align-grid">
+          <button class="align-btn" onclick="alignRooms('left')" title="Rata kiri">⬅</button>
+          <button class="align-btn" onclick="alignRooms('cx')" title="Tengah horizontal">↔</button>
+          <button class="align-btn" onclick="alignRooms('right')" title="Rata kanan">➡</button>
+          <button class="align-btn" onclick="alignRooms('top')" title="Rata atas">⬆</button>
+          <button class="align-btn" onclick="alignRooms('cy')" title="Tengah vertikal">↕</button>
+          <button class="align-btn" onclick="alignRooms('bottom')" title="Rata bawah">⬇</button>
+        </div>
+        <div class="align-row2">
+          <button class="align-btn wide" onclick="alignRooms('distH')" title="Jarak sama horizontal">⇆ Spasi Rata H</button>
+          <button class="align-btn wide" onclick="alignRooms('distV')" title="Jarak sama vertikal">⇅ Spasi Rata V</button>
+        </div>
+      </div>
+      <div class="panel-section auto-dim-box">
+        <div class="panel-title">Auto Dimensi</div>
+        <div class="dim-grid">
+          <div class="dim-cell"><span class="dim-k">Luas Lantai Ini</span><span class="dim-v accent" id="floorArea">0 m²</span></div>
+          <div class="dim-cell"><span class="dim-k">Luas Total Bangunan</span><span class="dim-v accent" id="buildingArea">0 m²</span></div>
+          <div class="dim-cell"><span class="dim-k">Dimensi Bangunan</span><span class="dim-v" id="buildingDims">— × —</span></div>
+          <div class="dim-cell"><span class="dim-k">Jumlah Lantai</span><span class="dim-v" id="floorCount">1</span></div>
+        </div>
+      </div>
+      <div class="panel-section" style="flex:1; overflow-y:auto;">
+        <div class="panel-title">Properti Ruangan Terpilih</div>
+        <div id="selectedRoomProps"><div class="empty-state mini">Pilih ruangan untuk edit ukuran</div></div>
+      </div>
+    </div>
+
+    <!-- SITE VIEW -->
+    <div class="panel-view" id="pv-site">
+      <div class="panel-section" style="flex:1; overflow-y:auto;">
+        <div class="panel-title">Site Plan / Lahan</div>
+        <label class="toggle-row">
+          <span>Tampilkan Site Plan</span>
+          <input type="checkbox" id="siteEnabled" checked onchange="onSiteToggle()">
+        </label>
+
+        <div class="panel-title" style="margin-top:16px;">Ukuran Tanah</div>
+        <div class="prop-row">
+          <span class="prop-label">Lebar (m)</span>
+          <input class="prop-input" type="number" id="landW" value="12" min="3" max="100" step="0.5" oninput="onSiteInput()">
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Panjang (m)</span>
+          <input class="prop-input" type="number" id="landH" value="18" min="3" max="100" step="0.5" oninput="onSiteInput()">
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Luas Tanah</span>
+          <span class="prop-value accent" id="landArea">216 m²</span>
+        </div>
+
+        <div class="panel-title" style="margin-top:16px;">Bentuk Tanah</div>
+        <div class="prop-row" style="margin-bottom:6px;">
+          <span class="prop-label">Saat ini</span>
+          <span class="prop-value" id="landShapeStatus" style="font-size:11px;">Persegi panjang</span>
+        </div>
+        <div class="land-shape-grid">
+          <button class="land-shape-btn" onclick="setLandShape('rect')" title="Persegi panjang">▭ Persegi</button>
+          <button class="land-shape-btn" onclick="setLandShape('L')" title="Bentuk L">∟ Bentuk L</button>
+          <button class="land-shape-btn" onclick="setLandShape('U')" title="Bentuk U">⊔ Bentuk U</button>
+          <button class="land-shape-btn" onclick="setLandShape('T')" title="Bentuk T">⊤ Bentuk T</button>
+          <button class="land-shape-btn" onclick="setLandShape('trapesium')" title="Trapesium">⏢ Trapesium</button>
+          <button class="land-shape-btn" onclick="startLandDraw()" title="Gambar bebas titik per titik">✏️ Gambar</button>
+        </div>
+        <div class="site-hint" style="margin-top:8px;">Untuk bentuk tak beraturan, klik <b>✏️ Gambar</b> lalu klik titik-titik sudut tanah di kanvas. Tutup dengan klik titik awal. Setelah jadi, pilih tool <b>Bentuk Tanah</b> lagi untuk menggeser titik.</div>
+
+        <div class="panel-title" style="margin-top:16px;">GSB — Garis Sempadan</div>
+        <label class="toggle-row" style="margin-bottom:10px;">
+          <span>Tampilkan GSB <span style="color:var(--accent2)">▦</span></span>
+          <input type="checkbox" id="gsbEnabled" checked onchange="onGsbToggle()">
+        </label>
+        <div class="prop-row">
+          <span class="prop-label">Depan (m)</span>
+          <input class="prop-input" type="number" id="gsbFront" value="3" min="0" max="20" step="0.5" oninput="onSiteInput()">
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Belakang (m)</span>
+          <input class="prop-input" type="number" id="gsbBack" value="1.5" min="0" max="20" step="0.5" oninput="onSiteInput()">
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Kiri (m)</span>
+          <input class="prop-input" type="number" id="gsbLeft" value="1" min="0" max="20" step="0.5" oninput="onSiteInput()">
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Kanan (m)</span>
+          <input class="prop-input" type="number" id="gsbRight" value="1" min="0" max="20" step="0.5" oninput="onSiteInput()">
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Area Boleh Bangun</span>
+          <span class="prop-value" id="buildableArea">— m²</span>
+        </div>
+
+        <div class="panel-title" style="margin-top:16px;">Elemen Lahan</div>
+        <div class="site-legend">
+          <div class="site-chip"><span class="sw" style="background:#3b82f6"></span>🚗 Carport</div>
+          <div class="site-chip"><span class="sw" style="background:#15803d"></span>🌳 Taman</div>
+          <div class="site-chip"><span class="sw" style="background:#0891b2"></span>💧 Kolam</div>
+        </div>
+        <div class="site-hint">Pakai tool Site di toolbar kiri, lalu klik-drag di kanvas untuk menggambar carport / taman / kolam.</div>
+        <div id="siteZoneList"></div>
+      </div>
+    </div>
+
+    <!-- ROOF VIEW -->
+    <div class="panel-view" id="pv-roof">
+      <div class="panel-section" style="flex:1; overflow-y:auto;">
+        <div class="panel-title">Roof Generator</div>
+        <div class="roof-sub">Bentuk atap untuk <b id="roofFloorName">Lantai 1</b> (diterapkan pada lantai teratas saat preview 3D).</div>
+        <div class="roof-grid" id="roofGrid"></div>
+
+        <div class="panel-title" style="margin-top:16px;">Parameter Atap</div>
+        <div class="prop-row">
+          <span class="prop-label">Kemiringan</span>
+          <input class="prop-input" type="number" id="roofPitch" value="30" min="0" max="60" step="1" oninput="onRoofInput()"> <span class="unit">°</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Overhang</span>
+          <input class="prop-input" type="number" id="roofOverhang" value="0.6" min="0" max="2" step="0.1" oninput="onRoofInput()"> <span class="unit">m</span>
+        </div>
+        <div class="roof-note" id="roofNote"></div>
+      </div>
+    </div>
+
+    <!-- PROPS / MATERIAL VIEW -->
+    <div class="panel-view" id="pv-props">
+      <div class="panel-section" style="flex:1; overflow-y:auto;">
+        <div class="panel-title">Properti Bangunan</div>
+        <div class="prop-row">
+          <span class="prop-label">Tinggi Dinding</span>
+          <input class="prop-input" type="number" value="3" id="wallHeight" min="2" max="6" step="0.1" oninput="recalcRAB()"> <span class="unit">m</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Tebal Dinding</span>
+          <input class="prop-input" type="number" value="15" id="wallThick" min="10" max="30" oninput="recalcRAB(); if(typeof setWallThickFromInput==='function') setWallThickFromInput();"> <span class="unit">cm</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Jenis Pondasi</span>
+          <select class="select-sm wide" id="pondasiType" onchange="recalcRAB()">
+            <option value="batu_kali">Batu Kali</option>
+            <option value="footplat">Footplat</option>
+            <option value="tiang_pancang">Tiang Pancang</option>
+          </select>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Material Lantai</span>
+          <select class="select-sm wide" id="floorMat" onchange="recalcRAB()">
+            <option value="keramik_40">Keramik 40×40</option>
+            <option value="keramik_60">Keramik 60×60</option>
+            <option value="granit">Granit</option>
+            <option value="vinyl">Vinyl</option>
+            <option value="semen">Floor Semen</option>
+          </select>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Material Dinding</span>
+          <select class="select-sm wide" id="wallMat" onchange="recalcRAB()">
+            <option value="bata_merah">Bata Merah</option>
+            <option value="hebel">Bata Hebel</option>
+            <option value="batako">Batako</option>
+          </select>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Material Atap</span>
+          <select class="select-sm wide" id="roofMat" onchange="recalcRAB()">
+            <option value="genteng_beton">Genteng Beton</option>
+            <option value="genteng_metal">Genteng Metal</option>
+            <option value="asbes">Asbes</option>
+            <option value="spandek">Spandek</option>
+          </select>
+        </div>
+        <button class="btn-primary" style="width:100%; margin-top:14px; padding:10px;" onclick="recalcRAB(); switchPanel('rooms');">🔄 Hitung Ulang RAB</button>
+      </div>
+    </div>
+
+    <!-- MEP VIEW -->
+    <div class="panel-view" id="pv-mep" style="flex-direction:column; overflow:hidden;">
+      <div class="panel-section" style="padding-bottom:10px;">
+        <div class="mep-cat-toggle">
+          <button class="mep-cat active" data-cat="elec" onclick="setMepCat('elec')">🔌 Listrik</button>
+          <button class="mep-cat" data-cat="plumb" onclick="setMepCat('plumb')">🚰 Plumbing</button>
+        </div>
+        <div class="mep-hint" id="mepHint">Klik simbol di bawah, lalu klik di kanvas untuk menaruh titik. Tekan Esc untuk berhenti.</div>
+        <div class="mep-palette" id="mepPalette"></div>
+        <button class="floor-act" style="width:100%; margin-top:8px;" onclick="autoMep()">✨ Auto-tata (per ruangan)</button>
+      </div>
+      <div class="panel-section" style="flex:1; overflow-y:auto;">
+        <div class="panel-title">Estimasi Material</div>
+        <div class="mep-estimate" id="mepEstimate"></div>
+        <div class="panel-title" style="margin-top:14px;">Titik Terpasang (Lantai Ini)</div>
+        <div id="mepList"></div>
+      </div>
+    </div>
+
+    <!-- FURNITURE VIEW -->
+    <div class="panel-view" id="pv-furn" style="flex-direction:column; padding:12px 12px 0; overflow:hidden;">
+      <div class="panel-title" style="margin-bottom:8px;">Library Furnitur</div>
+      <div class="furn-search-wrap">
+        <span class="furn-search-icon">🔍</span>
+        <input class="furn-search" id="furnSearch" placeholder="Cari furnitur..." oninput="renderFurnGrid()">
+      </div>
+      <div class="furn-cats" id="furnCats"></div>
+      <div class="furn-grid" id="furnGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- RAB FULL VIEW (overlay panel) -->
+<div class="rab-fullview" id="rabFullview">
+  <div class="rab-fv-head">
+    <div>
+      <div class="rab-fv-title">📋 Rencana Anggaran Biaya (RAB)</div>
+      <div class="rab-fv-sub" id="rabFvSub">Estimasi kasar berdasarkan luas & material</div>
+    </div>
+    <div class="rab-fv-actions">
+      <div class="city-row">
+        <span class="city-label">Kota / HSPK:</span>
+        <select class="select-sm" id="citySelect" onchange="recalcRAB()">
+          <option value="jakarta">Jakarta</option>
+          <option value="surabaya">Surabaya</option>
+          <option value="bandung">Bandung</option>
+          <option value="medan">Medan</option>
+          <option value="makassar">Makassar</option>
+          <option value="yogyakarta">Yogyakarta</option>
+        </select>
+      </div>
+      <button class="btn-sm" onclick="openPriceEditor()" title="Edit harga material lokal / supplier">💲 Harga</button>
+      <button class="btn-sm" onclick="exportRABExcel()">📊 CSV</button>
+      <button class="btn-sm" onclick="exportPDF()">📄 PDF</button>
+      <button class="btn-sm" onclick="setView('2d')">✕ Tutup</button>
+    </div>
+  </div>
+  <div class="rab-subtabs" id="rabSubtabs">
+    <div class="rab-subtab active" data-rab="ringkas" onclick="setRabTab('ringkas')">Ringkas</div>
+    <div class="rab-subtab" data-rab="konstruksi" onclick="setRabTab('konstruksi')">Konstruksi (Detail)</div>
+    <div class="rab-subtab" data-rab="struktur" onclick="setRabTab('struktur')">Struktur & Atap</div>
+    <div class="rab-subtab" data-rab="takeoff" onclick="setRabTab('takeoff')">Material Take-Off</div>
+  </div>
+  <div class="rab-fv-body" id="rabContent">
+    <div class="empty-state"><div class="empty-icon">📋</div>Tambahkan ruangan untuk melihat estimasi RAB</div>
+  </div>
+</div>
+
+<!-- 3D MODAL -->
+<div class="modal-overlay" id="modal3d">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">🎲 Preview 3D — Three.js Engine</span>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <button class="btn-sm" id="btn3dRoof" onclick="toggle3DRoof()" title="Tampilkan / sembunyikan atap">🏠 Atap</button>
+        <button class="btn-sm" id="btn3dWireframe" onclick="toggle3DWireframe()" title="Mode wireframe">⬡ Wireframe</button>
+        <button class="btn-sm" id="btn3dFloors" onclick="toggle3DAllFloors()" title="Tampilkan semua lantai bertumpuk">🏢 Semua Lantai</button>
+        <button class="btn-sm" id="btn3dEnv" onclick="toggle3DEnv()" title="Lingkungan luar: rumput, pohon, jalan">🌳 Lingkungan</button>
+        <button class="btn-sm" id="btn3dWalk" onclick="toggle3DWalk()" title="Tur jalan first-person (WASD + mouse)">🚶 Tur Jalan</button>
+        <button class="btn-sm" onclick="renderPhoto()" title="Simpan render foto dari tampilan 3D saat ini">📸 Render Foto</button>
+        <button class="btn-sm" onclick="openAIRender('three-canvas-container')" title="Render fotorealistik dengan AI (OpenAI)" style="border-color:#a78bfa; color:#c4b5fd;">✨ AI Render</button>
+        <button class="btn-sm" onclick="reset3DCamera()" title="Reset kamera">⊙ Reset</button>
+        <button class="modal-close" onclick="close3DModal()">✕</button>
+      </div>
+    </div>
+    <div id="view3d">
+      <div id="three-canvas-container"></div>
+      <div id="view3d-hint">🖱 Drag kiri: Orbit · Scroll: Zoom · Drag kanan: Geser</div>
+      <div id="walkOverlay">
+        <div class="walk-crosshair">+</div>
+        <div class="walk-hint">🚶 <b>Tur Jalan</b> — <b>W A S D</b> / panah bergerak · <b>Mouse</b> (atau tahan klik + geser) melihat · <b>Shift</b> lari · <b>Esc</b> keluar</div>
+      </div>
+      <div id="view3d-loading">⚙️ Memuat Three.js...</div>
+    </div>
+  </div>
+</div>
+
+<!-- CLOUD PROJECTS MODAL -->
+<div class="modal-overlay" id="modalCloud" style="z-index:1500;">
+  <div class="modal-box" style="max-width:560px; height:auto; max-height:86vh;">
+    <div class="modal-header">
+      <span class="modal-title">☁ Proyek Cloud</span>
+      <button class="modal-close" onclick="closeCloudProjects()">✕</button>
+    </div>
+    <div style="padding:18px 22px; overflow-y:auto;">
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
+        <input class="co-input" id="cloudSaveName" placeholder="Nama proyek (mis. Rumah Bpk. Andi)" style="flex:1;">
+        <button class="ai-btn-primary" style="white-space:nowrap;" onclick="saveCurrentToCloud()">💾 Simpan ke Cloud</button>
+      </div>
+      <div class="card-h" style="font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text3); margin:8px 0;">Proyek Tersimpan</div>
+      <div id="cloudList"><div class="empty-state mini">Memuat…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div class="modal-overlay" id="modalCheckout" style="z-index:1600;">
+  <div class="modal-box" style="max-width:760px; height:auto; max-height:92vh;">
+    <div class="modal-header">
+      <span class="modal-title" id="checkoutTitle">💳 Checkout</span>
+      <button class="modal-close" onclick="closeCheckout()">✕</button>
+    </div>
+    <div class="checkout-body" id="checkoutBody"></div>
+  </div>
+</div>
+
+<!-- PLAN MODAL -->
+<div class="modal-overlay" id="modalPlan" style="z-index:1500;">
+  <div class="modal-box" style="max-width:920px; height:auto; max-height:90vh;">
+    <div class="modal-header">
+      <span class="modal-title">💎 Paket & Langganan</span>
+      <button class="modal-close" onclick="closePlanModal()">✕</button>
+    </div>
+    <div class="plan-modal-body" id="planBody"></div>
+  </div>
+</div>
+
+<!-- AI RENDER MODAL -->
+<div class="modal-overlay" id="modalAIRender" style="z-index:1400;">
+  <div class="modal-box" style="max-width:1100px; height:88vh;">
+    <div class="modal-header">
+      <span class="modal-title">✨ AI Render Fotorealistik <span style="font-size:11px; color:var(--text3); font-weight:500;">· OpenAI gpt-image-1</span></span>
+      <button class="modal-close" onclick="closeAIRender()">✕</button>
+    </div>
+    <div class="airender-body" id="airenderBody"></div>
+  </div>
+</div>
+
+<!-- DEV SITEPLAN 3D MODAL -->
+<div class="modal-overlay" id="modalDev3D" style="z-index:1300;">
+  <div class="modal-box" style="max-width:1180px; height:88vh;">
+    <div class="modal-header">
+      <span class="modal-title">🏘️ Siteplan 3D — Komplek Perumahan</span>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <button class="btn-sm" onclick="openAIRender('dev3d-canvas-container')" title="Render fotorealistik dengan AI (OpenAI)" style="border-color:#a78bfa; color:#c4b5fd;">✨ AI Render</button>
+        <button class="btn-sm" onclick="resetDev3DCamera()" title="Reset kamera">⊙ Reset</button>
+        <button class="modal-close" onclick="closeDev3D()">✕</button>
+      </div>
+    </div>
+    <div id="dev3dView">
+      <div id="dev3d-canvas-container"></div>
+      <div id="dev3d-hint">🖱 Drag kiri: Orbit · Scroll: Zoom · Drag kanan: Geser</div>
+      <div id="dev3d-loading">⚙️ Memuat siteplan 3D…</div>
+    </div>
+  </div>
+</div>
+
+<!-- DRAWINGS MODAL -->
+<div class="modal-overlay" id="modalDraw">
+  <div class="modal-box" style="max-width:1180px; height:88vh;">
+    <div class="modal-header">
+      <span class="modal-title">📐 Gambar Kerja Arsitektur</span>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <select class="select-sm" id="drawPaper" onchange="renderDrawings()">
+          <option value="a4">PDF A4</option>
+          <option value="a3">PDF A3</option>
+        </select>
+        <button class="btn-sm" onclick="exportDrawingsPDF()">📄 Ekspor PDF</button>
+        <button class="modal-close" onclick="closeDrawings()">✕</button>
+      </div>
+    </div>
+    <div class="draw-body" id="drawBody"></div>
+  </div>
+</div>
+
+<!-- AI STUDIO MODAL -->
+<div class="modal-overlay" id="modalAI">
+  <div class="ai-shell">
+    <div class="ai-head">
+      <div class="ai-head-title">✨ AI Powered House Designer <span class="ver-badge">5.0</span></div>
+      <button class="modal-close" onclick="closeAIStudio()">✕</button>
+    </div>
+    <div class="ai-body">
+      <div class="ai-nav">
+        <div class="ai-nav-item active" data-ai="layout" onclick="aiNav('layout')"><span class="ain-ic">🏗️</span><div><div class="ain-t">AI Auto Layout</div><div class="ain-s">Tanah + kebutuhan → denah</div></div></div>
+        <div class="ai-nav-item" data-ai="regulasi" onclick="aiNav('regulasi')"><span class="ain-ic">📋</span><div><div class="ain-t">Regulation Checker</div><div class="ain-s">KDB / KLB / GSB / tinggi</div></div></div>
+        <div class="ai-nav-item" data-ai="assistant" onclick="aiNav('assistant')"><span class="ain-ic">💬</span><div><div class="ain-t">AI Design Assistant</div><div class="ain-s">Prompt → rumah lengkap</div></div></div>
+        <div class="ai-nav-item" data-ai="optimizer" onclick="aiNav('optimizer')"><span class="ain-ic">💰</span><div><div class="ain-t">AI RAB Optimizer</div><div class="ain-s">Saran hemat biaya</div></div></div>
+        <div class="ai-nav-item" data-ai="analysis" onclick="aiNav('analysis')"><span class="ain-ic">🧭</span><div><div class="ain-t">Sun & Feng Shui</div><div class="ain-s">Matahari, ventilasi</div></div></div>
+        <div class="ai-nav-item" data-ai="interior" onclick="aiNav('interior')"><span class="ain-ic">🛋️</span><div><div class="ain-t">Interior Generator</div><div class="ain-s">Render + furnitur + biaya</div></div></div>
+        <div class="ai-nav-item" data-ai="developer" onclick="aiNav('developer')"><span class="ain-ic">🏘️</span><div><div class="ain-t">Developer Mode</div><div class="ain-s">Lahan → unit + siteplan</div></div></div>
+        <div class="ai-nav-item" data-ai="renovasi" onclick="aiNav('renovasi')"><span class="ain-ic">🔨</span><div><div class="ain-t">Renovation Mode</div><div class="ain-s">Ubah denah: perbesar, tambah</div></div></div>
+        <div class="ai-nav-item" data-ai="scan" onclick="aiNav('scan')"><span class="ain-ic">📷</span><div><div class="ain-t">Scan Denah</div><div class="ain-s">Foto → underlay → trace</div></div></div>
+        <div class="ai-nav-item" data-ai="template" onclick="aiNav('template')"><span class="ain-ic">🏪</span><div><div class="ain-t">Marketplace Template</div><div class="ain-s">Tipe 36 / 45 / 60 / 90</div></div></div>
+        <div class="ai-foot">Bagian angka (denah, RAB, hemat) dihitung pasti oleh sistem. Narasi & saran dibuat AI.</div>
+      </div>
+      <div class="ai-content" id="aiContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PRICE EDITOR MODAL -->
+<div class="modal-overlay" id="modalPrice">
+  <div class="modal-box" style="max-width:560px; height:auto; max-height:86vh;">
+    <div class="modal-header">
+      <span class="modal-title">💲 Harga Material — <span id="priceCity" style="color:var(--accent)"></span></span>
+      <button class="modal-close" onclick="closePriceEditor()">✕</button>
+    </div>
+    <div style="padding:18px 22px; overflow-y:auto;">
+      <div class="ai-sub" style="margin-bottom:14px;">Isi harga sesuai toko bangunan / supplier Anda. RAB & Take-Off langsung memakai angka ini (disimpan bersama proyek). Kosongkan untuk pakai default.</div>
+      <div id="priceList"></div>
+      <div style="display:flex; gap:8px; margin-top:16px;">
+        <button class="ai-btn-primary" onclick="savePrices()">💾 Simpan Harga</button>
+        <button class="ai-btn-ghost" onclick="resetPrices()">↺ Kembalikan Default</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="furn-ghost" id="furnGhost"></div>
+<div class="notif" id="notif"></div>
+
+<script src="js/state.js"></script>
+<script src="js/render.js"></script>
+<script src="js/interact.js"></script>
+<script src="js/rooms.js"></script>
+<script src="js/site.js"></script>
+<script src="js/roof.js"></script>
+<script src="js/furniture.js"></script>
+<script src="js/walls2.js"></script>
+<script src="js/roomdetect.js"></script>
+<script src="js/mep.js"></script>
+<script src="js/construction.js"></script>
+<script src="js/structure.js"></script>
+<script src="js/prices.js"></script>
+<script src="js/rab.js"></script>
+<script src="js/three3d.js"></script>
+<script src="js/drawings.js"></script>
+<script src="js/dxf.js"></script>
+<script src="js/ailayout.js"></script>
+<script src="js/reg.js"></script>
+<script src="js/devmode.js"></script>
+<script src="js/dev3d.js"></script>
+<script src="js/airender.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/export.js"></script>
+<script src="js/plan.js"></script>
+<script src="js/payment-provider.js"></script>
+<script src="js/checkout.js"></script>
+<script src="js/cloud-ui.js"></script>
+<script src="js/onboarding.js"></script>
+<script src="js/mobile.js"></script>
+<script src="js/pwa.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
