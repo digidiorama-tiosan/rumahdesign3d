@@ -1,0 +1,159 @@
+// ===================== STRUCTURE GENERATOR (22) + ROOF STRUCTURE (23) =====================
+// Deterministic: derive a column grid from the building footprint, then quantify
+// sloof / kolom / ring balok / pondasi (beton + besi) and the roof truss system.
+
+function structureModel() {
+  const f = floors[0] || activeFloor();
+  const b = (typeof floorBoundsAll==='function') ? floorBoundsAll(f) : null;
+  const wallH = parseFloat(val('wallHeight')||3);
+  if (!b) return null;
+  const minXm = b.minX/PX_PER_M, minYm = b.minY/PX_PER_M, maxXm = b.maxX/PX_PER_M, maxYm = b.maxY/PX_PER_M;
+  const W = maxXm-minXm, D = maxYm-minYm;
+  // column grid ~3.0–3.5 m
+  const SPAN = 3.2;
+  const nx = Math.max(2, Math.round(W/SPAN)+1), ny = Math.max(2, Math.round(D/SPAN)+1);
+  const cols = [];
+  for (let i=0;i<nx;i++) for (let j=0;j<ny;j++) {
+    cols.push({ x: minXm + W*i/(nx-1), y: minYm + D*j/(ny-1) });
+  }
+  // beam lengths (sloof + ring) follow grid lines along perimeter + internal
+  const beamLen = (nx*D) + (ny*W);             // all grid lines both directions (approx)
+  const perim = 2*(W+D);
+  return { b, W, D, nx, ny, cols, beamLen, perim, wallH, minXm, minYm, floorsN: floors.length };
+}
+
+function computeStructure() {
+  const m = structureModel(); if (!m) return null;
+  const city = (typeof cityMultiplier!=='undefined' ? cityMultiplier[val('citySelect')||'jakarta'] : 1) || 1;
+  const nCol = m.cols.length * m.floorsN;
+  // section sizes
+  const kolom = { b:0.15, h:0.15 };       // 15×15
+  const sloof = { b:0.15, h:0.20 };
+  const ring  = { b:0.15, h:0.20 };
+  // volumes (m³)
+  const vKolom = nCol * kolom.b*kolom.h*m.wallH;
+  const vSloof = m.beamLen * sloof.b*sloof.h;                 // ground tie-beams
+  const vRing  = m.beamLen * ring.b*ring.h * Math.max(1, m.floorsN-0); // ring per floor approx
+  // foundation
+  const pondasiType = val('pondasiType')||'batu_kali';
+  let vPondasiConc = 0, pondasiDesc = '';
+  if (pondasiType==='footplat') { vPondasiConc = m.cols.length*0.18; pondasiDesc = `${m.cols.length} footplat 1×1×0,18 m`; }
+  else if (pondasiType==='tiang_pancang') { pondasiDesc = `${m.cols.length} titik pancang`; }
+  else { vPondasiConc = 0; pondasiDesc = `Batu kali menerus ${m.perim.toFixed(1)} m`; }
+  const vConc = vKolom+vSloof+vRing+vPondasiConc;
+  // rebar: ~150 kg/m³ structural concrete
+  const besiKg = vConc*150*1.1;
+  // concrete materials (per m³: 7 sak semen, 0.54 pasir, 0.81 split)
+  const semenSak = Math.ceil(vConc*7);
+  const pasirM3 = +(vConc*0.54).toFixed(1);
+  const splitM3 = +(vConc*0.81).toFixed(1);
+
+  const elements = [
+    { name:'Pondasi', detail:pondasiDesc, vol:vPondasiConc?vPondasiConc.toFixed(2)+' m³':'-' },
+    { name:'Sloof 15×20', detail:`Balok pengikat ${m.beamLen.toFixed(0)} m`, vol:vSloof.toFixed(2)+' m³' },
+    { name:'Kolom 15×15', detail:`${nCol} kolom × ${m.wallH} m`, vol:vKolom.toFixed(2)+' m³' },
+    { name:'Ring Balok 15×20', detail:`Per lantai, total ${(m.beamLen*Math.max(1,m.floorsN)).toFixed(0)} m`, vol:vRing.toFixed(2)+' m³' },
+  ];
+  const cost = vConc*3900000*city + besiKg*16500*city;  // beton cor + besi terpasang
+  return { m, nCol, vKolom, vSloof, vRing, vPondasiConc, vConc, besiKg, semenSak, pasirM3, splitM3, elements, cost, city };
+}
+
+// ----- ROOF STRUCTURE (kuda-kuda / usuk / reng / baja ringan) -----
+function computeRoofStructure() {
+  const topF = floors[floors.length-1];
+  const b = (typeof floorBoundsAll==='function') ? floorBoundsAll(topF) : null;
+  if (!b) return null;
+  const W = (b.maxX-b.minX)/PX_PER_M, D = (b.maxY-b.minY)/PX_PER_M;
+  const type = topF.roofType || 'pelana';
+  const city = (typeof cityMultiplier!=='undefined' ? cityMultiplier[val('citySelect')||'jakarta'] : 1) || 1;
+  const pitch = (parseFloat(val('roofPitch')||30))*Math.PI/180;
+  const over = parseFloat(val('roofOverhang')||0.6);
+  const plan = (W+over*2)*(D+over*2);
+  const slopeArea = type==='dak' ? plan : plan/Math.max(0.5,Math.cos(pitch));
+  const span = Math.min(W, D)+over*2;
+  const ridgeLen = Math.max(W, D)+over*2;
+
+  if (type === 'dak') {
+    const vBeton = plan*0.12; const besi = vBeton*180;
+    return { type, dak:true, slopeArea, items:[
+      { name:'Pelat Dak Beton t=12cm', qty:plan.toFixed(1)+' m²', sub:`${vBeton.toFixed(2)} m³ beton` },
+      { name:'Besi Tulangan', qty:Math.ceil(besi)+' kg', sub:'Wiremesh / besi ulir' },
+    ], cost: (vBeton*3900000 + besi*16500)*city };
+  }
+
+  // pitched roof — choose baja ringan (default modern) quantities
+  const nKuda = Math.max(2, Math.ceil(ridgeLen/1.2)+1);            // truss every ~1.2 m
+  const bajaRinganKg = slopeArea * 9.5;                            // ~9–10 kg/m² (kanal C + reng)
+  const rengM = slopeArea / 0.26;                                  // reng spacing ~26 cm
+  const usukM = slopeArea / 0.6;                                   // for kayu alternative
+  const skrup = Math.ceil(slopeArea*12);
+  return { type, dak:false, slopeArea, span, ridgeLen, nKuda, bajaRinganKg, rengM, usukM,
+    items:[
+      { name:'Kuda-kuda Baja Ringan', qty:nKuda+' bh', sub:`Bentang ${span.toFixed(1)} m, jarak ±1,2 m` },
+      { name:'Profil Baja Ringan (C75 + reng)', qty:Math.ceil(bajaRinganKg)+' kg', sub:`≈ ${(bajaRinganKg/ (span*1.05)).toFixed(0)} batang setara` },
+      { name:'Reng', qty:Math.ceil(rengM)+' m', sub:'Spasi ±26 cm (sesuai genteng)' },
+      { name:'Usuk/Kaso (alternatif kayu)', qty:Math.ceil(usukM)+' m', sub:'Bila pakai rangka kayu' },
+      { name:'Sekrup SDS', qty:skrup+' pcs', sub:'≈ 12 pcs/m²' },
+    ],
+    cost: slopeArea * 235000 * city  // rangka baja ringan terpasang ±Rp 200–260rb/m²
+  };
+}
+
+function renderStruktur(container) {
+  if (!floors.some(f=>f.rooms.length || (f.wallSegs&&f.wallSegs.length))) { container.innerHTML = (typeof emptyRab==='function'?emptyRab():'<div class="empty-state">Buat denah dulu</div>'); return; }
+  const s = computeStructure();
+  const rs = computeRoofStructure();
+  const rup = v => 'Rp'+Math.round(v).toLocaleString('id');
+
+  const structRows = s.elements.map(e=>`<tr><td class="el-name">${e.name}<div class="el-sub">${e.detail}</div></td><td class="num">${e.vol}</td></tr>`).join('');
+  const roofRows = rs ? rs.items.map(i=>`<tr><td class="el-name">${i.name}<div class="el-sub">${i.sub}</div></td><td class="num">${i.qty}</td></tr>`).join('') : '';
+
+  container.innerHTML = `
+    <div class="rab-section-title">Rencana Struktur — Grid Kolom</div>
+    <div class="struct-plan-wrap"><canvas id="structCanvas" width="760" height="420"></canvas>
+      <div class="struct-cap">${s.m.nx}×${s.m.ny} grid · ${s.nCol} kolom (${s.m.floorsN} lantai) · bentang ±3,2 m</div></div>
+    <table class="con-table"><thead><tr><th>Elemen Struktur</th><th class="num">Volume Beton</th></tr></thead><tbody>${structRows}</tbody></table>
+    <div class="takeoff-grid" style="grid-template-columns:repeat(4,1fr);">
+      <div class="mat-card"><div class="mc-ic">🧱</div><div class="mc-q">${s.vConc.toFixed(2)}</div><div class="mc-u">m³</div><div class="mc-n">Total Beton</div></div>
+      <div class="mat-card"><div class="mc-ic">🔩</div><div class="mc-q">${Math.ceil(s.besiKg).toLocaleString('id')}</div><div class="mc-u">kg</div><div class="mc-n">Besi Tulangan</div></div>
+      <div class="mat-card"><div class="mc-ic">🛍️</div><div class="mc-q">${s.semenSak}</div><div class="mc-u">sak</div><div class="mc-n">Semen (struktur)</div></div>
+      <div class="mat-card"><div class="mc-ic">⛏️</div><div class="mc-q">${s.splitM3}</div><div class="mc-u">m³</div><div class="mc-n">Split + ${s.pasirM3} m³ pasir</div></div>
+    </div>
+    <div class="rab-section-title">Struktur Atap — ${({pelana:'Pelana',limas:'Limas',miring:'Miring',dak:'Dak Beton'})[rs?rs.type:'-']||'-'}</div>
+    ${rs?`<table class="con-table"><thead><tr><th>Komponen Atap</th><th class="num">Volume</th></tr></thead><tbody>${roofRows}</tbody></table>`:'<div class="ai-result">Atap lantai teratas = none.</div>'}
+    <div class="rab-total-box">
+      <div class="rab-total-label">ESTIMASI BIAYA STRUKTUR + ATAP</div>
+      <div class="rab-total-value">${rup(s.cost + (rs?rs.cost:0))}</div>
+      <div class="rab-total-sub">Struktur beton+besi ${rup(s.cost)} · rangka atap ${rs?rup(rs.cost):'-'} · estimasi awal, bukan analisis SNI beban gempa.</div>
+    </div>`;
+  // draw structural plan
+  const cv = document.getElementById('structCanvas'); if (cv) drawStructPlan(cv.getContext('2d'), cv.width, cv.height, s);
+}
+
+function drawStructPlan(g, W, H, s) {
+  g.fillStyle = '#11131a'; g.fillRect(0,0,W,H);
+  const m = s.m;
+  const pad = 40;
+  const sc = Math.min((W-pad*2)/(m.W||1), (H-pad*2)/(m.D||1));
+  const ox = (W - m.W*sc)/2, oy = (H - m.D*sc)/2;
+  const X = x => ox + (x-m.minXm)*sc, Y = y => oy + (y-m.minYm)*sc;
+  // footprint
+  g.strokeStyle = '#3a3d4a'; g.lineWidth = 1.5; g.strokeRect(X(m.minXm),Y(m.minYm),m.W*sc,m.D*sc);
+  // grid lines
+  g.strokeStyle = 'rgba(74,158,255,0.35)'; g.lineWidth = 1; g.setLineDash([4,4]);
+  for (let i=0;i<m.nx;i++){ const gx=m.minXm+m.W*i/(m.nx-1); g.beginPath(); g.moveTo(X(gx),Y(m.minYm)); g.lineTo(X(gx),Y(m.minYm+m.D)); g.stroke(); }
+  for (let j=0;j<m.ny;j++){ const gy=m.minYm+m.D*j/(m.ny-1); g.beginPath(); g.moveTo(X(m.minXm),Y(gy)); g.lineTo(X(m.minXm+m.W),Y(gy)); g.stroke(); }
+  g.setLineDash([]);
+  // beams (ring/sloof) along perimeter — thick
+  g.strokeStyle = '#f5a623'; g.lineWidth = 3; g.strokeRect(X(m.minXm),Y(m.minYm),m.W*sc,m.D*sc);
+  // columns
+  m.cols.forEach(c=>{ const cs=Math.max(6, 0.4*sc); g.fillStyle='#e8523a'; g.fillRect(X(c.x)-cs/2, Y(c.y)-cs/2, cs, cs); g.strokeStyle='#fff'; g.lineWidth=1; g.strokeRect(X(c.x)-cs/2, Y(c.y)-cs/2, cs, cs); });
+  // grid labels
+  g.fillStyle='#8b8fa8'; g.font="bold 11px 'Space Mono', monospace"; g.textAlign='center';
+  for (let i=0;i<m.nx;i++){ const gx=m.minXm+m.W*i/(m.nx-1); g.fillText(String.fromCharCode(65+i), X(gx), Y(m.minYm)-12); }
+  g.textAlign='right'; g.textBaseline='middle';
+  for (let j=0;j<m.ny;j++){ const gy=m.minYm+m.D*j/(m.ny-1); g.fillText(String(j+1), X(m.minXm)-12, Y(gy)); }
+  // legend
+  g.textAlign='left'; g.textBaseline='alphabetic'; g.fillStyle='#e8523a'; g.fillRect(14,H-22,10,10); g.fillStyle='#8b8fa8'; g.fillText('Kolom', 30, H-13);
+  g.fillStyle='#f5a623'; g.fillRect(90,H-22,10,10); g.fillStyle='#8b8fa8'; g.fillText('Sloof/Ring Balok', 106, H-13);
+}

@@ -1,0 +1,249 @@
+// ===================== CONSTANTS =====================
+const PX_PER_M = 20;   // 20px = 1m
+const GRID = 40;       // 40px = 2m grid
+const HANDLE_SIZE = 8;
+const roomColors = ['#4a9eff','#3ecf8e','#f5a623','#e8523a','#a78bfa','#f472b6','#34d399','#fb923c'];
+
+// ===================== MULTI-FLOOR STATE =====================
+// Each floor owns its own geometry. `rooms/walls/doors/windows/furnitures`
+// are live references to the ACTIVE floor's arrays so the rest of the app
+// keeps working on plain globals.
+function makeFloor(name, kind) {
+  return {
+    id: 'f' + Date.now() + Math.floor(Math.random()*1000),
+    name: name || 'Lantai 1',
+    kind: kind || 'floor',          // 'floor' | 'rooftop'
+    roofType: 'pelana',             // pelana | limas | miring | dak | none
+    rooms: [], walls: [], doors: [], windows: [], furnitures: [], mep: [],
+    wallSegs: [],                   // {id, a:{x,y}, b:{x,y}, t:thicknessCm}
+    detectedRooms: []               // cached polygon rooms from wall graph
+  };
+}
+
+let floors = [ makeFloor('Lantai 1', 'floor') ];
+let currentFloorIndex = 0;
+
+// Live active references
+let rooms, walls, doors, windows, furnitures, mep, wallSegs, detectedRooms;
+function syncActive() {
+  const f = floors[currentFloorIndex];
+  if (!f.mep) f.mep = [];
+  if (!f.wallSegs) f.wallSegs = [];
+  if (!f.detectedRooms) f.detectedRooms = [];
+  rooms = f.rooms; walls = f.walls; doors = f.doors;
+  windows = f.windows; furnitures = f.furnitures; mep = f.mep;
+  wallSegs = f.wallSegs; detectedRooms = f.detectedRooms;
+}
+syncActive();
+
+function activeFloor() { return floors[currentFloorIndex]; }
+
+// ===================== GLOBAL (BUILDING-LEVEL) STATE =====================
+let siteplan = {
+  enabled: true,
+  landW: 12, landH: 18,                    // meters
+  gsbFront: 3, gsbBack: 1.5, gsbLeft: 1, gsbRight: 1,
+  showGsb: true,
+  polygon: null,
+  originX: 80, originY: 80,                  // top-left of land in world px
+  zones: []                                  // {id,type:'carport'|'garden'|'pool',x,y,w,h}
+};
+let northAngle = 0;                          // degrees, clockwise (0 = up)
+
+// ===================== INTERACTION STATE =====================
+let selectedRoom = null;
+let selectedFurnId = null;
+let selectedMepId = null;
+let pendingMep = null;        // armed MEP symbol id for placement
+let mepDragState = null;
+let selectedSegId = null;     // selected smart-wall segment
+let selectedOpening = null;   // {kind:'door'|'window', id} currently selected opening
+let swDraft = null;           // in-progress polyline: {pts:[{x,y}], cursor:{x,y}}
+let currentTool = 'select';
+let isDrawing = false;
+let drawStart = null;
+let zoomLevel = 1;
+let panOffset = { x: 0, y: 0 };
+let isPanning = false;
+let panStart = null;
+let dragState = null;
+let furnDragSource = null;
+let furnDragState = null;
+
+// ===================== UNDO / REDO =====================
+let undoStack = [];
+let redoStack = [];
+
+function snapshotState() {
+  return JSON.stringify({ floors, currentFloorIndex, siteplan, northAngle });
+}
+function restoreState(json) {
+  const s = JSON.parse(json);
+  floors = s.floors; currentFloorIndex = s.currentFloorIndex;
+  siteplan = s.siteplan; northAngle = s.northAngle ?? 0;
+  syncActive();
+  selectedRoom = null; selectedFurnId = null;
+}
+function saveSnapshot() {
+  undoStack.push(snapshotState());
+  if (undoStack.length > 60) undoStack.shift();
+  redoStack = [];
+}
+function undo() {
+  if (undoStack.length === 0) { showNotif('⚠️ Tidak ada yang bisa di-undo'); return; }
+  redoStack.push(snapshotState());
+  restoreState(undoStack.pop());
+  afterStateChange(); showNotif('↩ Undo');
+}
+function redo() {
+  if (redoStack.length === 0) { showNotif('⚠️ Tidak ada yang bisa di-redo'); return; }
+  undoStack.push(snapshotState());
+  restoreState(redoStack.pop());
+  afterStateChange(); showNotif('↪ Redo');
+}
+
+// Called after any state restore — refresh all UI
+function afterStateChange() {
+  document.getElementById('furnInfobar').classList.remove('show');
+  syncSiteInputs();
+  renderFloorTabs();
+  updateRoomList();
+  updateStats();
+  recalcRAB();
+  renderRoofGrid();
+  applyCompass();
+  if (typeof renderMepPanel === 'function') renderMepPanel();
+  if (typeof detectRooms === 'function') detectRooms();
+  if (typeof renderWallPanel === 'function') renderWallPanel();
+  render();
+}
+
+// ===================== SAVE / LOAD =====================
+const SAVE_KEY = 'rumah3d_v2_project';
+
+function getProjectState() {
+  return {
+    floors, currentFloorIndex, siteplan, northAngle,
+    props: {
+      wallHeight: val('wallHeight'), wallThick: val('wallThick'),
+      floorMat: val('floorMat'), wallMat: val('wallMat'), roofMat: val('roofMat'),
+      pondasiType: val('pondasiType'), citySelect: val('citySelect'),
+      roofPitch: val('roofPitch'), roofOverhang: val('roofOverhang')
+    },
+    savedAt: new Date().toISOString()
+  };
+}
+function val(id) { return document.getElementById(id)?.value; }
+function setVal(id, v) { const el = document.getElementById(id); if (el && v != null) el.value = v; }
+
+function applyProjectState(state) {
+  floors = state.floors && state.floors.length ? state.floors : [ makeFloor() ];
+  floors.forEach(f => { if (!f.mep) f.mep = []; if (!f.wallSegs) f.wallSegs = []; if (!f.detectedRooms) f.detectedRooms = []; });
+  currentFloorIndex = Math.min(state.currentFloorIndex || 0, floors.length - 1);
+  siteplan = state.siteplan || siteplan;
+  northAngle = state.northAngle ?? 0;
+  syncActive();
+  if (state.props) {
+    const p = state.props;
+    setVal('wallHeight', p.wallHeight); setVal('wallThick', p.wallThick);
+    setVal('floorMat', p.floorMat); setVal('wallMat', p.wallMat); setVal('roofMat', p.roofMat);
+    setVal('pondasiType', p.pondasiType); setVal('citySelect', p.citySelect);
+    setVal('roofPitch', p.roofPitch); setVal('roofOverhang', p.roofOverhang);
+  }
+  undoStack = []; redoStack = [];
+  afterStateChange();
+}
+
+function newProject(silent) {
+  if (!silent && (floors.some(f=>f.rooms.length || (f.wallSegs&&f.wallSegs.length)) )) {
+    if (!confirm('Mulai proyek baru? Kanvas akan dikosongkan. Pastikan proyek sekarang sudah disimpan.')) return;
+  }
+  floors = [ makeFloor('Lantai 1', 'floor') ];
+  currentFloorIndex = 0;
+  siteplan.zones = [];
+  if (typeof underlay !== 'undefined' && underlay) { underlay.img = null; underlay.dataUrl = null; underlay.visible = false; }
+  if (typeof _cloudCurrentId !== 'undefined') _cloudCurrentId = null;
+  syncActive();
+  selectedRoom = null; selectedFurnId = null;
+  if (typeof selectedSegId !== 'undefined') selectedSegId = null;
+  if (typeof selectedOpening !== 'undefined') selectedOpening = null;
+  undoStack = []; redoStack = [];
+  afterStateChange();
+  if (typeof resetZoom === 'function') resetZoom();
+  if (!silent) showNotif('🆕 Proyek baru — kanvas kosong');
+}
+
+function saveProject() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(getProjectState()));
+    showNotif('💾 Proyek disimpan!');
+  } catch(e) { showNotif('⚠️ Gagal menyimpan: ' + e.message); }
+}
+// Simpan lalu langsung mulai proyek baru (kanvas kosong)
+function saveAndNew() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(getProjectState()));
+    newProject(true);
+    showNotif('💾 Tersimpan! Kanvas dikosongkan untuk proyek baru.');
+  } catch(e) { showNotif('⚠️ Gagal menyimpan: ' + e.message); }
+}
+function loadProject() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) { showNotif('⚠️ Belum ada data tersimpan'); return; }
+    applyProjectState(JSON.parse(raw));
+    showNotif('📂 Proyek dimuat');
+  } catch(e) { showNotif('⚠️ Gagal memuat: ' + e.message); }
+}
+function exportProject() {
+  const json = JSON.stringify(getProjectState(), null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `RumahDesign3D_${Date.now()}.json`;
+  a.click();
+  showNotif('📦 Proyek diekspor sebagai JSON');
+}
+function importProject() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try { applyProjectState(JSON.parse(ev.target.result)); showNotif('📥 Proyek berhasil diimpor!'); }
+      catch(err) { showNotif('⚠️ File tidak valid: ' + err.message); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function clearAll() {
+  if (!confirm('Reset semua? Semua lantai & data akan hilang.')) return;
+  saveSnapshot();
+  floors = [ makeFloor('Lantai 1', 'floor') ];
+  currentFloorIndex = 0;
+  siteplan.zones = [];
+  syncActive();
+  selectedRoom = null; selectedFurnId = null;
+  afterStateChange();
+  showNotif('🗑 Semua direset');
+}
+
+// Auto-save every 60s
+setInterval(() => {
+  if (floors.some(f => f.rooms.length > 0)) {
+    try { localStorage.setItem(SAVE_KEY + '_autosave', JSON.stringify(getProjectState())); } catch(e) {}
+  }
+}, 60000);
+
+// ===================== NOTIF =====================
+let notifTimer = null;
+function showNotif(msg) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.classList.add('show');
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => n.classList.remove('show'), 2500);
+}

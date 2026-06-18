@@ -1,0 +1,38 @@
+// ===================== ROOF GENERATOR =====================
+const ROOF_TYPES = [
+  { id:'pelana', name:'Pelana', desc:'2 sisi miring', svg:`<svg viewBox="0 0 80 44"><polygon points="40,6 74,30 6,30" fill="none" stroke="#f5a623" stroke-width="2"/><rect x="14" y="30" width="52" height="10" fill="none" stroke="#5a5e72" stroke-width="1.5"/></svg>` },
+  { id:'limas', name:'Limas', desc:'4 sisi (perisai)', svg:`<svg viewBox="0 0 80 44"><polygon points="40,6 70,24 10,24" fill="none" stroke="#f5a623" stroke-width="2"/><line x1="40" y1="6" x2="40" y2="24" stroke="#f5a623" stroke-width="1"/><polygon points="10,24 70,24 60,30 20,30" fill="none" stroke="#f5a623" stroke-width="1.5"/><rect x="20" y="30" width="40" height="10" fill="none" stroke="#5a5e72" stroke-width="1.5"/></svg>` },
+  { id:'miring', name:'Miring', desc:'1 sisi (sandar)', svg:`<svg viewBox="0 0 80 44"><polygon points="10,12 70,28 70,30 10,30" fill="none" stroke="#f5a623" stroke-width="2"/><rect x="14" y="30" width="52" height="10" fill="none" stroke="#5a5e72" stroke-width="1.5"/></svg>` },
+  { id:'dak', name:'Dak Beton', desc:'Datar + parapet', svg:`<svg viewBox="0 0 80 44"><rect x="10" y="14" width="60" height="8" fill="none" stroke="#f5a623" stroke-width="2"/><rect x="14" y="22" width="52" height="18" fill="none" stroke="#5a5e72" stroke-width="1.5"/></svg>` },
+  { id:'none', name:'Tanpa Atap', desc:'Lantai terbuka', svg:`<svg viewBox="0 0 80 44"><rect x="14" y="18" width="52" height="20" fill="none" stroke="#5a5e72" stroke-width="1.5" stroke-dasharray="4 3"/></svg>` },
+];
+const ROOF_NOTES = {
+  pelana: 'Atap pelana paling umum & ekonomis untuk rumah tropis — kemiringan 30–40° membuang air hujan dengan baik.',
+  limas: 'Atap limas (perisai) menutup keempat sisi, lebih tahan angin & terlihat formal. Cocok untuk rumah di lahan terbuka.',
+  miring: 'Atap miring satu sisi (skylight/sandar) — modern & minimalis, bagus untuk void atau dapur belakang.',
+  dak: 'Dak beton datar memberi area rooftop fungsional. Bisa ditambah Lantai/Rooftop di atasnya.',
+  none: 'Lantai tanpa atap — berguna untuk teras atas, balkon, atau saat lantai ini bukan lantai teratas.',
+};
+
+function renderRoofGrid() {
+  const grid = document.getElementById('roofGrid'); if (!grid) return;
+  const cur = activeFloor().roofType || 'pelana';
+  document.getElementById('roofFloorName').textContent = activeFloor().name;
+  grid.innerHTML = ROOF_TYPES.map(r => `
+    <div class="roof-card ${r.id===cur?'active':''}" onclick="setRoofType('${r.id}')">
+      ${r.svg}
+      <div class="rc-name">${r.name}</div>
+      <div class="rc-desc">${r.desc}</div>
+    </div>`).join('');
+  document.getElementById('roofNote').textContent = ROOF_NOTES[cur] || '';
+}
+function setRoofType(id) {
+  saveSnapshot();
+  activeFloor().roofType = id;
+  renderRoofGrid();
+  showNotif('🏠 Atap: ' + (ROOF_TYPES.find(r=>r.id===id)?.name || id));
+}
+function onRoofInput() {
+  // pitch / overhang are global render params for 3D; just persist via DOM, used by three3d
+  showNotif('Parameter atap diperbarui — buka Preview 3D');
+}

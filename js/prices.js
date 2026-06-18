@@ -1,0 +1,64 @@
+// ===================== EDITABLE MATERIAL PRICES (26) =====================
+// Honest "real-time": the user / supplier fills local prices; RAB uses them live.
+let PRICE_DEFAULTS = null;
+const PRICE_GROUPS = [
+  { title:'Lantai (per m²)', obj:()=>floorPrices, labels:{keramik_40:'Keramik 40×40', keramik_60:'Keramik 60×60', granit:'Granit', vinyl:'Vinyl', semen:'Floor Semen'} },
+  { title:'Dinding (per m²)', obj:()=>wallPrices, labels:{bata_merah:'Bata Merah', hebel:'Bata Hebel', batako:'Batako'} },
+  { title:'Atap (per m²)', obj:()=>roofPrices, labels:{genteng_beton:'Genteng Beton', genteng_metal:'Genteng Metal', asbes:'Asbes', spandek:'Spandek'} },
+  { title:'Pondasi', obj:()=>pondasiPrices, labels:{batu_kali:'Batu Kali (per m³)', footplat:'Footplat (per m³)', tiang_pancang:'Tiang Pancang (per titik)'} },
+];
+const PRICE_KEY = 'rumah3d_prices';
+
+function capturePriceDefaults() {
+  if (PRICE_DEFAULTS) return;
+  if (typeof floorPrices === 'undefined') return;
+  PRICE_DEFAULTS = { floor:{...floorPrices}, wall:{...wallPrices}, roof:{...roofPrices}, pondasi:{...pondasiPrices} };
+}
+function applySavedPrices() {
+  capturePriceDefaults();
+  try {
+    const raw = localStorage.getItem(PRICE_KEY); if (!raw) return;
+    const p = JSON.parse(raw);
+    if (p.floor) Object.assign(floorPrices, p.floor);
+    if (p.wall) Object.assign(wallPrices, p.wall);
+    if (p.roof) Object.assign(roofPrices, p.roof);
+    if (p.pondasi) Object.assign(pondasiPrices, p.pondasi);
+  } catch(e) {}
+}
+function openPriceEditor() {
+  capturePriceDefaults();
+  document.getElementById('priceCity').textContent = (val('citySelect')||'jakarta');
+  const list = document.getElementById('priceList');
+  list.innerHTML = PRICE_GROUPS.map((grp,gi) => {
+    const obj = grp.obj();
+    const rows = Object.keys(grp.labels).map(k => `
+      <div class="price-row">
+        <span class="price-label">${grp.labels[k]}</span>
+        <div class="price-inwrap"><span>Rp</span><input class="price-input" data-g="${gi}" data-k="${k}" type="number" value="${obj[k]||''}" min="0" step="1000"></div>
+      </div>`).join('');
+    return `<div class="price-group"><div class="price-gtitle">${grp.title}</div>${rows}</div>`;
+  }).join('');
+  document.getElementById('modalPrice').classList.add('show');
+}
+function closePriceEditor() { document.getElementById('modalPrice').classList.remove('show'); }
+function savePrices() {
+  document.querySelectorAll('#priceList .price-input').forEach(inp => {
+    const gi = +inp.dataset.g, k = inp.dataset.k, v = parseFloat(inp.value);
+    if (!isNaN(v) && v > 0) PRICE_GROUPS[gi].obj()[k] = v;
+  });
+  const snapshot = { floor:{...floorPrices}, wall:{...wallPrices}, roof:{...roofPrices}, pondasi:{...pondasiPrices} };
+  try { localStorage.setItem(PRICE_KEY, JSON.stringify(snapshot)); } catch(e) {}
+  recalcRAB();
+  closePriceEditor();
+  showNotif('💲 Harga material diperbarui — RAB dihitung ulang');
+}
+function resetPrices() {
+  if (!PRICE_DEFAULTS) return;
+  Object.assign(floorPrices, PRICE_DEFAULTS.floor);
+  Object.assign(wallPrices, PRICE_DEFAULTS.wall);
+  Object.assign(roofPrices, PRICE_DEFAULTS.roof);
+  Object.assign(pondasiPrices, PRICE_DEFAULTS.pondasi);
+  try { localStorage.removeItem(PRICE_KEY); } catch(e) {}
+  recalcRAB(); openPriceEditor();
+  showNotif('↺ Harga dikembalikan ke default');
+}

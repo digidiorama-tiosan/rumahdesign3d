@@ -1,0 +1,88 @@
+// ===================== BUILDING REGULATION CHECKER (Indonesia) =====================
+// Typical residential zoning (perumahan). APPROXIMATE — user must verify with
+// the local Dinas / PBG-IMB. Values: kdb % (max coverage), klb (max floor-area ratio),
+// gsbFront m (min front setback), maxFloors, color note.
+const REG_DB = {
+  jakarta:    { kota:'DKI Jakarta',   kdb:60, klb:3.0, gsb:5,   maxFloors:4 },
+  bandung:    { kota:'Bandung',       kdb:60, klb:2.4, gsb:4,   maxFloors:4 },
+  surabaya:   { kota:'Surabaya',      kdb:60, klb:2.0, gsb:4,   maxFloors:4 },
+  medan:      { kota:'Medan',         kdb:60, klb:2.0, gsb:4,   maxFloors:4 },
+  makassar:   { kota:'Makassar',      kdb:60, klb:1.8, gsb:4,   maxFloors:3 },
+  yogyakarta: { kota:'Yogyakarta',    kdb:60, klb:1.6, gsb:3,   maxFloors:3 },
+  semarang:   { kota:'Semarang',      kdb:60, klb:2.0, gsb:4,   maxFloors:4 },
+  bekasi:     { kota:'Bekasi',        kdb:60, klb:2.4, gsb:4,   maxFloors:4 },
+  depok:      { kota:'Depok',         kdb:60, klb:2.0, gsb:4,   maxFloors:3 },
+  tangerang:  { kota:'Tangerang',     kdb:60, klb:2.4, gsb:4,   maxFloors:4 },
+  denpasar:   { kota:'Denpasar',      kdb:60, klb:1.4, gsb:4,   maxFloors:2 },  // Bali tinggi dibatasi
+};
+let regCity = 'bandung';
+
+function regRules() { return REG_DB[regCity] || REG_DB.jakarta; }
+
+function checkRegulations() {
+  const r = regRules();
+  const landArea = siteplan.landW * siteplan.landH;
+  // ground-floor footprint (rooms + detected)
+  const ground = floors[0] || activeFloor();
+  const footprint = (ground.rooms||[]).reduce((s,rm)=>s+(rm.w/PX_PER_M)*(rm.h/PX_PER_M),0)
+                  + (ground.detectedRooms||[]).reduce((s,rm)=>s+rm.area,0);
+  const totalArea = floors.reduce((s,f)=>s + f.rooms.reduce((a,rm)=>a+(rm.w/PX_PER_M)*(rm.h/PX_PER_M),0) + (f.detectedRooms||[]).reduce((a,rm)=>a+rm.area,0), 0);
+  const wallH = parseFloat(val('wallHeight')||3);
+  const height = floors.length * wallH + (floors[floors.length-1].roofType==='dak'?0.6:2.5);
+
+  const kdbActual = landArea ? (footprint/landArea*100) : 0;
+  const klbActual = landArea ? (totalArea/landArea) : 0;
+  const gsbActual = siteplan.gsbFront;
+
+  const checks = [
+    { key:'KDB', label:'KDB — Koefisien Dasar Bangunan', actual:kdbActual.toFixed(1)+'%', limit:'maks '+r.kdb+'%',
+      ok: kdbActual <= r.kdb + 0.5, hint:`Luas lantai dasar (${footprint.toFixed(0)} m²) ÷ luas tanah (${landArea.toFixed(0)} m²). Sisakan lahan terbuka untuk resapan.` },
+    { key:'KLB', label:'KLB — Koefisien Lantai Bangunan', actual:klbActual.toFixed(2), limit:'maks '+r.klb.toFixed(1),
+      ok: klbActual <= r.klb + 0.02, hint:`Total luas seluruh lantai (${totalArea.toFixed(0)} m²) ÷ luas tanah. Menentukan total massa bangunan.` },
+    { key:'GSB', label:'GSB — Garis Sempadan Bangunan', actual:gsbActual+' m', limit:'min '+r.gsb+' m',
+      ok: gsbActual >= r.gsb - 0.01, hint:`Jarak muka bangunan ke batas depan/jalan. Atur di tab Site.` },
+    { key:'Lantai', label:'Jumlah Lantai', actual:floors.length+' lantai', limit:'maks '+r.maxFloors,
+      ok: floors.length <= r.maxFloors, hint:`Tinggi bangunan ≈ ${height.toFixed(1)} m.` },
+  ];
+  return { r, checks, kdbActual, klbActual, footprint, totalArea, landArea };
+}
+
+function renderAIRegulation(c) {
+  if (!siteplan.landW) { c.innerHTML = '<div class="ai-title">📋 Regulasi Bangunan</div><div class="ai-sub">Atur ukuran tanah dulu di tab Site.</div>'; return; }
+  const cityOpts = Object.entries(REG_DB).map(([k,v])=>`<option value="${k}" ${k===regCity?'selected':''}>${v.kota}</option>`).join('');
+  const data = checkRegulations();
+  const allOk = data.checks.every(c=>c.ok);
+  const nViol = data.checks.filter(c=>!c.ok).length;
+  c.innerHTML = `
+    <div class="ai-title">📋 Building Regulation Checker</div>
+    <div class="ai-sub">Cek otomatis <b>KDB · KLB · GSB · tinggi bangunan</b> terhadap aturan zonasi kota. Desain Anda dievaluasi real-time.</div>
+    <div class="ai-card">
+      <div class="ai-field"><label>Lokasi Tanah / Kota</label>
+        <select class="ai-input" id="regCity" onchange="regCity=this.value; aiNav('regulasi')">${cityOpts}</select>
+      </div>
+      <div class="ai-sub" style="margin:8px 0 0;">Aturan ${data.r.kota}: KDB maks <b>${data.r.kdb}%</b> · KLB maks <b>${data.r.klb}</b> · GSB min <b>${data.r.gsb} m</b> · maks <b>${data.r.maxFloors} lantai</b></div>
+    </div>
+    <div class="${allOk?'opt-total':'opt-total'}" style="${allOk?'':'background:linear-gradient(135deg,rgba(232,82,58,0.14),rgba(232,82,58,0.04));border-color:rgba(232,82,58,0.4)'}">
+      <div class="opt-total-label">${allOk?'✓ STATUS: MEMENUHI ATURAN':'⚠ STATUS: '+nViol+' PELANGGARAN'}</div>
+      <div class="opt-total-value" style="color:${allOk?'var(--green)':'var(--accent2)'}; font-size:22px;">${allOk?'Desain sesuai zonasi '+data.r.kota:'Perlu penyesuaian'}</div>
+    </div>
+    ${data.checks.map(ch=>`
+      <div class="reg-check ${ch.ok?'ok':'bad'}">
+        <div class="reg-icon">${ch.ok?'✅':'⚠️'}</div>
+        <div class="reg-body">
+          <div class="reg-row"><span class="reg-name">${ch.label}</span>
+            <span class="reg-vals"><b style="color:${ch.ok?'var(--green)':'var(--accent2)'}">${ch.actual}</b> <span style="color:var(--text3)">/ ${ch.limit}</span></span></div>
+          <div class="reg-hint">${ch.hint}</div>
+        </div>
+      </div>`).join('')}
+    <div class="ai-sub" style="margin-top:14px;">ℹ️ Angka ini perkiraan zonasi perumahan umum. <b>Selalu verifikasi</b> dengan Dinas Tata Ruang / PBG-IMB setempat sebelum membangun.</div>
+    <div id="regNarr"></div>`;
+  if (!allOk && aiAvailable()) regNarrative(data);
+}
+async function regNarrative(data) {
+  const box = document.getElementById('regNarr'); if (!box) return;
+  box.innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div> AI menyusun saran kepatuhan...</div>';
+  const viol = data.checks.filter(c=>!c.ok).map(c=>`${c.key} ${c.actual} (batas ${c.limit})`).join('; ');
+  const txt = await aiComplete(`Anda konsultan perizinan bangunan Indonesia. Dalam 2-3 kalimat bahasa Indonesia tanpa markdown, beri saran praktis agar desain memenuhi aturan ${data.r.kota}. Pelanggaran: ${viol}. Sebutkan langkah konkret (mis. kurangi luas lantai dasar, tambah GSB, kurangi lantai).`);
+  box.innerHTML = txt ? `<div class="ai-result"><h4>🧠 Saran Kepatuhan AI</h4>${escapeHtml(txt)}</div>` : '';
+}
