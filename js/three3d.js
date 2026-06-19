@@ -313,7 +313,7 @@ function buildFloor3D(f, baseY, WALL_H, WALL_T) {
     const fx = ft.x*SCALE - sceneCenter.cx, fz = ft.y*SCALE - sceneCenter.cz;
     const fw = ft.w*SCALE, fh = ft.h*SCALE;
     const def = FURN_LIB.find(fl => fl.id === ft.defId);
-    const hM = Math.max(0.3, (def?def.h:0.6)*0.5);
+    const hM = Math.max(0.05, def && def.hz ? def.hz : (def ? def.h * 0.6 : 0.6));
     const m = new THREE.Mesh(new THREE.BoxGeometry(ft.rotation%180===0?fw:fh, hM, ft.rotation%180===0?fh:fw),
       new THREE.MeshStandardMaterial({ color:new THREE.Color(ft.color||'#8a7a66'), roughness:0.7, metalness:0.05, wireframe:wireframeMode }));
     m.position.set(fx+fw/2, baseY+hM/2+0.08, fz+fh/2); m.castShadow = true; m.receiveShadow = true; add(m);

@@ -1,36 +1,119 @@
 // ===================== FURNITURE LIBRARY =====================
+// w,h = footprint (meter) tampak atas · hz = tinggi (meter) untuk 3D · color = warna 3D/2D
 const FURN_LIB = [
-  { id:'sofa3', name:'Sofa 3-dudukan', cat:'Ruang Tamu', icon:'🛋️', w:3, h:1, color:'#6b7280' },
-  { id:'sofa2', name:'Sofa 2-dudukan', cat:'Ruang Tamu', icon:'🪑', w:2, h:1, color:'#6b7280' },
-  { id:'meja_tv', name:'Meja TV', cat:'Ruang Tamu', icon:'📺', w:2, h:0.5, color:'#92400e' },
-  { id:'meja_kopi', name:'Meja Kopi', cat:'Ruang Tamu', icon:'☕', w:1, h:0.6, color:'#92400e' },
-  { id:'kursi', name:'Kursi Single', cat:'Ruang Tamu', icon:'🪑', w:1, h:1, color:'#4b5563' },
-  { id:'lemari_tv', name:'Lemari TV', cat:'Ruang Tamu', icon:'🗄️', w:1.8, h:0.4, color:'#78350f' },
-  { id:'kasur_king', name:'Kasur King', cat:'Kamar Tidur', icon:'🛏️', w:2, h:2, color:'#1d4ed8' },
-  { id:'kasur_single', name:'Kasur Single', cat:'Kamar Tidur', icon:'🛏️', w:1, h:2, color:'#2563eb' },
-  { id:'lemari_pakaian', name:'Lemari Pakaian', cat:'Kamar Tidur', icon:'🚪', w:1.8, h:0.6, color:'#92400e' },
-  { id:'meja_rias', name:'Meja Rias', cat:'Kamar Tidur', icon:'🪞', w:1, h:0.5, color:'#a16207' },
-  { id:'nakas', name:'Nakas', cat:'Kamar Tidur', icon:'🗃️', w:0.5, h:0.5, color:'#78350f' },
-  { id:'meja_belajar', name:'Meja Belajar', cat:'Kamar Tidur', icon:'📚', w:1.2, h:0.6, color:'#92400e' },
-  { id:'kulkas', name:'Kulkas', cat:'Dapur', icon:'🧊', w:0.7, h:0.7, color:'#e5e7eb' },
-  { id:'kompor', name:'Kompor', cat:'Dapur', icon:'🍳', w:0.8, h:0.6, color:'#374151' },
-  { id:'wastafel_dapur', name:'Wastafel Dapur', cat:'Dapur', icon:'🚿', w:0.6, h:0.5, color:'#bfdbfe' },
-  { id:'meja_makan', name:'Meja Makan 4', cat:'Dapur', icon:'🍽️', w:1.5, h:1, color:'#92400e' },
-  { id:'island', name:'Kitchen Island', cat:'Dapur', icon:'🍽️', w:1.8, h:0.8, color:'#f3f4f6' },
-  { id:'toilet', name:'Toilet', cat:'Kamar Mandi', icon:'🚽', w:0.5, h:0.7, color:'#f9fafb' },
-  { id:'shower', name:'Shower Area', cat:'Kamar Mandi', icon:'🚿', w:0.9, h:0.9, color:'#bfdbfe' },
-  { id:'bathtub', name:'Bathtub', cat:'Kamar Mandi', icon:'🛁', w:0.8, h:1.7, color:'#e0f2fe' },
-  { id:'wastafel', name:'Wastafel', cat:'Kamar Mandi', icon:'🪥', w:0.5, h:0.4, color:'#f9fafb' },
-  { id:'meja_kerja', name:'Meja Kerja', cat:'Kantor', icon:'💻', w:1.5, h:0.7, color:'#1e3a5f' },
-  { id:'rak_buku', name:'Rak Buku', cat:'Kantor', icon:'📚', w:1.2, h:0.3, color:'#92400e' },
-  { id:'filing', name:'Filing Cabinet', cat:'Kantor', icon:'🗄️', w:0.5, h:0.6, color:'#374151' },
-  { id:'meeting', name:'Meja Meeting', cat:'Kantor', icon:'🪑', w:2.5, h:1.2, color:'#1e3a5f' },
-  { id:'tanaman', name:'Tanaman Hias', cat:'Lainnya', icon:'🪴', w:0.5, h:0.5, color:'#15803d' },
-  { id:'ac', name:'AC Split', cat:'Lainnya', icon:'❄️', w:1, h:0.2, color:'#bfdbfe' },
-  { id:'tv', name:'TV LED', cat:'Lainnya', icon:'📺', w:1.2, h:0.1, color:'#111827' },
-  { id:'lampu', name:'Lampu Lantai', cat:'Lainnya', icon:'💡', w:0.4, h:0.4, color:'#fbbf24' },
+  // ---------- Ruang Tamu ----------
+  { id:'sofa3', name:'Sofa 3-dudukan', cat:'Ruang Tamu', icon:'🛋️', w:2.2, h:0.9, color:'#6b7280', hz:0.8 },
+  { id:'sofa2', name:'Sofa 2-dudukan', cat:'Ruang Tamu', icon:'🛋️', w:1.6, h:0.9, color:'#6b7280', hz:0.8 },
+  { id:'sofa_l', name:'Sofa Sudut (L)', cat:'Ruang Tamu', icon:'🛋️', w:2.6, h:2.0, color:'#5b6472', hz:0.8 },
+  { id:'kursi', name:'Kursi Santai', cat:'Ruang Tamu', icon:'🪑', w:0.8, h:0.8, color:'#4b5563', hz:0.9 },
+  { id:'ottoman', name:'Ottoman / Puff', cat:'Ruang Tamu', icon:'🟫', w:0.6, h:0.6, color:'#7c6f5a', hz:0.45 },
+  { id:'meja_kopi', name:'Meja Kopi', cat:'Ruang Tamu', icon:'☕', w:1.1, h:0.6, color:'#92400e', hz:0.45 },
+  { id:'meja_tv', name:'Meja TV', cat:'Ruang Tamu', icon:'📺', w:1.8, h:0.45, color:'#78350f', hz:0.5 },
+  { id:'lemari_tv', name:'Lemari TV', cat:'Ruang Tamu', icon:'🗄️', w:2.0, h:0.45, color:'#78350f', hz:1.6 },
+  { id:'rak_hias', name:'Rak Hias', cat:'Ruang Tamu', icon:'🪟', w:1.0, h:0.35, color:'#a16207', hz:1.8 },
+  { id:'karpet', name:'Karpet', cat:'Ruang Tamu', icon:'🟦', w:2.4, h:1.6, color:'#9ca3af', hz:0.02 },
+
+  // ---------- Ruang Makan ----------
+  { id:'meja_makan4', name:'Meja Makan 4', cat:'Ruang Makan', icon:'🍽️', w:1.4, h:0.9, color:'#92400e', hz:0.75 },
+  { id:'meja_makan6', name:'Meja Makan 6', cat:'Ruang Makan', icon:'🍽️', w:2.0, h:1.0, color:'#92400e', hz:0.75 },
+  { id:'meja_makan8', name:'Meja Makan 8', cat:'Ruang Makan', icon:'🍽️', w:2.6, h:1.1, color:'#7c3a0e', hz:0.75 },
+  { id:'kursi_makan', name:'Kursi Makan', cat:'Ruang Makan', icon:'🪑', w:0.5, h:0.5, color:'#5b4636', hz:0.9 },
+  { id:'buffet', name:'Buffet / Credenza', cat:'Ruang Makan', icon:'🗄️', w:1.6, h:0.45, color:'#78350f', hz:0.85 },
+  { id:'lemari_pajang', name:'Lemari Pajang', cat:'Ruang Makan', icon:'🏺', w:1.0, h:0.45, color:'#a16207', hz:1.9 },
+  { id:'bar_table', name:'Meja Bar', cat:'Ruang Makan', icon:'🍸', w:1.4, h:0.5, color:'#374151', hz:1.05 },
+  { id:'bar_stool', name:'Kursi Bar', cat:'Ruang Makan', icon:'🪑', w:0.45, h:0.45, color:'#4b5563', hz:1.05 },
+
+  // ---------- Kamar Tidur ----------
+  { id:'kasur_king', name:'Kasur King', cat:'Kamar Tidur', icon:'🛏️', w:2.0, h:2.1, color:'#1d4ed8', hz:0.55 },
+  { id:'kasur_queen', name:'Kasur Queen', cat:'Kamar Tidur', icon:'🛏️', w:1.6, h:2.0, color:'#2563eb', hz:0.55 },
+  { id:'kasur_single', name:'Kasur Single', cat:'Kamar Tidur', icon:'🛏️', w:1.0, h:2.0, color:'#3b82f6', hz:0.5 },
+  { id:'nakas', name:'Nakas', cat:'Kamar Tidur', icon:'🗃️', w:0.5, h:0.5, color:'#78350f', hz:0.55 },
+  { id:'lemari_pakaian', name:'Lemari Pakaian 3 Pintu', cat:'Kamar Tidur', icon:'🚪', w:1.8, h:0.6, color:'#92400e', hz:2.1 },
+  { id:'lemari_2pintu', name:'Lemari 2 Pintu', cat:'Kamar Tidur', icon:'🚪', w:1.2, h:0.6, color:'#92400e', hz:2.0 },
+  { id:'meja_rias', name:'Meja Rias', cat:'Kamar Tidur', icon:'🪞', w:1.0, h:0.5, color:'#a16207', hz:1.4 },
+  { id:'bangku_rias', name:'Bangku Rias', cat:'Kamar Tidur', icon:'🪑', w:0.5, h:0.4, color:'#6b5848', hz:0.45 },
+
+  // ---------- Kamar Anak ----------
+  { id:'kasur_anak', name:'Kasur Anak', cat:'Kamar Anak', icon:'🛏️', w:1.0, h:1.9, color:'#f472b6', hz:0.5 },
+  { id:'ranjang_tingkat', name:'Ranjang Tingkat', cat:'Kamar Anak', icon:'🛏️', w:1.0, h:2.0, color:'#60a5fa', hz:1.7 },
+  { id:'meja_belajar_anak', name:'Meja Belajar Anak', cat:'Kamar Anak', icon:'📚', w:1.0, h:0.55, color:'#f59e0b', hz:0.75 },
+  { id:'rak_mainan', name:'Rak Mainan', cat:'Kamar Anak', icon:'🧸', w:0.9, h:0.35, color:'#34d399', hz:1.2 },
+  { id:'lemari_anak', name:'Lemari Anak', cat:'Kamar Anak', icon:'🚪', w:1.0, h:0.55, color:'#a78bfa', hz:1.8 },
+
+  // ---------- Dapur ----------
+  { id:'kulkas', name:'Kulkas', cat:'Dapur', icon:'🧊', w:0.7, h:0.7, color:'#e5e7eb', hz:1.8 },
+  { id:'kompor', name:'Kompor + Hob', cat:'Dapur', icon:'🍳', w:0.8, h:0.6, color:'#374151', hz:0.9 },
+  { id:'oven', name:'Oven', cat:'Dapur', icon:'🔥', w:0.6, h:0.6, color:'#4b5563', hz:0.9 },
+  { id:'microwave', name:'Microwave', cat:'Dapur', icon:'📦', w:0.5, h:0.4, color:'#9ca3af', hz:0.3 },
+  { id:'wastafel_dapur', name:'Sink Dapur', cat:'Dapur', icon:'🚰', w:0.8, h:0.55, color:'#cbd5e1', hz:0.9 },
+  { id:'kabinet_bawah', name:'Kabinet Bawah', cat:'Dapur', icon:'🗄️', w:1.2, h:0.6, color:'#d1d5db', hz:0.9 },
+  { id:'kabinet_atas', name:'Kabinet Atas', cat:'Dapur', icon:'🗄️', w:1.2, h:0.35, color:'#e5e7eb', hz:0.7 },
+  { id:'island', name:'Kitchen Island', cat:'Dapur', icon:'🍽️', w:1.8, h:0.9, color:'#f3f4f6', hz:0.9 },
+  { id:'dispenser', name:'Dispenser', cat:'Dapur', icon:'💧', w:0.4, h:0.4, color:'#bfdbfe', hz:1.0 },
+
+  // ---------- Kamar Mandi ----------
+  { id:'toilet', name:'Kloset Duduk', cat:'Kamar Mandi', icon:'🚽', w:0.5, h:0.7, color:'#f9fafb', hz:0.4 },
+  { id:'shower', name:'Area Shower', cat:'Kamar Mandi', icon:'🚿', w:0.9, h:0.9, color:'#bfdbfe', hz:2.0 },
+  { id:'bathtub', name:'Bathtub', cat:'Kamar Mandi', icon:'🛁', w:0.8, h:1.7, color:'#e0f2fe', hz:0.6 },
+  { id:'wastafel', name:'Wastafel', cat:'Kamar Mandi', icon:'🪥', w:0.6, h:0.45, color:'#f9fafb', hz:0.85 },
+  { id:'water_heater', name:'Water Heater', cat:'Kamar Mandi', icon:'♨️', w:0.4, h:0.3, color:'#e5e7eb', hz:0.5 },
+  { id:'cermin_km', name:'Cermin KM', cat:'Kamar Mandi', icon:'🪞', w:0.7, h:0.1, color:'#cbd5e1', hz:0.8 },
+
+  // ---------- Kantor ----------
+  { id:'meja_kerja', name:'Meja Kerja', cat:'Kantor', icon:'💻', w:1.4, h:0.7, color:'#1e3a5f', hz:0.75 },
+  { id:'kursi_kantor', name:'Kursi Kantor', cat:'Kantor', icon:'🪑', w:0.6, h:0.6, color:'#374151', hz:1.1 },
+  { id:'meeting', name:'Meja Meeting', cat:'Kantor', icon:'🧑‍💼', w:2.6, h:1.2, color:'#1e3a5f', hz:0.75 },
+  { id:'rak_buku', name:'Rak Buku', cat:'Kantor', icon:'📚', w:1.2, h:0.35, color:'#92400e', hz:1.9 },
+  { id:'filing', name:'Filing Cabinet', cat:'Kantor', icon:'🗄️', w:0.5, h:0.6, color:'#374151', hz:1.3 },
+  { id:'sofa_tunggu', name:'Sofa Tunggu', cat:'Kantor', icon:'🛋️', w:1.6, h:0.8, color:'#64748b', hz:0.8 },
+  { id:'papan_tulis', name:'Papan Tulis', cat:'Kantor', icon:'📋', w:1.8, h:0.1, color:'#f8fafc', hz:1.2 },
+
+  // ---------- Outdoor / Taman ----------
+  { id:'kursi_taman', name:'Kursi Taman', cat:'Outdoor', icon:'🪑', w:0.6, h:0.6, color:'#5b7553', hz:0.85 },
+  { id:'set_taman', name:'Set Meja Taman', cat:'Outdoor', icon:'⛱️', w:1.4, h:1.4, color:'#6b7e5e', hz:0.75 },
+  { id:'gazebo', name:'Gazebo', cat:'Outdoor', icon:'🏕️', w:3.0, h:3.0, color:'#8a6d4b', hz:2.6 },
+  { id:'ayunan', name:'Ayunan', cat:'Outdoor', icon:'🛝', w:1.8, h:1.0, color:'#9aa55e', hz:2.0 },
+  { id:'payung_taman', name:'Payung Taman', cat:'Outdoor', icon:'⛱️', w:1.6, h:1.6, color:'#d97706', hz:2.4 },
+  { id:'bbq_grill', name:'BBQ Grill', cat:'Outdoor', icon:'🔥', w:0.8, h:0.6, color:'#374151', hz:1.0 },
+  { id:'pot_besar', name:'Pot Tanaman Besar', cat:'Outdoor', icon:'🪴', w:0.7, h:0.7, color:'#15803d', hz:1.2 },
+  { id:'kolam_kecil', name:'Kolam Hias', cat:'Outdoor', icon:'⛲', w:2.0, h:1.4, color:'#38bdf8', hz:0.4 },
+
+  // ---------- Garasi ----------
+  { id:'mobil', name:'Mobil', cat:'Garasi', icon:'🚗', w:4.5, h:1.8, color:'#475569', hz:1.5 },
+  { id:'motor', name:'Motor', cat:'Garasi', icon:'🏍️', w:2.0, h:0.8, color:'#334155', hz:1.1 },
+  { id:'rak_perkakas', name:'Rak Perkakas', cat:'Garasi', icon:'🧰', w:1.5, h:0.5, color:'#6b7280', hz:1.8 },
+
+  // ---------- Laundry ----------
+  { id:'mesin_cuci', name:'Mesin Cuci', cat:'Laundry', icon:'🌀', w:0.6, h:0.6, color:'#e5e7eb', hz:0.9 },
+  { id:'pengering', name:'Pengering', cat:'Laundry', icon:'♨️', w:0.6, h:0.6, color:'#d1d5db', hz:0.9 },
+  { id:'jemuran', name:'Jemuran', cat:'Laundry', icon:'🧺', w:1.6, h:0.6, color:'#94a3b8', hz:1.6 },
+  { id:'wastafel_cuci', name:'Bak Cuci', cat:'Laundry', icon:'🚰', w:0.6, h:0.5, color:'#cbd5e1', hz:0.9 },
+
+  // ---------- Komersial / Toko ----------
+  { id:'rak_display', name:'Rak Display', cat:'Komersial', icon:'🛍️', w:1.2, h:0.5, color:'#9ca3af', hz:1.8 },
+  { id:'etalase', name:'Etalase Kaca', cat:'Komersial', icon:'🪟', w:1.5, h:0.6, color:'#bae6fd', hz:1.0 },
+  { id:'meja_kasir', name:'Meja Kasir', cat:'Komersial', icon:'💳', w:1.4, h:0.7, color:'#475569', hz:1.0 },
+  { id:'rak_gondola', name:'Rak Gondola', cat:'Komersial', icon:'🏪', w:1.8, h:0.6, color:'#6b7280', hz:1.6 },
+  { id:'manekin', name:'Manekin', cat:'Komersial', icon:'🧍', w:0.5, h:0.5, color:'#d6d3d1', hz:1.8 },
+
+  // ---------- Gym ----------
+  { id:'treadmill', name:'Treadmill', cat:'Gym', icon:'🏃', w:0.9, h:2.0, color:'#1f2937', hz:1.4 },
+  { id:'sepeda_statis', name:'Sepeda Statis', cat:'Gym', icon:'🚴', w:0.6, h:1.2, color:'#374151', hz:1.3 },
+  { id:'bench_press', name:'Bench Press', cat:'Gym', icon:'🏋️', w:1.2, h:1.4, color:'#334155', hz:1.2 },
+  { id:'rak_dumbbell', name:'Rak Dumbbell', cat:'Gym', icon:'💪', w:1.5, h:0.5, color:'#475569', hz:0.9 },
+  { id:'matras_yoga', name:'Matras Yoga', cat:'Gym', icon:'🧘', w:0.6, h:1.8, color:'#a78bfa', hz:0.03 },
+
+  // ---------- Lainnya ----------
+  { id:'tanaman', name:'Tanaman Hias', cat:'Lainnya', icon:'🪴', w:0.5, h:0.5, color:'#15803d', hz:0.8 },
+  { id:'tanaman_besar', name:'Tanaman Besar', cat:'Lainnya', icon:'🌳', w:0.9, h:0.9, color:'#166534', hz:2.2 },
+  { id:'ac', name:'AC Split', cat:'Lainnya', icon:'❄️', w:1.0, h:0.25, color:'#eff6ff', hz:0.3 },
+  { id:'tv', name:'TV LED', cat:'Lainnya', icon:'📺', w:1.2, h:0.12, color:'#111827', hz:0.7 },
+  { id:'lampu', name:'Lampu Lantai', cat:'Lainnya', icon:'💡', w:0.4, h:0.4, color:'#fbbf24', hz:1.6 },
+  { id:'rak_sepatu', name:'Rak Sepatu', cat:'Lainnya', icon:'👟', w:0.9, h:0.35, color:'#92400e', hz:0.9 },
+  { id:'cermin', name:'Cermin Berdiri', cat:'Lainnya', icon:'🪞', w:0.6, h:0.2, color:'#cbd5e1', hz:1.7 },
+  { id:'piano', name:'Piano', cat:'Lainnya', icon:'🎹', w:1.5, h:0.6, color:'#1f2937', hz:1.0 },
 ];
-const FURN_CATS = ['Semua','Ruang Tamu','Kamar Tidur','Dapur','Kamar Mandi','Kantor','Lainnya'];
+const FURN_CATS = ['Semua','Ruang Tamu','Ruang Makan','Kamar Tidur','Kamar Anak','Dapur','Kamar Mandi','Kantor','Outdoor','Garasi','Laundry','Komersial','Gym','Lainnya'];
 let activeFurnCat = 'Semua';
 
 function initFurnPanel() {
