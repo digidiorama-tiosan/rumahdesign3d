@@ -5,7 +5,7 @@
 //   Cross-origin CDN (three.js / jspdf / supabase / fonts): cache-on-success.
 //   Bump CACHE_VERSION whenever you ship changes to force a refresh.
 // =====================================================================
-const CACHE_VERSION = 'rd3d-v1';
+const CACHE_VERSION = 'rd3d-v2';
 const CORE = [
   './',
   './Floor%20Planner%202.0.html',
@@ -52,13 +52,22 @@ self.addEventListener('fetch', (e) => {
   }
 
   if (sameOrigin) {
-    // stale-while-revalidate
-    e.respondWith(
-      caches.match(req).then((cached) => {
-        const net = fetch(req).then((res) => { cachePut(req, res.clone()); return res; }).catch(() => cached);
-        return cached || net;
-      })
-    );
+    // App code (js/css/html) → NETWORK-FIRST so updates show immediately.
+    // Other same-origin assets (images/fonts) → stale-while-revalidate.
+    const isCode = /\.(js|css|html|webmanifest)(\?|$)/i.test(url.pathname);
+    if (isCode) {
+      e.respondWith(
+        fetch(req).then((res) => { cachePut(req, res.clone()); return res; })
+          .catch(() => caches.match(req))
+      );
+    } else {
+      e.respondWith(
+        caches.match(req).then((cached) => {
+          const net = fetch(req).then((res) => { cachePut(req, res.clone()); return res; }).catch(() => cached);
+          return cached || net;
+        })
+      );
+    }
   } else {
     // cross-origin (CDN) → cache-first, fill on success
     e.respondWith(
