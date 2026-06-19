@@ -104,6 +104,70 @@ const Cloud = {
     const { data } = await this.sb.from('subscriptions').select('*').eq('user_id', this.user.id).maybeSingle();
     return data || null;
   },
+
+  // ---------------- ADMIN ----------------
+  // Semua fungsi ini hanya berhasil jika RLS mengizinkan (role admin).
+  async isAdmin() {
+    if (!this.isLoggedIn()) return false;
+    try {
+      const { data, error } = await this.sb.from('profiles')
+        .select('role,active').eq('id', this.user.id).maybeSingle();
+      if (error) return false;
+      return !!data && data.role === 'admin' && data.active !== false;
+    } catch (e) { return false; }
+  },
+  // Daftar semua user + plan (admin only). Gabungkan profiles + subscriptions.
+  async adminListUsers() {
+    if (!this.isLoggedIn()) throw new Error('NOT_LOGGED_IN');
+    const { data: profs, error } = await this.sb.from('profiles')
+      .select('id,email,name,phone,role,active,created_at')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    const { data: subs } = await this.sb.from('subscriptions').select('user_id,plan,status,expires_at');
+    const subMap = {};
+    (subs || []).forEach(s => { subMap[s.user_id] = s; });
+    // hitung jumlah proyek per user
+    const { data: projs } = await this.sb.from('projects').select('user_id');
+    const projCount = {};
+    (projs || []).forEach(p => { projCount[p.user_id] = (projCount[p.user_id] || 0) + 1; });
+    return (profs || []).map(p => ({
+      ...p,
+      plan: subMap[p.id]?.plan || 'free',
+      planStatus: subMap[p.id]?.status || 'active',
+      expires_at: subMap[p.id]?.expires_at || null,
+      projects: projCount[p.id] || 0,
+    }));
+  },
+  async adminStats() {
+    const users = await this.adminListUsers();
+    return {
+      total: users.length,
+      admins: users.filter(u => u.role === 'admin').length,
+      pro: users.filter(u => u.plan === 'pro' || u.plan === 'dev').length,
+      inactive: users.filter(u => u.active === false).length,
+      projects: users.reduce((a, u) => a + (u.projects || 0), 0),
+    };
+  },
+  async adminSetRole(userId, role) {
+    const { error } = await this.sb.from('profiles').update({ role }).eq('id', userId);
+    if (error) throw error;
+  },
+  async adminSetActive(userId, active) {
+    const { error } = await this.sb.from('profiles').update({ active }).eq('id', userId);
+    if (error) throw error;
+  },
+  async adminSetPlan(userId, plan) {
+    const row = { user_id: userId, plan, status: 'active', updated_at: new Date().toISOString() };
+    const { error } = await this.sb.from('subscriptions').upsert(row);
+    if (error) throw error;
+  },
+  async adminDeleteUserData(userId) {
+    // Hapus proyek & profil user (akun auth tetap ada; hapus akun butuh service_role).
+    await this.sb.from('projects').delete().eq('user_id', userId);
+    await this.sb.from('subscriptions').delete().eq('user_id', userId);
+    const { error } = await this.sb.from('profiles').delete().eq('id', userId);
+    if (error) throw error;
+  },
 };
 
 window.Cloud = Cloud;

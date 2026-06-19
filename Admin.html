@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RumahDesign3D — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/cloud.js"></script>
+<style>
+:root{--bg:#0d0f14;--surface:#161820;--surface2:#1e2029;--border:#2a2d3a;--accent:#f5a623;--accent2:#e8523a;--green:#3ecf8e;--blue:#4a9eff;--violet:#a78bfa;--red:#ef4444;--text:#e8eaf0;--text2:#8b8fa8;--text3:#5a5e72;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 20% 10%,rgba(245,166,35,0.08),transparent 45%),radial-gradient(circle at 85% 90%,rgba(74,158,255,0.07),transparent 45%);pointer-events:none;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;position:relative;z-index:2;}
+.logo{display:flex;align-items:center;gap:9px;font-family:'Space Mono',monospace;font-weight:700;font-size:16px;text-decoration:none;color:var(--text);}
+.logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.logo span{color:var(--accent);}
+.badge-admin{font-size:10px;font-weight:700;letter-spacing:.5px;background:rgba(167,139,250,.16);color:var(--violet);border:1px solid rgba(167,139,250,.4);padding:3px 8px;border-radius:6px;margin-left:6px;}
+.topbar a.back{color:var(--text2);text-decoration:none;font-size:13px;font-weight:600;}
+.topbar a.back:hover{color:var(--accent);}
+
+.wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;padding:14px 24px 70px;}
+
+/* gate / loading */
+.gate{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:14px;}
+.gate .gic{font-size:54px;}
+.gate h2{font-size:22px;font-weight:800;}
+.gate p{font-size:14px;color:var(--text2);max-width:420px;line-height:1.6;}
+.gate a{color:var(--accent);text-decoration:none;font-weight:700;}
+.spin{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg);}}
+
+/* stats */
+.stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:8px 0 22px;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px;}
+.stat-v{font-size:26px;font-weight:800;font-family:'Space Mono',monospace;color:var(--accent);}
+.stat-k{font-size:11px;color:var(--text3);margin-top:3px;}
+.stat.b .stat-v{color:var(--blue);}
+.stat.g .stat-v{color:var(--green);}
+.stat.v .stat-v{color:var(--violet);}
+.stat.r .stat-v{color:var(--red);}
+
+/* toolbar */
+.tools{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+.tools h1{font-size:18px;font-weight:800;margin-right:auto;}
+.search{background:var(--surface);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 13px;width:240px;outline:none;}
+.search:focus{border-color:var(--accent);}
+.refresh{padding:9px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);color:var(--text2);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;}
+.refresh:hover{border-color:var(--accent);color:var(--accent);}
+
+/* table */
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);padding:13px 16px;border-bottom:1px solid var(--border);background:var(--bg);white-space:nowrap;}
+tbody td{padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--surface2);}
+.u-name{font-weight:700;}
+.u-email{font-size:11.5px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:1px;}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:14px;font-size:11px;font-weight:700;}
+.pill.user{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.pill.admin{background:rgba(167,139,250,.16);color:var(--violet);border:1px solid rgba(167,139,250,.4);}
+.pill.free{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.pill.pro{background:rgba(245,166,35,.16);color:var(--accent);border:1px solid rgba(245,166,35,.4);}
+.pill.dev{background:rgba(62,207,142,.16);color:var(--green);border:1px solid rgba(62,207,142,.4);}
+.pill.off{background:rgba(239,68,68,.14);color:var(--red);border:1px solid rgba(239,68,68,.4);}
+.sel{background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:inherit;font-size:12px;padding:6px 8px;cursor:pointer;outline:none;}
+.sel:focus{border-color:var(--accent);}
+.act-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.mini{padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);color:var(--text2);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.mini:hover{border-color:var(--accent);color:var(--accent);}
+.mini.danger:hover{border-color:var(--red);color:var(--red);}
+.you{font-size:10px;color:var(--text3);font-style:italic;margin-left:4px;}
+.empty{padding:40px;text-align:center;color:var(--text3);font-size:13px;}
+
+.note{font-size:11.5px;color:var(--text3);margin-top:16px;line-height:1.6;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.note b{color:var(--text2);}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:all .25s;z-index:50;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+@media(max-width:780px){
+  .stat-row{grid-template-columns:repeat(2,1fr);}
+  .wrap{padding:10px 12px 60px;}
+  .tbl-wrap{overflow-x:auto;}
+  table{min-width:680px;}
+  .search{width:100%;}
+  .tools h1{width:100%;}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="logo" href="index.html"><span class="logo-icon">🏠</span>Rumah<span>Design</span>3D<span class="badge-admin">ADMIN</span></a>
+  <a class="back" href="Akun.html">← Akun</a>
+</div>
+
+<div class="wrap">
+  <!-- GATE: loading / not-logged / not-admin -->
+  <div class="gate" id="gate">
+    <div class="spin"></div>
+    <p>Memeriksa akses…</p>
+  </div>
+
+  <!-- PANEL -->
+  <div id="panel" style="display:none;">
+    <div class="stat-row">
+      <div class="stat"><div class="stat-v" id="stTotal">–</div><div class="stat-k">Total User</div></div>
+      <div class="stat v"><div class="stat-v" id="stAdmin">–</div><div class="stat-k">Admin</div></div>
+      <div class="stat g"><div class="stat-v" id="stPro">–</div><div class="stat-k">Pro / Dev</div></div>
+      <div class="stat r"><div class="stat-v" id="stOff">–</div><div class="stat-k">Nonaktif</div></div>
+      <div class="stat b"><div class="stat-v" id="stProj">–</div><div class="stat-k">Total Proyek</div></div>
+    </div>
+
+    <div class="tools">
+      <h1>Manajemen User</h1>
+      <input class="search" id="search" placeholder="Cari nama / email…" oninput="renderRows()">
+      <button class="refresh" onclick="loadAll()">↻ Muat ulang</button>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>User</th><th>Peran</th><th>Paket</th><th>Proyek</th><th>Daftar</th><th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      💡 <b>Cara kerja:</b> User mendaftar sendiri lewat halaman Akun, lalu muncul di sini.
+      Anda bisa mengubah <b>Peran</b> (jadikan admin), <b>Paket</b> (upgrade manual ke Pro/Developer),
+      menonaktifkan, atau menghapus data user.<br>
+      ⚠️ <b>Hapus</b> menghapus profil, proyek &amp; langganan user dari database. Akun login (auth)
+      tetap ada — menghapus akun login sepenuhnya butuh tombol di <b>Supabase → Authentication → Users</b>,
+      atau Edge Function (opsional, bisa ditambahkan nanti).
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let _users = [];
+let _meId = null;
+
+const PLAN_NAMES = { free:'🆓 Free', pro:'⭐ Pro', dev:'👑 Dev' };
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 2400);
+}
+function esc(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function showGate(html){
+  document.getElementById('panel').style.display='none';
+  document.getElementById('gate').style.display='flex';
+  document.getElementById('gate').innerHTML = html;
+}
+
+async function boot(){
+  const ok = Cloud.init && Cloud.init();
+  if (!ok) {
+    showGate('<div class="gic">☁️</div><h2>Cloud belum aktif</h2><p>Aktifkan Supabase dulu di halaman <a href="Akun.html">Akun → Aktifkan Cloud</a>, lalu login sebagai admin.</p>');
+    return;
+  }
+  // wait for session
+  Cloud.onChange(async (user)=>{
+    if (!user) {
+      showGate('<div class="gic">🔒</div><h2>Belum masuk</h2><p>Anda harus login sebagai admin untuk membuka panel ini.</p><p><a href="Akun.html">→ Ke halaman masuk</a></p>');
+      return;
+    }
+    _meId = user.id;
+    const isAdmin = await Cloud.isAdmin();
+    if (!isAdmin) {
+      showGate('<div class="gic">⛔</div><h2>Akses ditolak</h2><p>Akun <b>'+esc(user.email)+'</b> bukan admin.<br>Minta admin menaikkan peran Anda, atau jalankan perintah SQL di <b>supabase-admin-schema.sql</b> bagian 7.</p><p><a href="index.html">← Kembali ke aplikasi</a></p>');
+      return;
+    }
+    document.getElementById('gate').style.display='none';
+    document.getElementById('panel').style.display='block';
+    loadAll();
+  });
+}
+
+async function loadAll(){
+  try{
+    _users = await Cloud.adminListUsers();
+    const s = await Cloud.adminStats();
+    document.getElementById('stTotal').textContent = s.total;
+    document.getElementById('stAdmin').textContent = s.admins;
+    document.getElementById('stPro').textContent = s.pro;
+    document.getElementById('stOff').textContent = s.inactive;
+    document.getElementById('stProj').textContent = s.projects;
+    renderRows();
+  }catch(e){ toast('Gagal memuat: '+e.message); }
+}
+
+function renderRows(){
+  const q = (document.getElementById('search').value||'').toLowerCase();
+  const list = _users.filter(u =>
+    !q || (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q));
+  const tb = document.getElementById('rows');
+  if (!list.length){ tb.innerHTML = '<tr><td colspan="6"><div class="empty">Tidak ada user.</div></td></tr>'; return; }
+  tb.innerHTML = list.map(u=>{
+    const me = u.id === _meId;
+    const active = u.active !== false;
+    const dateStr = u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) : '–';
+    return `<tr style="${active?'':'opacity:.55;'}">
+      <td>
+        <div class="u-name">${esc(u.name||'(tanpa nama)')}${me?'<span class="you">(Anda)</span>':''}</div>
+        <div class="u-email">${esc(u.email||'')}</div>
+        ${active?'':'<span class="pill off" style="margin-top:6px;">Nonaktif</span>'}
+      </td>
+      <td>
+        <select class="sel" ${me?'disabled title="Tidak bisa ubah peran sendiri"':''} onchange="setRole('${u.id}',this.value)">
+          <option value="user" ${u.role==='user'?'selected':''}>User</option>
+          <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+        </select>
+      </td>
+      <td>
+        <select class="sel" onchange="setPlan('${u.id}',this.value)">
+          <option value="free" ${u.plan==='free'?'selected':''}>🆓 Free</option>
+          <option value="pro" ${u.plan==='pro'?'selected':''}>⭐ Pro</option>
+          <option value="dev" ${u.plan==='dev'?'selected':''}>👑 Dev</option>
+        </select>
+      </td>
+      <td><span class="pill ${u.projects?'pro':'free'}">${u.projects}</span></td>
+      <td style="color:var(--text3);font-size:12px;white-space:nowrap;">${dateStr}</td>
+      <td>
+        <div class="act-btns">
+          ${me?'' : `<button class="mini" onclick="toggleActive('${u.id}',${active})">${active?'Nonaktifkan':'Aktifkan'}</button>
+          <button class="mini danger" onclick="delUser('${u.id}','${esc(u.email)}')">Hapus</button>`}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function setRole(id, role){
+  try{ await Cloud.adminSetRole(id, role); const u=_users.find(x=>x.id===id); if(u)u.role=role; loadAll(); toast('Peran diperbarui → '+role); }
+  catch(e){ toast('Gagal: '+e.message); }
+}
+async function setPlan(id, plan){
+  try{ await Cloud.adminSetPlan(id, plan); const u=_users.find(x=>x.id===id); if(u)u.plan=plan; loadAll(); toast('Paket diperbarui → '+PLAN_NAMES[plan]); }
+  catch(e){ toast('Gagal: '+e.message); }
+}
+async function toggleActive(id, currentlyActive){
+  try{ await Cloud.adminSetActive(id, !currentlyActive); loadAll(); toast(currentlyActive?'User dinonaktifkan':'User diaktifkan'); }
+  catch(e){ toast('Gagal: '+e.message); }
+}
+async function delUser(id, email){
+  if (!confirm('Hapus data user '+email+'?\n\nIni menghapus profil, proyek, & langganan user dari database. Tidak bisa dibatalkan.')) return;
+  try{ await Cloud.adminDeleteUserData(id); loadAll(); toast('Data user dihapus'); }
+  catch(e){ toast('Gagal: '+e.message); }
+}
+
+boot();
+</script>
+</body>
+</html>

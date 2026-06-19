@@ -142,6 +142,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
         <div class="dash-sub" id="dashEmail">budi@email.com</div>
       </div>
       <button class="dash-logout" onclick="demoLogout()">Keluar</button>
+      <a class="dash-logout hidden" id="adminLink" href="Admin.html" style="text-decoration:none;border-color:rgba(167,139,250,.4);color:var(--violet);">⚙️ Panel Admin</a>
     </div>
 
     <div class="stat-row">
@@ -262,6 +263,8 @@ function enterDashboard(name, email){
   // status langganan: dari cloud bila ada, else dari localStorage lokal
   const names={free:'🆓 Free',pro:'⭐ Pro',dev:'👑 Developer'};
   if (CLOUD_ON && Cloud.isLoggedIn()) {
+    // tampilkan tautan admin jika user adalah admin
+    Cloud.isAdmin().then(ok => { const a=document.getElementById('adminLink'); if(a) a.classList.toggle('hidden', !ok); }).catch(()=>{});
     Cloud.getSubscription().then(sub => {
       const plan = sub?.plan || localStorage.getItem('rumah3d_user_plan') || 'free';
       document.getElementById('dashPlanPill').textContent = names[plan]||'🆓 Free';
