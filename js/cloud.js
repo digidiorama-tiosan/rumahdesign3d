@@ -168,6 +168,41 @@ const Cloud = {
     const { error } = await this.sb.from('profiles').delete().eq('id', userId);
     if (error) throw error;
   },
+
+  // ---------------- AI RENDER (Edge Function aman) ----------------
+  // Memanggil Edge Function 'ai-render'. Mengembalikan data JSON, atau
+  // melempar Error dengan .body (isi JSON error) & .status (kode HTTP).
+  async invokeAIRender(payload) {
+    if (!this.isLoggedIn()) throw new Error('Masuk dulu untuk memakai AI Render.');
+    const { data, error } = await this.sb.functions.invoke('ai-render', { body: payload });
+    if (error) {
+      let bodyJson = null;
+      try { bodyJson = await error.context.json(); } catch (_) {}
+      const e2 = new Error(bodyJson?.error || error.message || 'Gagal memanggil server render.');
+      e2.body = bodyJson; e2.status = error.context?.status;
+      throw e2;
+    }
+    return data;
+  },
+  async getRenderStatus() { return this.invokeAIRender({ action: 'status' }); },
+  // Simulasi pembayaran: tambah 1 kredit render. (Diganti webhook gateway nanti.)
+  async addRenderCreditDemo() {
+    const { data, error } = await this.sb.rpc('add_render_credit_demo');
+    if (error) throw error;
+    return data;
+  },
+
+  // ---------------- ADMIN: API key OpenAI ----------------
+  async getOpenAIKeyStatus() {
+    const { data, error } = await this.sb.from('app_settings').select('openai_key,updated_at').eq('id', 1).maybeSingle();
+    if (error) throw error;
+    return { set: !!(data && data.openai_key), updated_at: data?.updated_at || null };
+  },
+  async setOpenAIKey(key) {
+    const { error } = await this.sb.from('app_settings')
+      .upsert({ id: 1, openai_key: key, updated_at: new Date().toISOString() });
+    if (error) throw error;
+  },
 };
 
 window.Cloud = Cloud;

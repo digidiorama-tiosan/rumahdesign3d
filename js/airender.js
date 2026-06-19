@@ -1,14 +1,12 @@
-// ===================== AI PHOTOREALISTIC RENDER (OpenAI) =====================
-// Captures the current 3D WebGL canvas and asks OpenAI gpt-image-1 to reimagine it
-// as a photorealistic architectural visualization. Key is stored locally (this PC only).
+// ===================== AI PHOTOREALISTIC RENDER (server-side, aman) =====================
+// Snapshot kanvas 3D dikirim ke Edge Function 'ai-render' di Supabase.
+// API key OpenAI TIDAK ada di browser — dikelola admin & dipakai di server.
+// Kuota: Pro 1×/bulan, Dev 3×/bulan (reset bulanan). Habis → beli per render.
 
-const OAI_KEY_STORE = 'rumah3d_openai_key';
-let airSourceId = null;      // canvas container id to capture
-let airLastDataUrl = null;   // last captured source PNG
+let airSourceId = null;      // id container kanvas yang di-capture
+let airLastDataUrl = null;   // PNG sumber terakhir
 let airResultUrl = null;
-
-function getOAIKey() { try { return localStorage.getItem(OAI_KEY_STORE) || ''; } catch(e){ return ''; } }
-function setOAIKey(k) { try { localStorage.setItem(OAI_KEY_STORE, k.trim()); } catch(e){} }
+let airStatus = null;        // {plan, freeQuota, used, remainingFree, credits}
 
 const AIR_STYLES = {
   siang:   { label:'☀️ Siang Cerah', extra:'bright midday sunlight, clear blue sky, sharp shadows' },
@@ -20,7 +18,6 @@ const AIR_STYLES = {
 function openAIRender(sourceId) {
   if (typeof requireFeature==='function' && !requireFeature('airender')) return;
   airSourceId = sourceId;
-  // capture immediately
   const cont = document.getElementById(sourceId);
   const canvas = cont ? cont.querySelector('canvas') : null;
   if (!canvas) { showNotif('⚠️ Buka tampilan 3D dulu'); return; }
@@ -28,27 +25,20 @@ function openAIRender(sourceId) {
   catch(e) { airLastDataUrl = null; }
   document.getElementById('modalAIRender').classList.add('show');
   renderAIRenderUI();
+  refreshAirStatus();
 }
 function closeAIRender() { document.getElementById('modalAIRender').classList.remove('show'); }
 
-function renderAIRenderUI(state) {
+function renderAIRenderUI() {
   const body = document.getElementById('airenderBody');
-  const key = getOAIKey();
-  const hasKey = !!key;
   body.innerHTML = `
     <div class="air-left">
-      <div class="air-panel">
-        <div class="air-h">1 · API Key OpenAI</div>
-        <div class="air-sub">Disimpan hanya di browser PC ini (localStorage). Tidak dikirim ke mana pun selain OpenAI saat Anda menekan Render.</div>
-        <div class="air-keyrow">
-          <input id="airKey" type="password" class="air-input" placeholder="sk-..." value="${key.replace(/"/g,'')}">
-          <button class="air-btn" onclick="saveAirKey()">Simpan</button>
-        </div>
-        <div class="air-keystat">${hasKey ? '✅ Key tersimpan' : '⚠️ Belum ada key'}</div>
+      <div class="air-panel" id="airStatusBox">
+        <div class="air-keystat">Memuat kuota…</div>
       </div>
 
       <div class="air-panel">
-        <div class="air-h">2 · Suasana</div>
+        <div class="air-h">Suasana</div>
         <div class="air-styles" id="airStyles">
           ${Object.entries(AIR_STYLES).map(([k,v],i)=>`<div class="air-chip ${i===0?'active':''}" data-style="${k}" onclick="pickAirStyle('${k}')">${v.label}</div>`).join('')}
         </div>
@@ -62,8 +52,8 @@ function renderAIRenderUI(state) {
         </select>
       </div>
 
-      <button class="air-render-btn" id="airRenderBtn" onclick="runAIRender()" ${hasKey?'':'disabled'}>✨ Render Fotorealistik</button>
-      <div class="air-note">Memakai model <b>gpt-image-1</b> (butuh akses Images API & verifikasi organisasi di akun OpenAI Anda). Biaya render ditagih ke akun OpenAI Anda. Hasil adalah interpretasi AI — tata letak dipertahankan, detail bisa berbeda.</div>
+      <button class="air-render-btn" id="airRenderBtn" onclick="runAIRender()" disabled>✨ Render Fotorealistik</button>
+      <div class="air-note">Render diproses aman di server. Hasil adalah interpretasi AI — tata letak dipertahankan, detail bisa berbeda.</div>
     </div>
 
     <div class="air-right">
@@ -77,12 +67,63 @@ function renderAIRenderUI(state) {
       </div>
     </div>`;
 }
-function saveAirKey() {
-  const v = document.getElementById('airKey').value;
-  setOAIKey(v);
-  showNotif('🔑 API key disimpan (lokal)');
-  renderAIRenderUI();
+
+async function refreshAirStatus() {
+  const el = document.getElementById('airStatusBox');
+  if (!window.Cloud || !Cloud.isLoggedIn || !Cloud.isLoggedIn()) {
+    airStatus = null;
+    if (el) el.innerHTML = '<div class="air-h">Kuota Render</div><div class="air-keystat">⚠️ Masuk dulu (Akun) untuk memakai AI Render — kuota terikat akun Anda.</div>';
+    updateRenderBtn();
+    return;
+  }
+  if (el) el.innerHTML = '<div class="air-h">Kuota Render</div><div class="air-keystat">Memuat…</div>';
+  try {
+    airStatus = await Cloud.getRenderStatus();
+    renderAirStatusBox();
+  } catch (e) {
+    if (el) el.innerHTML = `<div class="air-h">Kuota Render</div><div class="air-error" style="font-size:11px;">Gagal memuat kuota: ${escapeHtmlSafe(e.message)}</div>`;
+  }
+  updateRenderBtn();
 }
+
+function renderAirStatusBox() {
+  const el = document.getElementById('airStatusBox');
+  if (!el || !airStatus) return;
+  const { plan, freeQuota, remainingFree, credits } = airStatus;
+  const planName = plan==='dev' ? '👑 Developer' : plan==='pro' ? '⭐ Pro' : '🆓 Free';
+  const total = (remainingFree||0) + (credits||0);
+  el.innerHTML = `
+    <div class="air-h">Kuota Render</div>
+    <div class="air-quota">
+      <div class="air-quota-num">${total}</div>
+      <div class="air-quota-lbl">render tersedia
+        <span>${remainingFree||0} gratis bulan ini${credits ? ` · ${credits} berbayar` : ''}</span>
+      </div>
+    </div>
+    <div class="air-sub" style="margin-bottom:0;">Paket <b>${planName}</b> — jatah ${freeQuota}× / bulan, reset tiap bulan.</div>
+    ${ total<=0 ? `
+      <button class="air-btn-pay" onclick="buyRenderCredit()">💳 Beli 1 render — Rp 5.000</button>
+      <div class="air-keystat" style="margin-top:6px;">Pembayaran masih simulasi (akan disambung ke gateway).</div>` : '' }
+  `;
+}
+
+function updateRenderBtn() {
+  const btn = document.getElementById('airRenderBtn');
+  if (!btn) return;
+  const loggedIn = window.Cloud && Cloud.isLoggedIn && Cloud.isLoggedIn();
+  const total = airStatus ? ((airStatus.remainingFree||0) + (airStatus.credits||0)) : 0;
+  btn.disabled = !loggedIn || total <= 0;
+}
+
+async function buyRenderCredit() {
+  if (!confirm('Beli 1 render seharga Rp 5.000?\n\n(Sementara ini disimulasikan — belum ada transaksi nyata.)')) return;
+  try {
+    await Cloud.addRenderCreditDemo();
+    showNotif('✅ 1 render ditambahkan');
+    await refreshAirStatus();
+  } catch (e) { showNotif('❌ Gagal: ' + e.message); }
+}
+
 function pickAirStyle(k) {
   document.querySelectorAll('#airStyles .air-chip').forEach(c=>c.classList.toggle('active', c.dataset.style===k));
 }
@@ -92,8 +133,7 @@ function currentAirStyle() {
 }
 
 function buildAirPrompt() {
-  const styleKey = currentAirStyle();
-  const st = AIR_STYLES[styleKey];
+  const st = AIR_STYLES[currentAirStyle()];
   const extra = (document.getElementById('airExtra').value||'').trim();
   const subject = airSourceId === 'dev3d-canvas-container'
     ? 'an aerial architectural visualization of an Indonesian residential housing complex (perumahan) with multiple identical houses, internal roads, carports and landscaping'
@@ -106,53 +146,44 @@ function buildAirPrompt() {
 }
 
 async function runAIRender() {
-  const key = getOAIKey();
-  if (!key) { showNotif('⚠️ Masukkan API key dulu'); return; }
+  if (!window.Cloud || !Cloud.isLoggedIn()) { showNotif('⚠️ Masuk dulu untuk render'); return; }
   if (!airLastDataUrl) { showNotif('⚠️ Tidak ada snapshot 3D'); return; }
   const btn = document.getElementById('airRenderBtn');
   const resultBox = document.getElementById('airResultBox');
+  const oldLabel = btn.textContent;
   btn.disabled = true; btn.textContent = '⏳ Merender... (15-40 detik)';
   resultBox.innerHTML = '<div class="air-preview-label">Hasil AI</div><div class="air-empty"><div class="ai-spinner"></div>AI sedang merender...</div>';
 
   try {
     const size = document.getElementById('airSize').value || '1536x1024';
-    const blob = await (await fetch(airLastDataUrl)).blob();
-    const fd = new FormData();
-    fd.append('model', 'gpt-image-1');
-    fd.append('image', blob, 'scene.png');
-    fd.append('prompt', buildAirPrompt());
-    fd.append('size', size);
-    fd.append('n', '1');
-
-    const res = await fetch('https://api.openai.com/v1/images/edits', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + key },
-      body: fd
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      const msg = data?.error?.message || ('HTTP ' + res.status);
-      throw new Error(msg);
-    }
-    const b64 = data?.data?.[0]?.b64_json;
-    const url = data?.data?.[0]?.url;
-    airResultUrl = b64 ? ('data:image/png;base64,' + b64) : url;
-    if (!airResultUrl) throw new Error('Respons kosong dari OpenAI');
+    const data = await Cloud.invokeAIRender({ imageBase64: airLastDataUrl, prompt: buildAirPrompt(), size });
+    airResultUrl = data.image;
+    if (!airResultUrl) throw new Error('Respons kosong dari server');
     resultBox.innerHTML = `<div class="air-preview-label">Hasil AI</div>
       <img src="${airResultUrl}" class="air-img">
       <a class="air-btn" style="margin-top:8px; display:inline-block; text-decoration:none;" href="${airResultUrl}" download="AI_Render_${Date.now()}.png">⬇️ Unduh PNG</a>`;
+    airStatus = Object.assign({}, airStatus, { remainingFree: data.remainingFree, credits: data.credits });
+    renderAirStatusBox();
     showNotif('✨ Render AI selesai!');
   } catch (e) {
-    resultBox.innerHTML = `<div class="air-preview-label">Hasil AI</div>
-      <div class="air-error">❌ Gagal: ${escapeHtmlSafe(e.message)}<br><br>
-      <b>Penyebab umum:</b><br>
-      • Key salah / tidak punya akses Images API<br>
-      • Organisasi belum diverifikasi untuk gpt-image-1 (cek platform.openai.com → Settings → Verifikasi)<br>
-      • Saldo/billing OpenAI habis<br>
-      • Diblokir CORS browser — coba jalankan lewat server lokal, bukan file://</div>`;
+    if (e.body?.error === 'QUOTA_EMPTY' || e.status === 402) {
+      airStatus = Object.assign({}, airStatus, { remainingFree: 0, credits: 0 });
+      renderAirStatusBox();
+      resultBox.innerHTML = `<div class="air-preview-label">Hasil AI</div>
+        <div class="air-empty">Kuota render bulan ini habis. Beli 1 render (Rp 5.000) di panel kiri untuk melanjutkan.</div>`;
+    } else {
+      resultBox.innerHTML = `<div class="air-preview-label">Hasil AI</div>
+        <div class="air-error">❌ Gagal: ${escapeHtmlSafe(e.message)}<br><br>
+        <b>Penyebab umum:</b><br>
+        • Admin belum mengatur API key OpenAI (Panel Admin)<br>
+        • Organisasi OpenAI belum diverifikasi untuk gpt-image-1<br>
+        • Saldo/billing OpenAI habis<br>
+        • Edge Function 'ai-render' belum di-deploy</div>`;
+    }
     showNotif('❌ Render gagal: ' + e.message);
   } finally {
-    btn.disabled = false; btn.textContent = '✨ Render Fotorealistik';
+    btn.textContent = oldLabel;
+    updateRenderBtn();
   }
 }
 function escapeHtmlSafe(s) { return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
