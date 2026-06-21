@@ -505,6 +505,14 @@ header {
 .walk-crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); color: rgba(255,255,255,0.85); font-size: 22px; font-weight: 300; text-shadow: 0 0 4px rgba(0,0,0,0.6); }
 .walk-hint { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(13,15,20,0.85); border: 1px solid var(--border); border-radius: 9px; padding: 9px 16px; font-size: 12px; color: var(--text); white-space: nowrap; }
 .walk-hint b { color: var(--accent); }
+.walk-hint-touch { display: none; }
+/* Joystick gerak untuk layar sentuh */
+#walkJoystick { display: none; position: absolute; left: 22px; bottom: 22px; width: 124px; height: 124px; border-radius: 50%; background: rgba(20,22,30,0.38); border: 2px solid rgba(255,255,255,0.28); pointer-events: auto; touch-action: none; z-index: 6; }
+#walkJoyKnob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; background: rgba(245,166,35,0.88); box-shadow: 0 3px 12px rgba(0,0,0,0.45); transition: transform 0.05s linear; }
+@media (pointer: coarse) {
+  #walkOverlay.show #walkJoystick { display: block; }
+  .walk-hint-touch { display: inline; }
+}
 
 /* NOTIF */
 .notif { position: fixed; top: 64px; right: 16px; background: var(--surface2); border: 1px solid var(--green); border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 600; color: var(--green); z-index: 2000; transform: translateY(-10px); opacity: 0; transition: all 0.3s; pointer-events: none; }

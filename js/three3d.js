@@ -624,9 +624,10 @@ function enterWalkMode(){
   const baseY = (showAllFloors ? currentFloorIndex : 0) * WALL_H;
   threeCamera.position.set((b.minX+b.maxX)/2, baseY + walkState.eyeY, b.maxZ + 2.5);
   walkState.yaw = Math.PI; walkState.targetYaw = Math.PI;   // look toward -z (into the house)
-  walkState.pitch = 0; walkState.targetPitch = 0; walkState.keys = {}; walkState.vel = {x:0,z:0};
+  walkState.pitch = 0; walkState.targetPitch = 0; walkState.keys = {}; walkState.vel = {x:0,z:0}; walkState.joy = {f:0,s:0};
   buildWalkCollision();
   applyWalkLook();
+  setupWalkJoystick();
   flagBtn('btn3dWalk', true);
   document.getElementById('walkOverlay')?.classList.add('show');
   document.getElementById('view3d-hint').style.display = 'none';
@@ -640,7 +641,7 @@ function enterWalkMode(){
 }
 function exitWalkMode(){
   nav3dMode = 'orbit';
-  walkState.keys = {};
+  walkState.keys = {}; walkState.joy = {f:0,s:0};
   flagBtn('btn3dWalk', false);
   document.getElementById('walkOverlay')?.classList.remove('show');
   if (document.getElementById('view3d-hint')) document.getElementById('view3d-hint').style.display = '';
@@ -652,6 +653,22 @@ function exitWalkMode(){
   reset3DCamera();
 }
 function toggle3DWalk(){ if (nav3dMode==='walk') exitWalkMode(); else enterWalkMode(); }
+// ---- joystick gerak (HP/tablet) ----
+let _walkJoyInit = false;
+function setupWalkJoystick(){
+  if (_walkJoyInit) return;
+  const j = document.getElementById('walkJoystick'), kn = document.getElementById('walkJoyKnob');
+  if (!j || !kn) return;
+  _walkJoyInit = true;
+  let active=false, cx=0, cy=0, R=60;
+  function start(e){ active=true; const r=j.getBoundingClientRect(); cx=r.left+r.width/2; cy=r.top+r.height/2; R=r.width/2; move(e); if(e.cancelable)e.preventDefault(); e.stopPropagation(); }
+  function move(e){ if(!active) return; const t=e.touches?e.touches[0]:e; let dx=t.clientX-cx, dy=t.clientY-cy; const d=Math.hypot(dx,dy); if(d>R){ dx*=R/d; dy*=R/d; } kn.style.transform='translate('+dx+'px,'+dy+'px)'; walkState.joy={ f:-dy/R, s:dx/R }; if(e.cancelable)e.preventDefault(); e.stopPropagation(); }
+  function end(){ active=false; kn.style.transform='translate(0,0)'; walkState.joy={f:0,s:0}; }
+  j.addEventListener('touchstart', start, {passive:false});
+  j.addEventListener('touchmove', move, {passive:false});
+  j.addEventListener('touchend', end); j.addEventListener('touchcancel', end);
+  j.addEventListener('mousedown', start); window.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+}
 function onPLChange(){ if (!document.pointerLockElement && nav3dMode==='walk') exitWalkMode(); }
 function onWalkMouse(e){
   if (nav3dMode!=='walk') return;
@@ -724,6 +741,11 @@ function updateWalk(dt){
   if (k['s']||k['arrowdown']) { mx-=fHx; mz-=fHz; }
   if (k['d']||k['arrowright']){ mx+=rx;  mz+=rz; }
   if (k['a']||k['arrowleft']) { mx-=rx;  mz-=rz; }
+  // joystick analog (HP/tablet): joy.f = maju(+)/mundur(-), joy.s = kanan(+)/kiri(-)
+  if (walkState.joy && (walkState.joy.f || walkState.joy.s)) {
+    mx += fHx*walkState.joy.f + rx*walkState.joy.s;
+    mz += fHz*walkState.joy.f + rz*walkState.joy.s;
+  }
   const len = Math.hypot(mx,mz);
   const target = walkState.speed * fast;
   const tvx = len>0 ? (mx/len)*target : 0;
