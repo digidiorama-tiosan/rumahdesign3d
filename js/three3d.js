@@ -1,6 +1,8 @@
 // ===================== THREE.JS 3D ENGINE =====================
 let threeRenderer = null, threeScene = null, threeCamera = null, threeAnimFrame = null;
 let orbitState = { isOrbiting:false, isPanning:false, lastX:0, lastY:0, theta:45, phi:58, radius:22, targetX:0, targetZ:0 };
+let furnMeshes = [];                 // furniture meshes for interior pick/drag (tagged userData.fid)
+let interiorSelFid = null;           // currently selected furniture in interior mode
 let wireframeMode = false, showRoof = true, showAllFloors = true;
 let showEnv = true;                 // outdoor environment (grass, trees, road…)
 let nav3dMode = 'orbit';            // 'orbit' | 'walk'
@@ -81,7 +83,7 @@ function init3DScene() {
   threeRenderer.toneMappingExposure = 1.05;
   container.appendChild(threeRenderer.domElement);
 
-  threeScene.add(new THREE.AmbientLight(0xffffff, showEnv ? 0.32 : 0.4));
+  const amb = new THREE.AmbientLight(0xffffff, showEnv ? 0.32 : 0.4); threeScene.add(amb);
   // Sun direction driven by North orientation (tropical planning)
   const sunAz = (northAngle + 135) * Math.PI/180;
   const sun = new THREE.DirectionalLight(0xfff4e2, showEnv ? 2.7 : 2.2);
@@ -92,7 +94,8 @@ function init3DScene() {
   sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02;
   threeScene.add(sun);
   const fill = new THREE.DirectionalLight(0x88a6d8, 0.5); fill.position.set(-14, 12, -10); threeScene.add(fill);
-  threeScene.add(new THREE.HemisphereLight(showEnv?0xbcd8ff:0x556070, showEnv?0x5a7048:0x202430, showEnv?0.95:0.7));
+  const hemi = new THREE.HemisphereLight(showEnv?0xbcd8ff:0x556070, showEnv?0x5a7048:0x202430, showEnv?0.95:0.7); threeScene.add(hemi);
+  threeScene.userData.lights = { amb, sun, fill, hemi };
 
   if (showEnv) {
     threeScene.background = makeSkyTexture();
@@ -109,6 +112,7 @@ function init3DScene() {
 
   buildNorthArrow();
   build3DScene();
+  if (typeof applyInteriorLighting === 'function') applyInteriorLighting();
 
   threeRenderer.domElement.addEventListener('mousedown', on3DMouseDown);
   threeRenderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
@@ -155,6 +159,7 @@ function computeCenter() {
 
 function build3DScene() {
   threeObjects.forEach(o => threeScene.remove(o)); threeObjects = [];
+  furnMeshes = [];
   const WALL_H = parseFloat(val('wallHeight')||3);
   const WALL_T = 0.15;
   computeCenter();
@@ -301,17 +306,35 @@ function buildFloor3D(f, baseY, WALL_H, WALL_T) {
   f.rooms.forEach(r => {
     const x = r.x*SCALE - sceneCenter.cx, z = r.y*SCALE - sceneCenter.cz;
     const w = r.w*SCALE, d = r.h*SCALE;
-    // Floor slab (tiled, faint room tint)
+    // Floor slab (tiled, faint room tint) — interior override via r.iFloor
+    const floorHex = r.iFloor ? new THREE.Color(r.iFloor).getHex()
+      : new THREE.Color(r.color).lerp(new THREE.Color(0xffffff), 0.75).getHex();
     const slab = new THREE.Mesh(new THREE.BoxGeometry(w-WALL_T*2, 0.08, d-WALL_T*2),
-      matFloor(w, d, new THREE.Color(r.color).lerp(new THREE.Color(0xffffff), 0.75).getHex()));
+      matFloor(w, d, floorHex));
     slab.position.set(x+w/2, baseY+0.04, z+d/2); slab.receiveShadow = true; add(slab);
 
-    // Painted-plaster walls (neutral for realism); exterior faces slightly warmer than interior
-    const wallMat = matWall(0xf2ece0);
-    const wallMatDark = matWall(0xe7e0d2);
+    // Painted-plaster walls (neutral for realism); interior override via r.iWall
+    const wallHex = r.iWall ? new THREE.Color(r.iWall).getHex() : 0xf2ece0;
+    const wallHexDark = r.iWall ? new THREE.Color(r.iWall).multiplyScalar(0.93).getHex() : 0xe7e0d2;
+    const wallMat = matWall(wallHex);
+    const wallMatDark = matWall(wallHexDark);
     ['n','s'].forEach(e => buildWall(f, r, e, x, z, w, d, baseY, WALL_H, WALL_T, wallMat));
     ['w','e'].forEach(e => buildWall(f, r, e, x, z, w, d, baseY, WALL_H, WALL_T, wallMatDark));
     addLabel(r.type, x+w/2, baseY+WALL_H+0.35, z+d/2, r.color);
+    // Interior ceiling (only inside walk-tour so it doesn't block orbit-from-above)
+    if (typeof interiorState !== 'undefined' && interiorState.active && nav3dMode==='walk') {
+      const ceilHex = r.iCeil ? new THREE.Color(r.iCeil).getHex() : 0xf6f3ec;
+      const ceil = new THREE.Mesh(new THREE.BoxGeometry(w-WALL_T*2, 0.06, d-WALL_T*2),
+        new THREE.MeshStandardMaterial({ color: ceilHex, roughness:0.95 }));
+      ceil.position.set(x+w/2, baseY+WALL_H-0.03, z+d/2); add(ceil);
+    }
+    // Interior ceiling lamp (point light) when interior active
+    if (typeof interiorState !== 'undefined' && interiorState.active && r.iLamp) {
+      const lamp = new THREE.PointLight(0xffe7bd, 0.9, Math.max(w,d)*1.6, 2);
+      lamp.position.set(x+w/2, baseY+WALL_H-0.4, z+d/2); add(lamp);
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.09,8,8), new THREE.MeshBasicMaterial({ color:0xfff1cf }));
+      bulb.position.copy(lamp.position); add(bulb);
+    }
   });
   // Furniture
   f.furnitures.forEach(ft => {
@@ -319,9 +342,11 @@ function buildFloor3D(f, baseY, WALL_H, WALL_T) {
     const fw = ft.w*SCALE, fh = ft.h*SCALE;
     const def = FURN_LIB.find(fl => fl.id === ft.defId);
     const hM = Math.max(0.05, def && def.hz ? def.hz : (def ? def.h * 0.6 : 0.6));
+    const sel = (interiorSelFid===ft.fid);
     const m = new THREE.Mesh(new THREE.BoxGeometry(ft.rotation%180===0?fw:fh, hM, ft.rotation%180===0?fh:fw),
-      new THREE.MeshStandardMaterial({ color:new THREE.Color(ft.color||'#8a7a66'), roughness:0.7, metalness:0.05, wireframe:wireframeMode }));
-    m.position.set(fx+fw/2, baseY+hM/2+0.08, fz+fh/2); m.castShadow = true; m.receiveShadow = true; add(m);
+      new THREE.MeshStandardMaterial({ color:new THREE.Color(ft.color||'#8a7a66'), roughness:0.7, metalness:0.05, wireframe:wireframeMode, emissive: sel?0x3a2c0a:0x000000 }));
+    m.position.set(fx+fw/2, baseY+hM/2+0.08, fz+fh/2); m.castShadow = true; m.receiveShadow = true;
+    m.userData.fid = ft.fid; furnMeshes.push(m); add(m);
   });
   // Smart walls (wall-based geometry: L / U / T / polygon)
   buildSmartWalls3D(f, baseY, WALL_H);

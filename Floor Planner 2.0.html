@@ -17,7 +17,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/cloud.js"></script>
-<link rel="stylesheet" href="styles.css?v=15">
+<link rel="stylesheet" href="styles.css?v=16">
 <style>
   /* Inline safety net — guarantees fit even if external CSS is cached/stale */
   html, body { overflow: hidden !important; max-width: 100vw !important; }
@@ -50,6 +50,7 @@
   <div class="header-tabs">
     <button class="tab-btn active" id="vtab-2d" onclick="setView('2d')">▦ Denah 2D</button>
     <button class="tab-btn" id="vtab-3d" onclick="setView('3d')">🎲 Preview 3D</button>
+    <button class="tab-btn" id="vtab-int" onclick="openInterior()">🛋️ Interior</button>
     <button class="tab-btn" id="vtab-rab" onclick="setView('rab')">📋 RAB</button>
   </div>
 
@@ -476,6 +477,16 @@
         <div id="walkJoystick"><div id="walkJoyKnob"></div></div>
       </div>
       <div id="view3d-loading">⚙️ Memuat Three.js...</div>
+      <!-- PANEL MODE INTERIOR -->
+      <div id="interiorPanel">
+        <div class="int-head">
+          <span>🛋️ Desain Interior</span>
+          <button class="int-close" onclick="closeInterior()" title="Tutup Interior">✕</button>
+        </div>
+        <div class="int-tabs" id="intTabs"></div>
+        <div class="int-body" id="intBody"></div>
+        <button class="int-render" onclick="openAIRender('three-canvas-container')">✨ Render Interior Fotorealistik</button>
+      </div>
     </div>
   </div>
 </div>
@@ -637,6 +648,7 @@
 <script src="js/devmode.js"></script>
 <script src="js/dev3d.js"></script>
 <script src="js/airender.js"></script>
+<script src="js/interior.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/export.js"></script>
 <script src="js/plan.js"></script>
