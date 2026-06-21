@@ -11,8 +11,8 @@
 // JANGAN pernah menempel "service_role" key di sini.
 // =====================================================================
 
-window.SUPABASE_URL = "";        // contoh: "https://abcdxyz.supabase.co"
-window.SUPABASE_ANON_KEY = "";   // contoh: "eyJhbGciOi...."
+window.SUPABASE_URL = "https://yxawclwidythmstculql.supabase.co";        // contoh: "https://abcdxyz.supabase.co"
+window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4YXdjbHdpZHl0aG1zdGN1bHFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjA3OTIsImV4cCI6MjA5NzM5Njc5Mn0.Jn2q5X1Qy6bDFvDan0cI29Xl7UQGlSGl0AZ8QHUkhXM";   // contoh: "eyJhbGciOi...."
 
 // ---------------------------------------------------------------------
 // AKTIVASI TANPA EDIT FILE (opsional):
