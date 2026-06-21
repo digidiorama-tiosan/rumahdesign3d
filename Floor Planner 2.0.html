@@ -17,7 +17,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/cloud.js"></script>
-<link rel="stylesheet" href="styles.css?v=16">
+<link rel="stylesheet" href="styles.css?v=18">
 <style>
   /* Inline safety net — guarantees fit even if external CSS is cached/stale */
   html, body { overflow: hidden !important; max-width: 100vw !important; }
@@ -206,6 +206,13 @@
           </select>
           <button class="btn-add" onclick="addRoomFromPanel()">+ Tambah</button>
         </div>
+        <div class="add-room-size">
+          <label>Ukuran (m):</label>
+          <input type="number" id="newRoomW" class="prop-input" step="0.1" min="1" placeholder="Lebar" title="Lebar (m) — kosongkan untuk ukuran default">
+          <span>×</span>
+          <input type="number" id="newRoomH" class="prop-input" step="0.1" min="1" placeholder="Panjang" title="Panjang (m) — kosongkan untuk ukuran default">
+        </div>
+        <div class="add-room-hint">Isi ukuran lalu <b>+ Tambah</b>, atau pakai alat <b>⬛ Ruangan</b> lalu seret di kanvas (HP: 1 jari).</div>
       </div>
       <div class="panel-section auto-dim-box">
         <div class="panel-title">Auto Alignment</div>

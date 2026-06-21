@@ -112,6 +112,7 @@ const FURN_LIB = [
   { id:'rak_sepatu', name:'Rak Sepatu', cat:'Lainnya', icon:'👟', w:0.9, h:0.35, color:'#92400e', hz:0.9 },
   { id:'cermin', name:'Cermin Berdiri', cat:'Lainnya', icon:'🪞', w:0.6, h:0.2, color:'#cbd5e1', hz:1.7 },
   { id:'piano', name:'Piano', cat:'Lainnya', icon:'🎹', w:1.5, h:0.6, color:'#1f2937', hz:1.0 },
+  { id:'tangga', name:'Tangga', cat:'Lainnya', icon:'🪜', w:1.0, h:3.0, color:'#9aa0aa', hz:3.0 },
 ];
 const FURN_CATS = ['Semua','Ruang Tamu','Ruang Makan','Kamar Tidur','Kamar Anak','Dapur','Kamar Mandi','Kantor','Outdoor','Garasi','Laundry','Komersial','Gym','Lainnya'];
 let activeFurnCat = 'Semua';
@@ -188,4 +189,14 @@ function deleteFurn() {
   selectedFurnId = null;
   document.getElementById('furnInfobar').classList.remove('show'); render();
   showNotif('🗑 Furnitur dihapus');
+}
+
+// ---- Tangga: tempatkan & pindah (seret) seperti furnitur ----
+function addStair() {
+  saveSnapshot();
+  const def = FURN_LIB.find(f => f.id === 'tangga');
+  const ref = rooms[0];
+  const x = ref ? ref.x + 20 : 200, y = ref ? ref.y + 20 : 200;
+  placeFurniture('tangga', x, y);
+  showNotif('🪜 Tangga ditambahkan — seret untuk atur posisi, ↻ untuk arah naik');
 }

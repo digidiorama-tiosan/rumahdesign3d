@@ -42,20 +42,23 @@ function nearestOnSeg(p, s) {
 
 function snapWallPoint(p, fromPt) {
   snapHint = null;
+  // skala ambang snap agar konstan di layar (mudah di HP: cubit-zoom untuk presisi)
+  const Z = (typeof zoomLevel==='number' && zoomLevel>0) ? zoomLevel : 1;
+  const nodeR=SNAP_NODE/Z, midR=SNAP_MID/Z, intR=SNAP_INT/Z, segR=SNAP_SEG/Z;
   // 1. endpoint (existing node) — highest priority, enables auto-join
-  let best=null, bd=SNAP_NODE;
+  let best=null, bd=nodeR;
   getWallNodes().forEach(n => { const d=Math.hypot(p.x-n.x,p.y-n.y); if (d<bd){bd=d;best=n;} });
   if (best) { snapHint={x:best.x,y:best.y,type:'endpoint'}; return {x:best.x,y:best.y,joined:true}; }
   // 2. midpoint of a segment
-  best=null; bd=SNAP_MID;
+  best=null; bd=midR;
   wallSegs.forEach(s => { const mx=(s.a.x+s.b.x)/2, my=(s.a.y+s.b.y)/2; const d=Math.hypot(p.x-mx,p.y-my); if (d<bd){bd=d;best={x:mx,y:my};} });
   if (best) { snapHint={...best,type:'midpoint'}; return {x:best.x,y:best.y,joined:false}; }
   // 3. intersection of two segments
-  best=null; bd=SNAP_INT;
+  best=null; bd=intR;
   segIntersections().forEach(ip => { const d=Math.hypot(p.x-ip.x,p.y-ip.y); if (d<bd){bd=d;best=ip;} });
   if (best) { snapHint={...best,type:'intersect'}; return {x:best.x,y:best.y,joined:false}; }
   // 4. on a segment line
-  best=null; bd=SNAP_SEG;
+  best=null; bd=segR;
   wallSegs.forEach(s => { const np=nearestOnSeg(p,s); if(!np) return; const d=Math.hypot(p.x-np.x,p.y-np.y); if (d<bd){bd=d;best=np;} });
   if (best) { snapHint={...best,type:'segment'}; return {x:best.x,y:best.y,joined:false}; }
   // 5. grid + ortho
@@ -222,6 +225,8 @@ function renderWallPanel() {
   el.innerHTML = `
     <div class="panel-title">Smart Wall</div>
     <button class="btn-primary" style="width:100%; padding:9px; margin-bottom:8px;" onclick="setTool('swall')">✏️ Gambar Dinding</button>
+    <button class="floor-act" style="width:100%; padding:9px; margin-bottom:8px; border-color:var(--accent); color:var(--accent);" onclick="wallsFromRooms()">🧱 Buat Dinding dari Ruangan</button>
+    <button class="floor-act" style="width:100%; padding:9px; margin-bottom:8px; border-color:#3ecf8e; color:#3ecf8e;" onclick="doorsFromWalls()">🚪 Pintu Otomatis</button>
     <div class="wall-stat-row">
       <div class="wall-stat"><span class="ws-k">Segmen</span><span class="ws-v">${wallSegs.length}</span></div>
       <div class="wall-stat"><span class="ws-k">Total Panjang</span><span class="ws-v">${totLen.toFixed(1)} m</span></div>
@@ -236,6 +241,73 @@ function renderWallPanel() {
     ${wallSegs.length ? `<button class="floor-act" style="width:100%; margin-top:6px;" onclick="clearWalls()">Hapus Semua Dinding</button>` : ''}
     ${typeof detectedRoomsListHTML==='function' ? detectedRoomsListHTML() : ''}`;
 }
+
+// ---- Buat dinding otomatis mengikuti ruangan yang sudah ditempatkan ----
+function wallsFromRooms() {
+  const rms = activeFloor().rooms;
+  if (!rms.length) { showNotif('⚠️ Belum ada ruangan untuk dibuatkan dinding'); return; }
+  saveSnapshot();
+  const t = currentWallThick();
+  const rd = v => Math.round(v);
+  const key = (a,b) => { const k1=rd(a.x)+','+rd(a.y), k2=rd(b.x)+','+rd(b.y); return k1<k2 ? k1+'|'+k2 : k2+'|'+k1; };
+  const seen = new Set();
+  // hindari duplikat terhadap dinding yang sudah ada
+  wallSegs.forEach(s => seen.add(key(s.a, s.b)));
+  const added = [];
+  rms.forEach(rm => {
+    const c = [{x:rm.x,y:rm.y},{x:rm.x+rm.w,y:rm.y},{x:rm.x+rm.w,y:rm.y+rm.h},{x:rm.x,y:rm.y+rm.h}];
+    for (let i=0;i<4;i++) {
+      const a=c[i], b=c[(i+1)%4];
+      const k=key(a,b);
+      if (seen.has(k)) continue;     // dinding bersama hanya dibuat sekali
+      seen.add(k);
+      added.push({ id: Date.now()+Math.floor(Math.random()*100000)+i, a:{x:a.x,y:a.y}, b:{x:b.x,y:b.y}, t });
+    }
+  });
+  if (!added.length) { showNotif('✓ Dinding sudah sesuai ruangan'); return; }
+  activeFloor().wallSegs = wallSegs = wallSegs.concat(added);
+  // ruangan persegi tetap jadi sumber utama → jangan buat ruang-deteksi yang menumpuk
+  activeFloor().detectedRooms = detectedRooms = [];
+  renderWallPanel(); updateStats(); recalcRAB(); render();
+  showNotif('🧱 ' + added.length + ' dinding dibuat mengikuti ruangan');
+}
+
+// ---- Pintu otomatis: taruh 1 pintu per ruangan pada dinding yang cocok ----
+function doorsFromWalls() {
+  const f = activeFloor();
+  if (!f.wallSegs || !f.wallSegs.length) { showNotif('⚠️ Pasang/buat dinding dulu sebelum pintu otomatis'); return; }
+  if (!f.rooms.length) { showNotif('⚠️ Belum ada ruangan'); return; }
+  saveSnapshot();
+  const rd = v => Math.round(v);
+  const segKey = (a,b) => { const k1=rd(a.x)+','+rd(a.y), k2=rd(b.x)+','+rd(b.y); return k1<k2 ? k1+'|'+k2 : k2+'|'+k1; };
+  const segByKey = {}; f.wallSegs.forEach(s => { segByKey[segKey(s.a,s.b)] = s; });
+  const usedSeg = new Set();
+  f.doors.forEach(d => { if (d.segId != null) usedSeg.add(d.segId); });
+  let added = 0;
+  f.rooms.forEach(rm => {
+    const c = [{x:rm.x,y:rm.y},{x:rm.x+rm.w,y:rm.y},{x:rm.x+rm.w,y:rm.y+rm.h},{x:rm.x,y:rm.y+rm.h}];
+    // prioritas tepi: selatan (depan) → utara → timur → barat
+    const edges = [
+      {a:c[3], b:c[2], len:rm.w}, {a:c[0], b:c[1], len:rm.w},
+      {a:c[1], b:c[2], len:rm.h}, {a:c[3], b:c[0], len:rm.h},
+    ];
+    // jika ruangan ini sudah punya pintu di salah satu dindingnya → lewati (hindari dobel saat dijalankan ulang)
+    const alreadyHasDoor = edges.some(e => { const s = segByKey[segKey(e.a, e.b)]; return s && usedSeg.has(s.id); });
+    if (alreadyHasDoor) return;
+    const width = rm.type==='Garasi' ? 2.4 : (rm.type==='Kamar Mandi' ? 0.7 : 0.9);
+    for (const e of edges) {
+      const s = segByKey[segKey(e.a, e.b)];
+      if (s && !usedSeg.has(s.id) && (e.len/PX_PER_M) >= width + 0.3) {
+        f.doors.push({ id: Date.now()+Math.random(), segId: s.id, pos: 0.5, width });
+        usedSeg.add(s.id); added++; break;
+      }
+    }
+  });
+  if (!added) { showNotif('✓ Pintu sudah terpasang / tidak ada dinding yang cocok'); return; }
+  doors = f.doors; updateStats(); recalcRAB(); render();
+  showNotif('🚪 ' + added + ' pintu otomatis ditambahkan');
+}
+
 function clearWalls() {
   if (!confirm('Hapus semua dinding & ruang terdeteksi di lantai ini?')) return;
   saveSnapshot();

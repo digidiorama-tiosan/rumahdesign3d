@@ -234,6 +234,12 @@ header {
 .room-del:hover { color: var(--accent2); background: rgba(232,82,58,0.1); }
 
 .add-room-row { display: flex; gap: 6px; margin-top: 8px; }
+.add-room-size { display: flex; align-items: center; gap: 6px; margin-top: 7px; font-size: 12px; color: var(--text2); }
+.add-room-size label { flex-shrink: 0; }
+.add-room-size .prop-input { width: 100%; min-width: 0; }
+.add-room-size span { color: var(--text3); }
+.add-room-hint { font-size: 10.5px; color: var(--text3); line-height: 1.5; margin-top: 7px; }
+.add-room-hint b { color: var(--text2); }
 .input-sm, .select-sm {
   background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text);
   font-family: inherit; font-size: 12px; padding: 6px 9px; outline: none; transition: border-color 0.2s;
@@ -745,9 +751,14 @@ header {
    ===================================================================== */
 .m-only { display: none; }
 .m-fab, .m-backdrop, .m-sheet, .m-menu-btn { display: none; }
+.m-undo-wrap { display: none; }
 
 @media (max-width: 860px) {
   .m-only { display: flex; }
+  /* floating Undo/Redo */
+  .m-undo-wrap { display: flex; gap: 8px; position: fixed; left: 12px; bottom: 78px; z-index: 1250; }
+  .m-undo-btn { width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 20px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; }
+  .m-undo-btn:active { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
 
   /* --- HEADER --- */
   header { height: 50px; padding: 0 10px; gap: 8px; }

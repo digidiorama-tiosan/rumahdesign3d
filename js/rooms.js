@@ -6,11 +6,45 @@ function addRoom(type, x, y, w, h) {
   selectRoom(id); updateRoomList(); updateStats(); recalcRAB(); render();
   showNotif(`✅ ${type} ditambahkan`);
 }
+function autoArrangeRooms() {
+  if (!rooms.length) { showNotif('⚠️ Belum ada ruangan untuk diatur'); return; }
+  saveSnapshot();
+  const enabled = siteplan.enabled;
+  const ox = enabled ? siteplan.originX + (siteplan.gsbLeft||0)*PX_PER_M : 80;
+  const oy = enabled ? siteplan.originY + (siteplan.gsbFront||0)*PX_PER_M : 80;
+  const bwpx = (enabled ? Math.max(3, siteplan.landW-(siteplan.gsbLeft||0)-(siteplan.gsbRight||0)) : (siteplan.landW||12)) * PX_PER_M;
+  const bhpx = (enabled ? Math.max(3, siteplan.landH-(siteplan.gsbFront||0)-(siteplan.gsbBack||0)) : (siteplan.landH||18)) * PX_PER_M;
+  // urutkan tinggi-besar dulu untuk shelf-packing rapi
+  const order = rooms.slice().sort((a,b)=> b.h - a.h || b.w - a.w);
+  function pack(scale){
+    let x=0,y=0,rowH=0,maxW=0,pos=[];
+    order.forEach(r=>{
+      const w=r.w*scale, h=r.h*scale;
+      if (x>0 && x+w > bwpx+0.5) { y+=rowH; x=0; rowH=0; }
+      pos.push({r,x,y,w,h}); x+=w; rowH=Math.max(rowH,h); maxW=Math.max(maxW,x);
+    });
+    return {pos, usedW:maxW, usedH:y+rowH};
+  }
+  let p = pack(1);
+  const maxRoomW = Math.max(...order.map(r=>r.w));
+  let scale = Math.min(1, bwpx/maxRoomW, bhpx/p.usedH);
+  if (scale < 1) { p = pack(scale); if (p.usedH>bhpx) { scale *= bhpx/p.usedH; p = pack(scale); } }
+  p.pos.forEach(({r,x,y,w,h})=>{ r.x = Math.round(ox+x); r.y = Math.round(oy+y); r.w = Math.round(w); r.h = Math.round(h); });
+  selectedRoom = null;
+  updateRoomList(); updateStats(); recalcRAB(); renderSelectedRoomProps(); render();
+  showNotif(scale<1 ? '🧩 Ruangan ditata & diskalakan agar muat tanah' : '🧩 Ruangan ditata rapi dalam tanah');
+}
+
 function addRoomFromPanel() {
   const type = document.getElementById('newRoomType').value;
   const sizes = { 'Ruang Tamu':[200,160],'Kamar Tidur':[160,160],'Dapur':[160,120],'Kamar Mandi':[80,80],
                   'Ruang Makan':[160,120],'Garasi':[200,120],'Teras':[200,80],'Gudang':[80,100] };
-  const [dw,dh] = sizes[type] || [160,120];
+  let [dw,dh] = sizes[type] || [160,120];
+  // pakai ukuran manual bila diisi — bebas, tanpa kunci 0,5 m
+  const wIn = parseFloat(document.getElementById('newRoomW')?.value);
+  const hIn = parseFloat(document.getElementById('newRoomH')?.value);
+  if (!isNaN(wIn) && wIn > 0) dw = Math.max(PX_PER_M*0.5, Math.round(wIn*PX_PER_M));
+  if (!isNaN(hIn) && hIn > 0) dh = Math.max(PX_PER_M*0.5, Math.round(hIn*PX_PER_M));
   const offset = rooms.length * 20;
   saveSnapshot();
   addRoom(type, 80+offset, 80+offset, dw, dh);
@@ -40,7 +74,11 @@ function updateRoomList() {
       <span class="room-size">${luas}m²</span>
       <span class="room-del" onclick="event.stopPropagation(); deleteRoom(${r.id})">✕</span>
     </div>`;
-  }).join('');
+  }).join('')
+   + `<button class="floor-act" style="width:100%; margin-top:8px; border-color:#4a9eff; color:#4a9eff;" onclick="autoArrangeRooms()">🧩 Auto Atur Ruangan (sesuai tanah)</button>`
+   + `<button class="floor-act" style="width:100%; margin-top:6px; border-color:var(--accent); color:var(--accent);" onclick="wallsFromRooms()">🧱 Buat Dinding dari Ruangan</button>`
+   + `<button class="floor-act" style="width:100%; margin-top:6px; border-color:#3ecf8e; color:#3ecf8e;" onclick="doorsFromWalls()">🚪 Pintu Otomatis</button>`
+   + `<button class="floor-act" style="width:100%; margin-top:6px; border-color:#a78bfa; color:#c4b5fd;" onclick="addStair()">🪜 Tambah Tangga</button>`;
 }
 
 // ===================== SELECTED ROOM PROPERTIES (editable dims) =====================
@@ -55,9 +93,9 @@ function renderSelectedRoomProps() {
           .map(t => `<option ${t===r.type?'selected':''}>${t}</option>`).join('')}
       </select></div>
     <div class="srp-row"><label>Lebar (m)</label>
-      <input class="prop-input" type="number" step="0.5" min="1" value="${(r.w/PX_PER_M).toFixed(1)}" onchange="setRoomDim(${r.id},'w',this.value)"></div>
+      <input class="prop-input" type="number" step="0.1" min="1" value="${(r.w/PX_PER_M).toFixed(1)}" onchange="setRoomDim(${r.id},'w',this.value)"></div>
     <div class="srp-row"><label>Panjang (m)</label>
-      <input class="prop-input" type="number" step="0.5" min="1" value="${(r.h/PX_PER_M).toFixed(1)}" onchange="setRoomDim(${r.id},'h',this.value)"></div>
+      <input class="prop-input" type="number" step="0.1" min="1" value="${(r.h/PX_PER_M).toFixed(1)}" onchange="setRoomDim(${r.id},'h',this.value)"></div>
     <div class="srp-row"><label>Luas</label>
       <span class="prop-value accent">${((r.w/PX_PER_M)*(r.h/PX_PER_M)).toFixed(1)} m²</span></div>
     <button class="floor-act danger" style="width:100%; margin-top:6px;" onclick="deleteRoom(${r.id})">🗑 Hapus Ruangan</button>`;
@@ -66,7 +104,8 @@ function setRoomType(id, type) { const r = rooms.find(x=>x.id===id); if(!r) retu
 function setRoomDim(id, dim, v) {
   const r = rooms.find(x=>x.id===id); if(!r) return;
   saveSnapshot();
-  const px = Math.max(GRID, Math.round(parseFloat(v)*PX_PER_M / GRID)*GRID);
+  // bebas: tanpa kunci 0,5 m (presisi ~0,05 m)
+  const px = Math.max(PX_PER_M*0.5, Math.round(parseFloat(v)*PX_PER_M));
   r[dim] = px;
   updateRoomList(); updateStats(); recalcRAB(); renderSelectedRoomProps(); render();
 }

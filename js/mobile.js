@@ -135,6 +135,20 @@
     document.body.appendChild(fabT);
     document.body.appendChild(fabP);
 
+    // floating Undo / Redo (mobile) — selalu tampil saat mengedit
+    var undoWrap = document.createElement('div');
+    undoWrap.className = 'm-undo-wrap';
+    undoWrap.innerHTML =
+      '<button class="m-undo-btn" data-uact="undo" title="Urungkan">↩</button>' +
+      '<button class="m-undo-btn" data-uact="redo" title="Ulangi">↪</button>';
+    document.body.appendChild(undoWrap);
+    undoWrap.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-uact]'); if (!b) return;
+      var a = b.getAttribute('data-uact');
+      if (a === 'undo' && typeof undo === 'function') undo();
+      if (a === 'redo' && typeof redo === 'function') redo();
+    });
+
     // header "⋯" button
     var menuBtn = document.createElement('button');
     menuBtn.className = 'm-menu-btn';
@@ -180,6 +194,11 @@
 
   function buildSheetHTML() {
     return '<div class="m-sheet-grip"></div>' +
+      '<div class="m-sheet-grp-label">Edit</div>' +
+      '<div class="m-sheet-grid">' +
+        item('undo', '↩', 'Urungkan') +
+        item('redo', '↪', 'Ulangi') +
+      '</div>' +
       '<div class="m-sheet-grp-label">Proyek</div>' +
       '<div class="m-sheet-grid">' +
         item('new', '🆕', 'Baru') +
@@ -212,6 +231,8 @@
 
   function runAction(act) {
     switch (act) {
+      case 'undo': call('undo'); break;
+      case 'redo': call('redo'); break;
       case 'new': call('newProject'); break;
       case 'save': call('saveProject'); break;
       case 'load': call('loadProject'); break;

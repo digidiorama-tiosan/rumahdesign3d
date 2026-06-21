@@ -73,9 +73,17 @@ function detectRooms() {
 function floorDetectedArea(f) { return (f.detectedRooms||[]).reduce((s,r)=>s+r.area, 0); }
 function floorWallLen(f) { return (f.wallSegs||[]).reduce((s,w)=>s+Math.hypot(w.b.x-w.a.x,w.b.y-w.a.y)/PX_PER_M, 0); }
 
+// detected room dianggap duplikat jika titik tengahnya berada di dalam ruangan persegi (rooms)
+function _detectedIsDup(r) {
+  if (!r || !r.centroid) return false;
+  const rms = (typeof activeFloor==='function' && activeFloor()) ? activeFloor().rooms : (typeof rooms!=='undefined'?rooms:[]);
+  return rms.some(rm => r.centroid.x>=rm.x && r.centroid.x<=rm.x+rm.w && r.centroid.y>=rm.y && r.centroid.y<=rm.y+rm.h);
+}
+
 // ---- render ----
 function drawDetectedRooms(invZ) {
   detectedRooms.forEach(r => {
+    if (_detectedIsDup(r)) return;   // jangan tumpang tindih dengan ruangan asli
     ctx.save();
     ctx.beginPath();
     r.pts.forEach((p,i)=> i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
@@ -94,12 +102,13 @@ function drawDetectedRooms(invZ) {
 
 // ---- panel list (called from wall panel area) ----
 function detectedRoomsListHTML() {
-  if (!detectedRooms.length) return '';
+  const list = detectedRooms.filter(r => !_detectedIsDup(r));
+  if (!list.length) return '';
   return `<div class="panel-title" style="margin-top:12px;">Ruang Terdeteksi</div>` +
-    detectedRooms.map((r,i) => `<div class="room-item" onclick="renameDetected(${i})">
+    list.map((r) => { const i = detectedRooms.indexOf(r); return `<div class="room-item" onclick="renameDetected(${i})">
       <div class="room-dot" style="background:${r.color}"></div>
       <span class="room-name">${r.name||r.type}</span>
-      <span class="room-size">${r.area.toFixed(1)}m²</span></div>`).join('');
+      <span class="room-size">${r.area.toFixed(1)}m²</span></div>`; }).join('');
 }
 function renameDetected(i) {
   const r = detectedRooms[i]; if (!r) return;

@@ -19,7 +19,9 @@ function getPos(e) {
   };
 }
 function snapToGrid(p) {
-  return { x: Math.round(p.x / GRID) * GRID, y: Math.round(p.y / GRID) * GRID };
+  // snap halus 0,1 m (nyaris bebas) — grid visual tetap 2 m
+  const S = PX_PER_M / 10;
+  return { x: Math.round(p.x / S) * S, y: Math.round(p.y / S) * S };
 }
 function getRoomAt(p) {
   for (let i = rooms.length - 1; i >= 0; i--) {
@@ -345,6 +347,24 @@ function drawFurniture(invZ) {
     ctx.lineWidth = (sel ? 2 : 1) * invZ;
     ctx.beginPath(); ctx.roundRect(-rw/2, -rh/2, rw, rh, 3); ctx.fill(); ctx.stroke();
     ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    if (f.defId === 'tangga') {
+      // anak tangga + arah naik
+      ctx.strokeStyle = sel ? '#f5a623' : f.color + 'dd'; ctx.lineWidth = 1 * invZ;
+      const steps = Math.max(3, Math.round(rh / 12));
+      for (let i = 1; i < steps; i++) { const yy = -rh/2 + (rh/steps)*i; ctx.beginPath(); ctx.moveTo(-rw/2, yy); ctx.lineTo(rw/2, yy); ctx.stroke(); }
+      // panah naik (ke atas dalam koordinat lokal = arah -y)
+      ctx.strokeStyle = sel ? '#f5a623' : '#ffffffcc'; ctx.lineWidth = 1.6 * invZ;
+      ctx.beginPath(); ctx.moveTo(0, rh/2 - 4*invZ); ctx.lineTo(0, -rh/2 + 6*invZ);
+      ctx.moveTo(0, -rh/2 + 6*invZ); ctx.lineTo(-4*invZ, -rh/2 + 12*invZ);
+      ctx.moveTo(0, -rh/2 + 6*invZ); ctx.lineTo(4*invZ, -rh/2 + 12*invZ); ctx.stroke();
+      ctx.fillStyle = sel ? '#f5a623' : 'rgba(255,255,255,0.85)';
+      ctx.font = `bold ${Math.min(9, rw/6)}px Plus Jakarta Sans, sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('TANGGA ↑', 0, 0);
+      if (sel) { ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 2 * invZ; ctx.setLineDash([4*invZ, 3*invZ]); ctx.strokeRect(-rw/2 - 4*invZ, -rh/2 - 4*invZ, rw + 8*invZ, rh + 8*invZ); ctx.setLineDash([]); }
+      ctx.restore();
+      return;
+    }
     const iconSize = Math.min(rw, rh) * 0.55;
     ctx.font = `${Math.max(10, Math.min(iconSize, 24))}px serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

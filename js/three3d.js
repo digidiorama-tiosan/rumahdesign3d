@@ -53,6 +53,9 @@ function matRoof(sx, sz) {
 function hasGeometry() { return floors.some(f => f.rooms.length > 0 || (f.wallSegs && f.wallSegs.length > 0)); }
 function open3DModal() {
   if (!hasGeometry()) { showNotif('⚠️ Tambah ruangan / dinding dulu untuk preview 3D!'); return; }
+  if (typeof interiorState !== 'undefined') interiorState.active = false;
+  const ip = document.getElementById('interiorPanel'); if (ip) ip.style.display = 'none';
+  document.getElementById('modal3d').classList.remove('interior-mode');
   document.getElementById('modal3d').classList.add('show');
   setTimeout(init3DScene, 120);
 }
@@ -341,6 +344,25 @@ function buildFloor3D(f, baseY, WALL_H, WALL_T) {
     const fx = ft.x*SCALE - sceneCenter.cx, fz = ft.y*SCALE - sceneCenter.cz;
     const fw = ft.w*SCALE, fh = ft.h*SCALE;
     const def = FURN_LIB.find(fl => fl.id === ft.defId);
+    // ---- TANGGA: bangun anak tangga naik setinggi 1 lantai ----
+    if (ft.defId === 'tangga') {
+      const grp = new THREE.Group();
+      const runLen = fh;                 // panjang tangga (arah naik) di denah
+      const widthX = fw;                 // lebar tangga
+      const N = Math.max(8, Math.round(WALL_H / 0.18));
+      const rise = WALL_H / N, depth = runLen / N;
+      const stepMat = new THREE.MeshStandardMaterial({ color:new THREE.Color(ft.color||'#9aa0aa'), roughness:0.9 });
+      for (let i=0;i<N;i++){
+        const h=(i+1)*rise;
+        const step=new THREE.Mesh(new THREE.BoxGeometry(widthX, h, depth), stepMat);
+        step.position.set(0, baseY + h/2, -runLen/2 + depth*(i+0.5));
+        step.castShadow=true; step.receiveShadow=true; grp.add(step);
+      }
+      grp.position.set(fx+fw/2, 0, fz+fh/2);
+      grp.rotation.y = -ft.rotation*Math.PI/180;
+      add(grp);
+      return;
+    }
     const hM = Math.max(0.05, def && def.hz ? def.hz : (def ? def.h * 0.6 : 0.6));
     const sel = (interiorSelFid===ft.fid);
     const m = new THREE.Mesh(new THREE.BoxGeometry(ft.rotation%180===0?fw:fh, hM, ft.rotation%180===0?fh:fw),
