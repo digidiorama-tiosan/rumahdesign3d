@@ -57,6 +57,11 @@ function initDev3D() {
   window.addEventListener('mousemove', dev3DMove);
   window.addEventListener('mouseup', dev3DUp);
   rend.domElement.addEventListener('wheel', dev3DWheel, { passive:false });
+  // TOUCH (HP/tablet): 1 jari orbit, 2 jari cubit zoom + geser
+  rend.domElement.addEventListener('touchstart', dev3DTouchStart, { passive:false });
+  rend.domElement.addEventListener('touchmove', dev3DTouchMove, { passive:false });
+  rend.domElement.addEventListener('touchend', dev3DTouchEnd, { passive:false });
+  rend.domElement.addEventListener('touchcancel', dev3DTouchEnd, { passive:false });
   window.addEventListener('resize', dev3DResize);
 
   resetDev3DCamera();
@@ -298,6 +303,38 @@ function dev3DMove(e){
   if (o.pan){ const sp=o.radius*0.0022, t=o.theta*Math.PI/180; o.tx-=(Math.cos(t)*dx-Math.sin(t)*dy)*sp; o.tz+=(Math.sin(t)*dx+Math.cos(t)*dy)*sp; updateDev3DCam(); }
 }
 function dev3DWheel(e){ e.preventDefault(); dv3.orbit.radius=Math.max(12,Math.min(400,dv3.orbit.radius+e.deltaY*0.06)); updateDev3DCam(); }
+
+// ---- touch controls (HP/tablet) ----
+let dvTouch = { mode:null, lx:0, ly:0, lastDist:0, lmx:0, lmy:0 };
+function _dvDist(t){ return Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY); }
+function dev3DTouchStart(e){
+  if(!dv3.renderer) return; e.preventDefault();
+  const t=e.touches;
+  if(t.length===1){ dvTouch.mode='one'; dvTouch.lx=t[0].clientX; dvTouch.ly=t[0].clientY; }
+  else if(t.length>=2){ dvTouch.mode='two'; dvTouch.lastDist=_dvDist(t); dvTouch.lmx=(t[0].clientX+t[1].clientX)/2; dvTouch.lmy=(t[0].clientY+t[1].clientY)/2; }
+}
+function dev3DTouchMove(e){
+  if(!dv3.renderer) return; e.preventDefault();
+  const t=e.touches, o=dv3.orbit;
+  if(dvTouch.mode==='one' && t.length===1){
+    const dx=t[0].clientX-dvTouch.lx, dy=t[0].clientY-dvTouch.ly; dvTouch.lx=t[0].clientX; dvTouch.ly=t[0].clientY;
+    o.theta-=dx*0.4; o.phi=Math.max(8,Math.min(85,o.phi+dy*0.4)); updateDev3DCam();
+  } else if(dvTouch.mode==='two' && t.length>=2){
+    const dist=_dvDist(t);
+    if(dvTouch.lastDist>0){ o.radius=Math.max(12,Math.min(400, o.radius*(dvTouch.lastDist/dist))); }
+    dvTouch.lastDist=dist;
+    const mx=(t[0].clientX+t[1].clientX)/2, my=(t[0].clientY+t[1].clientY)/2;
+    const pdx=mx-dvTouch.lmx, pdy=my-dvTouch.lmy; dvTouch.lmx=mx; dvTouch.lmy=my;
+    const sp=o.radius*0.0022, th=o.theta*Math.PI/180;
+    o.tx-=(Math.cos(th)*pdx-Math.sin(th)*pdy)*sp; o.tz+=(Math.sin(th)*pdx+Math.cos(th)*pdy)*sp;
+    updateDev3DCam();
+  }
+}
+function dev3DTouchEnd(e){
+  const t=e.touches;
+  if(t.length===0) dvTouch.mode=null;
+  else if(t.length===1){ dvTouch.mode='one'; dvTouch.lx=t[0].clientX; dvTouch.ly=t[0].clientY; }
+}
 function dev3DResize(){
   if (!dv3.renderer) return;
   const cont=document.getElementById('dev3d-canvas-container'); if(!cont) return;

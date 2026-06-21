@@ -350,14 +350,14 @@ header {
 .modal-close:hover { border-color: var(--accent2); color: var(--accent2); }
 #view3d { flex: 1; position: relative; overflow: hidden; }
 #three-canvas-container { width: 100%; height: 100%; }
-#three-canvas-container canvas { display: block; }
+#three-canvas-container canvas { display: block; touch-action: none; }
 #view3d-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); background: rgba(13,15,20,0.82); border: 1px solid var(--border); border-radius: 8px; padding: 7px 14px; font-size: 11px; color: var(--text2); white-space: nowrap; pointer-events: none; }
 #view3d-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); font-size: 14px; color: var(--text2); }
 
 /* DEV SITEPLAN 3D */
 #dev3dView { flex: 1; position: relative; overflow: hidden; }
 #dev3d-canvas-container { width: 100%; height: 100%; }
-#dev3d-canvas-container canvas { display: block; }
+#dev3d-canvas-container canvas { display: block; touch-action: none; }
 #dev3d-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); background: rgba(13,15,20,0.82); border: 1px solid var(--border); border-radius: 8px; padding: 7px 14px; font-size: 11px; color: var(--text2); white-space: nowrap; pointer-events: none; }
 #dev3d-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); font-size: 14px; color: var(--text2); }
 

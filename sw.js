@@ -5,12 +5,12 @@
 //   Cross-origin CDN (three.js / jspdf / supabase / fonts): cache-on-success.
 //   Bump CACHE_VERSION whenever you ship changes to force a refresh.
 // =====================================================================
-const CACHE_VERSION = 'rd3d-v9';
+const CACHE_VERSION = 'rd3d-v10';
 const CORE = [
   './',
   './Floor%20Planner%202.0.html',
   './Akun.html',
-  './styles.css?v=13',
+  './styles.css?v=14',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

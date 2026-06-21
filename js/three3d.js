@@ -115,6 +115,11 @@ function init3DScene() {
   window.addEventListener('mousemove', on3DMouseMove);
   window.addEventListener('mouseup', on3DMouseUp);
   threeRenderer.domElement.addEventListener('wheel', on3DWheel, { passive:false });
+  // --- TOUCH (HP / tablet): 1 jari = orbit/look, 2 jari = cubit zoom + geser ---
+  threeRenderer.domElement.addEventListener('touchstart', on3DTouchStart, { passive:false });
+  threeRenderer.domElement.addEventListener('touchmove', on3DTouchMove, { passive:false });
+  threeRenderer.domElement.addEventListener('touchend', on3DTouchEnd, { passive:false });
+  threeRenderer.domElement.addEventListener('touchcancel', on3DTouchEnd, { passive:false });
 
   document.getElementById('view3d-loading').style.display = 'none';
   let _last = performance.now();
@@ -527,6 +532,63 @@ function on3DMouseMove(e){
     orbitState.targetX-=(Math.cos(t)*dx-Math.sin(t)*dy)*sp; orbitState.targetZ+=(Math.sin(t)*dx+Math.cos(t)*dy)*sp; updateCameraPosition(); }
 }
 function on3DWheel(e){ if(nav3dMode!=='orbit') return; e.preventDefault(); orbitState.radius=Math.max(3,Math.min(90,orbitState.radius+e.deltaY*0.02)); updateCameraPosition(); }
+
+// ===================== TOUCH CONTROLS (HP / tablet) =====================
+let touch3D = { mode:null, lastX:0, lastY:0, lastDist:0, lastMidX:0, lastMidY:0 };
+function _t3dDist(t){ const dx=t[0].clientX-t[1].clientX, dy=t[0].clientY-t[1].clientY; return Math.hypot(dx,dy); }
+function on3DTouchStart(e){
+  if(!threeRenderer) return;
+  e.preventDefault();
+  const t=e.touches;
+  if(t.length===1){
+    touch3D.mode='one'; touch3D.lastX=t[0].clientX; touch3D.lastY=t[0].clientY;
+  } else if(t.length>=2){
+    touch3D.mode='two';
+    touch3D.lastDist=_t3dDist(t);
+    touch3D.lastMidX=(t[0].clientX+t[1].clientX)/2;
+    touch3D.lastMidY=(t[0].clientY+t[1].clientY)/2;
+  }
+}
+function on3DTouchMove(e){
+  if(!threeRenderer) return;
+  e.preventDefault();
+  const t=e.touches;
+  if(touch3D.mode==='one' && t.length===1){
+    const dx=t[0].clientX-touch3D.lastX, dy=t[0].clientY-touch3D.lastY;
+    touch3D.lastX=t[0].clientX; touch3D.lastY=t[0].clientY;
+    if(nav3dMode==='walk'){
+      // 1 jari = melihat-lihat (look)
+      walkState.targetYaw   -= dx*0.005;
+      walkState.targetPitch  = Math.max(-1.2, Math.min(1.2, walkState.targetPitch - dy*0.005));
+    } else {
+      orbitState.theta -= dx*0.4;
+      orbitState.phi    = Math.max(6, Math.min(88, orbitState.phi + dy*0.4));
+      updateCameraPosition();
+    }
+  } else if(touch3D.mode==='two' && t.length>=2){
+    if(nav3dMode!=='orbit') return;
+    // cubit = zoom
+    const dist=_t3dDist(t);
+    if(touch3D.lastDist>0){
+      const scale=touch3D.lastDist/dist;
+      orbitState.radius=Math.max(3, Math.min(90, orbitState.radius*scale));
+    }
+    touch3D.lastDist=dist;
+    // geser 2 jari = pan target
+    const midX=(t[0].clientX+t[1].clientX)/2, midY=(t[0].clientY+t[1].clientY)/2;
+    const pdx=midX-touch3D.lastMidX, pdy=midY-touch3D.lastMidY;
+    touch3D.lastMidX=midX; touch3D.lastMidY=midY;
+    const sp=orbitState.radius*0.003, th=orbitState.theta*Math.PI/180;
+    orbitState.targetX-=(Math.cos(th)*pdx-Math.sin(th)*pdy)*sp;
+    orbitState.targetZ+=(Math.sin(th)*pdx+Math.cos(th)*pdy)*sp;
+    updateCameraPosition();
+  }
+}
+function on3DTouchEnd(e){
+  const t=e.touches;
+  if(t.length===0){ touch3D.mode=null; }
+  else if(t.length===1){ touch3D.mode='one'; touch3D.lastX=t[0].clientX; touch3D.lastY=t[0].clientY; }
+}
 
 function toggle3DWireframe(){ wireframeMode=!wireframeMode; flagBtn('btn3dWireframe', wireframeMode); build3DScene(); }
 function toggle3DRoof(){ showRoof=!showRoof; flagBtn('btn3dRoof', showRoof); build3DScene(); }
