@@ -144,7 +144,7 @@ tbody tr:hover{background:var(--surface2);}
       <table>
         <thead>
           <tr>
-            <th>User</th><th>Peran</th><th>Paket</th><th>Proyek</th><th>Daftar</th><th>Aksi</th>
+            <th>User</th><th>Peran</th><th>Paket</th><th>Proyek</th><th>Daftar</th><th>Expired</th><th>Aksi</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -278,6 +278,18 @@ function renderRows(){
       <td><span class="pill ${u.projects?'pro':'free'}">${u.projects}</span></td>
       <td style="color:var(--text3);font-size:12px;white-space:nowrap;">${dateStr}</td>
       <td>
+        ${(()=>{
+          const exp=u.expires_at?new Date(u.expires_at):null;
+          if(!exp||u.plan==='free')return '<span style="color:var(--text3);font-size:12px;">—</span>';
+          const days=Math.ceil((exp-new Date())/(1000*60*60*24));
+          const color=days>7?'#3ecf8e':days>0?'#f5a623':'#e8523a';
+          const label=days>0?days+'h lagi':'Expired';
+          return `<div style="font-size:11px;color:${color};font-weight:700;">${label}</div>
+                  <div style="font-size:10px;color:var(--text3);">${exp.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})}</div>
+                  <button class="mini" style="margin-top:3px;font-size:10px;padding:2px 6px;" onclick="extendPlan('${u.id}')">+30h</button>`;
+        })()}
+      </td>
+      <td>
         <div class="act-btns">
           ${me?'' : `<button class="mini" onclick="toggleActive('${u.id}',${active})">${active?'Nonaktifkan':'Aktifkan'}</button>
           <button class="mini danger" onclick="delUser('${u.id}','${esc(u.email)}')">Hapus</button>
@@ -288,6 +300,15 @@ function renderRows(){
   }).join('');
 }
 
+async function extendPlan(id){
+  const u=_users.find(x=>x.id===id);if(!u)return;
+  try{
+    const newExp=await Cloud.adminExtendPlan(id,1);
+    u.expires_at=newExp.toISOString();
+    renderRows();
+    toast('✅ Diperpanjang 30 hari — '+(u.name||u.email));
+  }catch(e){toast('Gagal: '+e.message);}
+}
 const _pending={};
 function stagePlan(id,plan){
   const si=document.getElementById('search');if(si&&si.value)si.value='';
