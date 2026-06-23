@@ -46,6 +46,7 @@ const PaymentProvider={
       headers: {
         'Content-Type': 'application/json',
         'apikey': typeof window.SUPABASE_ANON_KEY !== 'undefined' ? window.SUPABASE_ANON_KEY : '',
+        'Authorization': 'Bearer ' + (typeof window.SUPABASE_ANON_KEY !== 'undefined' ? window.SUPABASE_ANON_KEY : ''),
       },
       body: JSON.stringify({
         orderId,
