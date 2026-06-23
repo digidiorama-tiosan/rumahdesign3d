@@ -238,7 +238,6 @@ window.wzApply=function(){
     var def=FLib.find(function(f){return f.id===item.id;});if(!def)return;
     var fx=r.x+item.x*r.w;
     var fy=r.y+item.y*r.h;
-    // Clamp inside room
     fx=Math.max(r.x+4,Math.min(r.x+r.w-def.w*PX-4,fx));
     fy=Math.max(r.y+4,Math.min(r.y+r.h-def.h*PX-4,fy));
     furnitures.push({fid:Date.now()+Math.random()+added,defId:def.id,name:def.name,icon:def.icon,x:fx,y:fy,w:def.w*PX,h:def.h*PX,color:def.color,rotation:0});
@@ -247,6 +246,8 @@ window.wzApply=function(){
   if(typeof activeFloor==='function')activeFloor().furnitures=furnitures;
   if(typeof updateStats==='function')updateStats();
   if(typeof recalcRAB==='function')recalcRAB();
+  // Force rebuild 3D jika interior terbuka
+  if(typeof rebuild3DIfOpen==='function')rebuild3DIfOpen();
   if(typeof render==='function')render();
   document.getElementById('furnWizardModal').remove();
   if(typeof showNotif==='function')showNotif('✅ '+added+' furnitur ditambahkan ('+_wStyle+')');
