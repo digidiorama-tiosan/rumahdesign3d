@@ -11,6 +11,8 @@ window.openInterior3D=function(roomId){
 };
 window.destroyInterior3D=function(){
   if(!i3d)return;
+  _saveFurnToMain();
+  if(i3d.tourFrame)cancelAnimationFrame(i3d.tourFrame);
   if(i3d.animFrame)cancelAnimationFrame(i3d.animFrame);
   if(i3d.renderer)i3d.renderer.dispose();
   window.removeEventListener('resize',_onResize);
@@ -39,6 +41,7 @@ function _buildOverlay(room){
       '<button class="i3b" onclick="i3dSetCamera(\'top\')">⬆ Atas</button>'+
       '<button class="i3b" onclick="i3dSetCamera(\'front\')">⬛ Depan</button>'+
       '<button class="i3b" onclick="i3dToggleCeiling()">🏠 Plafon</button>'+
+      '<button class="i3b" id="i3tbtn" onclick="i3dStartTour()" style="background:#3ecf8e;border-color:#3ecf8e;color:#000;">🚶 Tur Ruangan</button>'+
       '<button class="i3b" onclick="i3dScreenshot()">📸 Foto</button>'+
     '</div>'+
     '<div style="display:flex;flex:1;overflow:hidden;">'+
@@ -291,6 +294,84 @@ window.i3dToggleCeiling=function(){
     i3d.scene.add(cm);
   }
 };
+// ── Tour ────────────────────────────────────────────────
+window.i3dStartTour=function(){
+  if(!i3d)return;
+  if(i3d.touring){_stopTour();return;}
+  i3d.touring=true;
+  i3d.viewMode='fps';
+  var btn=document.getElementById('i3tbtn');
+  if(btn){btn.textContent='⏹ Stop Tur';btn.style.background='#e8523a';btn.style.borderColor='#e8523a';}
+  _hint('🚶 Tur berjalan — klik Stop Tur untuk berhenti');
+  // Build waypoints along room perimeter at eye level
+  var {rw,rd,wh}=i3d;
+  var margin=0.7, eyeH=1.6;
+  var pts=[
+    {x:margin,       y:eyeH,z:margin,       lx:rw/2,ly:eyeH*0.7,lz:rd/2},
+    {x:rw-margin,    y:eyeH,z:margin,       lx:rw/2,ly:eyeH*0.7,lz:rd/2},
+    {x:rw-margin,    y:eyeH,z:rd/2,         lx:rw/2,ly:eyeH*0.7,lz:rd/2},
+    {x:rw-margin,    y:eyeH,z:rd-margin,    lx:rw/2,ly:eyeH*0.7,lz:rd/2},
+    {x:rw/2,         y:eyeH,z:rd-margin,    lx:rw/2,ly:eyeH*0.7,lz:rd/4},
+    {x:margin,       y:eyeH,z:rd-margin,    lx:rw/2,ly:eyeH*0.7,lz:rd/2},
+    {x:margin,       y:eyeH,z:rd/2,         lx:rw/2,ly:eyeH*0.7,lz:rd/2},
+    {x:margin,       y:eyeH,z:margin,       lx:rw/2,ly:eyeH*0.7,lz:rd/2},
+  ];
+  i3d.tourPts=pts;i3d.tourSeg=0;i3d.tourT=0;
+  i3d.camera.position.set(pts[0].x,pts[0].y,pts[0].z);
+  i3d.camera.lookAt(pts[0].lx,pts[0].ly,pts[0].lz);
+  _tourStep();
+};
+function _stopTour(){
+  if(i3d.tourFrame)cancelAnimationFrame(i3d.tourFrame);
+  i3d.touring=false;
+  var btn=document.getElementById('i3tbtn');
+  if(btn){btn.textContent='🚶 Tur Ruangan';btn.style.background='#3ecf8e';btn.style.borderColor='#3ecf8e';btn.style.color='#000';}
+  _hint('Tur selesai. Klik furnitur di katalog untuk melanjutkan.');
+}
+function _tourStep(){
+  if(!i3d||!i3d.touring)return;
+  var pts=i3d.tourPts,seg=i3d.tourSeg;
+  if(seg>=pts.length-1){_stopTour();return;}
+  var a=pts[seg],b=pts[seg+1];
+  var dur=120; // frames per segment
+  i3d.tourT=(i3d.tourT||0)+1;
+  var t=Math.min(i3d.tourT/dur,1);
+  var ease=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  i3d.camera.position.set(
+    a.x+(b.x-a.x)*ease,
+    a.y+(b.y-a.y)*ease,
+    a.z+(b.z-a.z)*ease);
+  var lx=a.lx+(b.lx-a.lx)*ease,ly=a.ly+(b.ly-a.ly)*ease,lz=a.lz+(b.lz-a.lz)*ease;
+  i3d.camera.lookAt(lx,ly,lz);
+  if(t>=1){i3d.tourSeg++;i3d.tourT=0;}
+  i3d.tourFrame=requestAnimationFrame(_tourStep);
+}
+
+// ── Save to main furnitures[] ──────────────────────────────
+function _saveFurnToMain(){
+  if(!i3d||typeof furnitures==='undefined'||typeof FURN_LIB==='undefined')return;
+  var room=i3d.room;
+  var PX=typeof PX_PER_M!=='undefined'?PX_PER_M:20;
+  // Remove existing furnitures that were inside this room
+  var inside=furnitures.filter(function(f){
+    var cx=f.x+f.w/2,cy=f.y+f.h/2;
+    return cx>=room.x&&cx<=room.x+room.w&&cy>=room.y&&cy<=room.y+room.h;
+  });
+  inside.forEach(function(f){var idx=furnitures.indexOf(f);if(idx>-1)furnitures.splice(idx,1);});
+  // Add current 3D objects back to main furnitures
+  i3d.furnObjs.forEach(function(obj){
+    var def=FURN_LIB.find(function(d){return d.id===obj.userData.defId;});
+    if(!def)return;
+    var wx=room.x+obj.position.x*PX;
+    var wy=room.y+obj.position.z*PX;
+    furnitures.push({fid:Date.now()+Math.random(),defId:def.id,name:def.name,icon:def.icon,
+      x:wx,y:wy,w:def.w*PX,h:def.h*PX,color:def.color,rotation:Math.round(obj.rotation.y*180/Math.PI)});
+  });
+  if(typeof activeFloor==='function')activeFloor().furnitures=furnitures;
+  if(typeof render==='function')render();
+  if(typeof showNotif==='function'&&i3d.furnObjs.length)showNotif('💾 '+i3d.furnObjs.length+' furnitur disimpan ke denah');
+}
+
 window.i3dScreenshot=function(){
   i3d.renderer.render(i3d.scene,i3d.camera);
   var a=document.createElement('a');a.href=i3d.canvas.toDataURL('image/png');a.download='interior3d.png';a.click();
