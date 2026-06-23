@@ -109,7 +109,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
       <button class="btn-google" onclick="demoLogin('Google')"><span>🔵</span> Lanjut dengan Google</button>
       <div class="divider">atau email</div>
       <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="nama@email.com"></div>
-      <div class="field"><label>Kata sandi <a class="forgot" href="#" onclick="alert('Demo: tautan reset password akan dikirim ke email');return false;">Lupa?</a></label><input type="password" id="loginPass" placeholder="••••••••"></div>
+      <div class="field"><label>Kata sandi <a class="forgot" href="#" onclick="sendResetPassword();return false;">Lupa?</a></label><input type="password" id="loginPass" placeholder="••••••••"></div>
       <button class="btn-primary" onclick="demoLogin()">Masuk</button>
       <div class="auth-foot">Belum punya akun? <a href="#" onclick="showAuth('register');return false;">Daftar gratis</a></div>
     </div>
@@ -221,6 +221,16 @@ if (CLOUD_ON) {
   Cloud.onChange(user => { if (user) enterDashboard(Cloud.displayName(), user.email); });
 }
 
+async function sendResetPassword(){
+  const email=(document.getElementById('loginEmail').value||'').trim();
+  if(!email){alert('Isi email dulu sebelum klik Lupa.');return;}
+  const CLOUD_ON=typeof Cloud!=='undefined'&&Cloud.enabled;
+  if(!CLOUD_ON){alert('Demo: tautan reset akan dikirim ke '+email);return;}
+  try{
+    await Cloud.resetPassword(email);
+    alert('✅ Email reset password sudah dikirim ke '+email+'\nCek inbox/spam Anda.');
+  }catch(e){alert('Gagal: '+e.message);}
+}
 async function demoLogin(provider){
   if (CLOUD_ON && provider === 'Google') { try { await Cloud.signInWithGoogle(); } catch(e){ alert('Login Google gagal: '+e.message); } return; }
   if (CLOUD_ON) {
@@ -307,6 +317,52 @@ async function demoLogout(){
   document.getElementById('dashboard').classList.add('hidden');
   document.getElementById('authCard').classList.remove('hidden');
   showAuth('login');
+}
+
+// ── Password Reset Handler ─────────────────────────────────
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  const hash = window.location.hash;
+  if (params.get('reset') === '1' || hash.includes('type=recovery')) {
+    // Show reset password modal
+    setTimeout(() => {
+      const modal = document.createElement('div');
+      modal.id = 'resetModal';
+      modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;';
+      modal.innerHTML = `
+        <div style="background:#161925;border:1px solid #2a2d3e;border-radius:16px;padding:36px;max-width:380px;width:90%;text-align:center;">
+          <div style="font-size:36px;margin-bottom:12px;">🔑</div>
+          <h3 style="font-size:18px;font-weight:800;margin-bottom:8px;color:#e8eaf2;">Buat Password Baru</h3>
+          <p style="color:#9aa0b8;font-size:13px;margin-bottom:20px;">Masukkan password baru Anda.</p>
+          <input id="newPassInput" type="password" placeholder="Password baru (min. 8 karakter)"
+            style="width:100%;padding:12px;background:#0d0f14;border:1px solid #2a2d3e;border-radius:8px;color:#e8eaf2;font-size:14px;margin-bottom:10px;box-sizing:border-box;">
+          <input id="newPassConfirm" type="password" placeholder="Ulangi password baru"
+            style="width:100%;padding:12px;background:#0d0f14;border:1px solid #2a2d3e;border-radius:8px;color:#e8eaf2;font-size:14px;margin-bottom:16px;box-sizing:border-box;">
+          <button onclick="doResetPassword()" style="width:100%;padding:13px;background:linear-gradient(135deg,#f5a623,#ff6b35);border:none;color:#000;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;">Simpan Password Baru</button>
+          <div id="resetMsg" style="font-size:12px;color:#9aa0b8;margin-top:6px;"></div>
+        </div>`;
+      document.body.appendChild(modal);
+    }, 800);
+  }
+})();
+
+async function doResetPassword() {
+  const pass = document.getElementById('newPassInput').value;
+  const conf = document.getElementById('newPassConfirm').value;
+  const msg  = document.getElementById('resetMsg');
+  if (pass.length < 8) { msg.textContent = '⚠️ Password minimal 8 karakter'; msg.style.color='#f5a623'; return; }
+  if (pass !== conf)   { msg.textContent = '⚠️ Password tidak cocok'; msg.style.color='#f5a623'; return; }
+  try {
+    if (!Cloud.sb) throw new Error('Cloud tidak aktif');
+    const { error } = await Cloud.sb.auth.updateUser({ password: pass });
+    if (error) throw error;
+    msg.textContent = '✅ Password berhasil diubah! Silakan login.';
+    msg.style.color = '#3ecf8e';
+    setTimeout(() => {
+      document.getElementById('resetModal')?.remove();
+      window.history.replaceState({}, '', 'Akun.html');
+    }, 2000);
+  } catch(e) { msg.textContent = '❌ Gagal: ' + e.message; msg.style.color = '#e8523a'; }
 }
 </script>
 </body>
