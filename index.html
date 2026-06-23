@@ -547,7 +547,7 @@ footer {
     <div class="price-card popular reveal">
       <div class="popular-badge">⭐ Paling Populer</div>
       <div class="price-plan">⭐ Pro</div>
-      <div class="price-amount">Rp 99rb<span> / bulan</span></div>
+      <div class="price-amount">Rp 25rb<span> / bulan</span></div>
       <div class="price-desc">Untuk arsitek, drafter & kontraktor</div>
       <hr class="price-divider">
       <ul class="price-features">
@@ -564,7 +564,7 @@ footer {
     </div>
     <div class="price-card reveal">
       <div class="price-plan">👑 Developer</div>
-      <div class="price-amount">Rp 299rb<span> / bulan</span></div>
+      <div class="price-amount">Rp 50rb<span> / bulan</span></div>
       <div class="price-desc">Untuk developer perumahan</div>
       <hr class="price-divider">
       <ul class="price-features">
@@ -581,7 +581,7 @@ footer {
     </div>
   </div>
   <p style="text-align:center;margin-top:24px;font-size:13px;color:var(--text3);">
-    AI Render tambahan: <strong style="color:var(--accent);">Rp 5.000 / render</strong> · Pembayaran via QRIS, Transfer Bank, e-Wallet
+    AI Render tambahan: <strong style="color:var(--accent);">Rp 2.000 / render</strong> · Pembayaran via QRIS, Transfer Bank, e-Wallet
   </p>
 </section>
 
@@ -698,8 +698,8 @@ function toggleFaq(btn) {
 function openUpgrade(plan) {
   const modal = document.getElementById('upgradeModal');
   const plans = {
-    pro: { icon: '⭐', title: 'Upgrade ke Pro', desc: 'Rp 99.000/bulan — Multi-lantai, AI Render, ekspor DXF, RAB lengkap & lebih banyak lagi.', link: 'Akun.html?upgrade=pro' },
-    dev: { icon: '👑', title: 'Upgrade ke Developer', desc: 'Rp 299.000/bulan — Semua fitur Pro + Developer Mode, Siteplan otomatis, Marketplace Template.', link: 'Akun.html?upgrade=dev' }
+    pro: { icon: '⭐', title: 'Upgrade ke Pro', desc: 'Rp 25.000/bulan — Multi-lantai, AI Render, ekspor DXF, RAB lengkap & lebih banyak lagi.', link: 'Akun.html?upgrade=pro' },
+    dev: { icon: '👑', title: 'Upgrade ke Developer', desc: 'Rp 50.000/bulan — Semua fitur Pro + Developer Mode, Siteplan otomatis, Marketplace Template.', link: 'Akun.html?upgrade=dev' }
   };
   const p = plans[plan] || plans.pro;
   document.getElementById('upgradeIcon').textContent = p.icon;

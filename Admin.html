@@ -151,6 +151,29 @@ tbody tr:hover{background:var(--surface2);}
       </table>
     </div>
 
+    <!-- ── PENGATURAN HARGA ── -->
+    <div class="tools" style="margin-top:32px;">
+      <h1>💰 Pengaturan Harga</h1>
+    </div>
+    <div class="tbl-wrap" style="padding:24px;margin-bottom:8px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:20px;">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">⭐ Harga Pro (Rp/bulan)</label>
+          <input id="priceProInput" type="number" min="0" step="1000" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;font-weight:700;">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">👑 Harga Developer (Rp/bulan)</label>
+          <input id="priceDevInput" type="number" min="0" step="1000" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;font-weight:700;">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">✨ AI Render per render (Rp)</label>
+          <input id="priceRenderInput" type="number" min="0" step="500" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;font-weight:700;">
+        </div>
+      </div>
+      <button onclick="savePrices()" style="background:linear-gradient(135deg,#f5a623,#ff6b35);border:none;color:#000;font-size:13px;font-weight:700;padding:10px 24px;border-radius:8px;cursor:pointer;">💾 Simpan Harga</button>
+      <span id="priceSaveStatus" style="margin-left:12px;font-size:12px;color:var(--text3);"></span>
+    </div>
+
     <div class="note">
       💡 <b>Cara kerja:</b> User mendaftar sendiri lewat halaman Akun, lalu muncul di sini.
       Anda bisa mengubah <b>Peran</b> (jadikan admin), <b>Paket</b> (upgrade manual ke Pro/Developer),
@@ -281,6 +304,34 @@ async function delUser(id, email){
 }
 
 boot();
+
+// ── Harga ──────────────────────────────────────────────────
+const PRICE_KEY = 'rumah3d_admin_prices';
+const DEFAULT_PRICES = { pro: 25000, dev: 50000, render: 2000 };
+
+function loadPriceInputs() {
+  const saved = JSON.parse(localStorage.getItem(PRICE_KEY) || 'null') || DEFAULT_PRICES;
+  document.getElementById('priceProInput').value    = saved.pro;
+  document.getElementById('priceDevInput').value    = saved.dev;
+  document.getElementById('priceRenderInput').value = saved.render;
+}
+
+function savePrices() {
+  const prices = {
+    pro:    parseInt(document.getElementById('priceProInput').value)    || DEFAULT_PRICES.pro,
+    dev:    parseInt(document.getElementById('priceDevInput').value)    || DEFAULT_PRICES.dev,
+    render: parseInt(document.getElementById('priceRenderInput').value) || DEFAULT_PRICES.render,
+  };
+  localStorage.setItem(PRICE_KEY, JSON.stringify(prices));
+  const el = document.getElementById('priceSaveStatus');
+  el.textContent = '✅ Tersimpan!';
+  el.style.color = 'var(--green)';
+  setTimeout(() => { el.textContent = ''; }, 2500);
+  toast('Harga berhasil diperbarui');
+}
+
+// Load harga saat panel terbuka
+document.addEventListener('DOMContentLoaded', () => setTimeout(loadPriceInputs, 500));
 
 // ---- OpenAI key (admin) ----
 async function loadKeyStatus(){
