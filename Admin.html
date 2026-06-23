@@ -254,7 +254,7 @@ function renderRows(){
     const me = u.id === _meId;
     const active = u.active !== false;
     const dateStr = u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) : '–';
-    return `<tr style="${active?'':'opacity:.55;'}">
+    return `<tr data-uid="${u.id}" style="${active?'':'opacity:.55;'}">
       <td>
         <div class="u-name">${esc(u.name||'(tanpa nama)')}${me?'<span class="you">(Anda)</span>':''}</div>
         <div class="u-email">${esc(u.email||'')}</div>
@@ -268,9 +268,9 @@ function renderRows(){
       </td>
       <td>
         <div style="display:flex;gap:4px;flex-wrap:wrap;">
-          <button onclick="setPlan('${u.id}','free')" style="padding:4px 8px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${u.plan==='free'?'#8b8fa8':'#2a2d3e'};background:${u.plan==='free'?'#252836':'transparent'};color:${u.plan==='free'?'#e2e8f0':'#5a607a'};">🆓 Free</button>
-          <button onclick="setPlan('${u.id}','pro')" style="padding:4px 8px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${u.plan==='pro'?'#f5a623':'#2a2d3e'};background:${u.plan==='pro'?'rgba(245,166,35,.15)':'transparent'};color:${u.plan==='pro'?'#f5a623':'#5a607a'};">⭐ Pro</button>
-          <button onclick="setPlan('${u.id}','dev')" style="padding:4px 8px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${u.plan==='dev'?'#a78bfa':'#2a2d3e'};background:${u.plan==='dev'?'rgba(167,139,250,.15)':'transparent'};color:${u.plan==='dev'?'#a78bfa':'#5a607a'};">👑 Dev</button>
+          <button data-plan="free" onclick="stagePlan('${u.id}','free')" class="plan-btn" style="padding:4px 8px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${u.plan==='free'?'#8b8fa8':'#2a2d3e'};background:${u.plan==='free'?'rgba(139,143,168,.15)':'transparent'};color:${u.plan==='free'?'#8b8fa8':'#5a607a'};">🆓 Free</button>
+          <button data-plan="pro" onclick="stagePlan('${u.id}','pro')" class="plan-btn" style="padding:4px 8px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${u.plan==='pro'?'#f5a623':'#2a2d3e'};background:${u.plan==='pro'?'rgba(245,166,35,.15)':'transparent'};color:${u.plan==='pro'?'#f5a623':'#5a607a'};">⭐ Pro</button>
+          <button data-plan="dev" onclick="stagePlan('${u.id}','dev')" class="plan-btn" style="padding:4px 8px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${u.plan==='dev'?'#a78bfa':'#2a2d3e'};background:${u.plan==='dev'?'rgba(167,139,250,.15)':'transparent'};color:${u.plan==='dev'?'#a78bfa':'#5a607a'};">👑 Dev</button>
         </div>
       </td>
       <td><span class="pill ${u.projects?'pro':'free'}">${u.projects}</span></td>
@@ -278,20 +278,66 @@ function renderRows(){
       <td>
         <div class="act-btns">
           ${me?'' : `<button class="mini" onclick="toggleActive('${u.id}',${active})">${active?'Nonaktifkan':'Aktifkan'}</button>
-          <button class="mini danger" onclick="delUser('${u.id}','${esc(u.email)}')">Hapus</button>`}
+          <button class="mini danger" onclick="delUser('${u.id}','${esc(u.email)}')">Hapus</button>
+          <button class="mini" id="savebtn_${u.id}" style="display:none;background:#3ecf8e;color:#000;border-color:#3ecf8e;" onclick="savePlanRole('${u.id}')">💾 Simpan</button>`}
         </div>
       </td>
     </tr>`;
   }).join('');
 }
 
+const _pending={};
+function stagePlan(id,plan){
+  if(!_pending[id])_pending[id]={};
+  _pending[id].plan=plan;
+  const row=document.querySelector(`tr[data-uid="${id}"]`);
+  if(row){
+    const colors={free:'#8b8fa8',pro:'#f5a623',dev:'#a78bfa'};
+    const bgs={free:'rgba(139,143,168,.15)',pro:'rgba(245,166,35,.15)',dev:'rgba(167,139,250,.15)'};
+    row.querySelectorAll('.plan-btn').forEach(btn=>{
+      const p=btn.dataset.plan;
+      btn.style.border=`1px solid ${plan===p?colors[p]:'#2a2d3e'}`;
+      btn.style.background=plan===p?bgs[p]:'transparent';
+      btn.style.color=plan===p?colors[p]:'#5a607a';
+    });
+    const sb=document.getElementById('savebtn_'+id);
+    if(sb)sb.style.display='inline-block';
+  }
+}
+async function savePlanRole(id){
+  const changes=_pending[id];if(!changes)return;
+  const u=_users.find(x=>x.id===id);if(!u)return;
+  try{
+    if(changes.plan!==undefined&&changes.plan!==u.plan){await Cloud.adminSetPlan(id,changes.plan);u.plan=changes.plan;}
+    delete _pending[id];
+    const sb=document.getElementById('savebtn_'+id);if(sb)sb.style.display='none';
+    toast('✅ Tersimpan — '+(u.name||u.email)+' → '+PLAN_NAMES[u.plan]);
+  }catch(e){toast('Gagal: '+e.message);}
+}
 async function setRole(id, role){
   try{ await Cloud.adminSetRole(id, role); const u=_users.find(x=>x.id===id); if(u)u.role=role; renderRows(); toast('Peran diperbarui → '+role); }
   catch(e){ toast('Gagal: '+e.message); }
 }
 async function setPlan(id, plan){
-  try{ await Cloud.adminSetPlan(id, plan); const u=_users.find(x=>x.id===id); if(u)u.plan=plan; renderRows(); toast('Paket diperbarui → '+PLAN_NAMES[plan]); }
-  catch(e){ toast('Gagal: '+e.message); }
+  try{
+    await Cloud.adminSetPlan(id, plan);
+    const u=_users.find(x=>x.id===id); if(u)u.plan=plan;
+    // Update hanya tombol plan pada baris ini tanpa rebuild tabel
+    const row = document.querySelector(`tr[data-uid="${id}"]`);
+    if(row){
+      const plans=['free','pro','dev'];
+      const labels={'free':'🆓 Free','pro':'⭐ Pro','dev':'👑 Dev'};
+      const colors={'free':'#8b8fa8','pro':'#f5a623','dev':'#a78bfa'};
+      const bgs={'free':'rgba(139,143,168,.15)','pro':'rgba(245,166,35,.15)','dev':'rgba(167,139,250,.15)'};
+      row.querySelectorAll('.plan-btn').forEach(btn=>{
+        const p=btn.dataset.plan;
+        btn.style.border=`1px solid ${plan===p?colors[p]:'#2a2d3e'}`;
+        btn.style.background=plan===p?bgs[p]:'transparent';
+        btn.style.color=plan===p?colors[p]:'#5a607a';
+      });
+    } else { renderRows(); }
+    toast('Paket diperbarui \u2192 '+PLAN_NAMES[plan]);
+  } catch(e){ toast('Gagal: '+e.message); }
 }
 async function toggleActive(id, currentlyActive){
   try{ await Cloud.adminSetActive(id, !currentlyActive); const u=_users.find(x=>x.id===id); if(u)u.active=!currentlyActive; renderRows(); toast(currentlyActive?'User dinonaktifkan':'User diaktifkan'); }
