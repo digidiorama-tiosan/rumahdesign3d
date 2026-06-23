@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.rumahdesign3d.app",
+    "sha256_cert_fingerprints": ["A0:32:98:56:11:DF:9E:F2:B6:61:75:71:16:08:18:66:38:32:9B:B0:7D:BD:57:CC:33:E8:AC:79:60:DA:AA:9A"]
+  }
+}]
