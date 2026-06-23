@@ -333,7 +333,7 @@ footer {
   <div class="hero-cta">
     <a href="Floor Planner 2.0.html" class="btn-hero btn-hero-primary">🚀 Coba Gratis Sekarang</a>
     <a href="#harga" class="btn-hero btn-hero-ghost">Lihat Paket →</a>
-    <a href="https://rumahdesign3d.vercel.app/RumahDesign3D.apk" download class="btn-hero btn-hero-ghost" style="border-color:#3ecf8e;color:#3ecf8e;">📱 Download APK Android</a>
+    <a href="RumahDesign3D.apk" download class="btn-hero btn-hero-ghost" style="border-color:#3ecf8e;color:#3ecf8e;">📱 Download APK Android</a>
   </div>
 
   <div class="hero-preview animate-float">
@@ -633,7 +633,7 @@ footer {
   <div class="hero-cta">
     <a href="Floor Planner 2.0.html" class="btn-hero btn-hero-primary">🚀 Buka Aplikasi Gratis</a>
     <a href="Akun.html" class="btn-hero btn-hero-ghost">Buat Akun →</a>
-    <a href="https://rumahdesign3d.vercel.app/RumahDesign3D.apk" download class="btn-hero btn-hero-ghost" style="border-color:#3ecf8e;color:#3ecf8e;">📱 Download APK</a>
+    <a href="RumahDesign3D.apk" download class="btn-hero btn-hero-ghost" style="border-color:#3ecf8e;color:#3ecf8e;">📱 Download APK Android</a>
   </div>
 </div>
 
@@ -723,6 +723,36 @@ window.addEventListener('scroll', () => {
     if (a) a.style.color = (s.offsetTop <= y && s.offsetTop + s.offsetHeight > y) ? 'var(--accent)' : '';
   });
 });
+
+// Install guide modal
+function showInstallGuide() {
+  const m = document.createElement('div');
+  m.style.cssText = 'position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;';
+  m.innerHTML = `<div style="background:#161925;border:1px solid #2a2d3e;border-radius:16px;padding:32px;max-width:420px;width:100%;color:#e8eaf2;">
+    <h3 style="font-size:20px;font-weight:800;margin-bottom:16px;">📱 Pasang di HP</h3>
+    <div style="background:#0d0f14;border-radius:10px;padding:16px;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:700;color:#f5a623;margin-bottom:8px;">🤖 Android (Chrome)</div>
+      <ol style="font-size:13px;color:#9aa0b8;line-height:1.8;padding-left:18px;">
+        <li>Buka <b style="color:#e8eaf2;">rumahdesign3d.vercel.app</b> di Chrome</li>
+        <li>Klik menu <b style="color:#e8eaf2;">⋮</b> (pojok kanan atas)</li>
+        <li>Pilih <b style="color:#e8eaf2;">"Tambahkan ke Layar Utama"</b></li>
+        <li>Klik <b style="color:#e8eaf2;">Tambah</b> ✅</li>
+      </ol>
+    </div>
+    <div style="background:#0d0f14;border-radius:10px;padding:16px;margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:700;color:#4a9eff;margin-bottom:8px;">🍎 iPhone/iPad (Safari)</div>
+      <ol style="font-size:13px;color:#9aa0b8;line-height:1.8;padding-left:18px;">
+        <li>Buka di <b style="color:#e8eaf2;">Safari</b></li>
+        <li>Klik ikon <b style="color:#e8eaf2;">⬆ Share</b></li>
+        <li>Pilih <b style="color:#e8eaf2;">"Add to Home Screen"</b></li>
+        <li>Klik <b style="color:#e8eaf2;">Add</b> ✅</li>
+      </ol>
+    </div>
+    <button onclick="this.closest('div[style]').remove()" style="width:100%;padding:12px;background:linear-gradient(135deg,#f5a623,#ff6b35);border:none;color:#000;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">Mengerti</button>
+  </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e => { if(e.target===m) m.remove(); });
+}
 </script>
 </body>
 </html>

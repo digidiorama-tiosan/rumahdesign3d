@@ -6,7 +6,7 @@ var ROOM_PRESETS={
 };
 
 window.buildingType='rumah';
-window.BUILDING_ROOM_SIZES={'Area Penjualan':[300,200],'Ruang Kasir':[100,80],'Gudang (Toko)':[120,100],'Toilet (Toko)':[80,80],'Ruang Karyawan':[120,80],'Teras/Parkir':[200,80],'Dapur/Pantry':[120,80],'Ruang Sholat':[400,300],'Tempat Wudhu Pria':[200,120],'Tempat Wudhu Wanita':[200,120],'Selasar/Teras':[400,80],'Ruang Imam':[80,80],'Menara':[60,60],'Ruang Penyimpanan':[80,100]};
+window.BUILDING_ROOM_SIZES={'Kolam Renang':[240,120],'Teras Kolam':[240,60],'Carport':[200,100],'Area Penjualan':[300,200],'Ruang Kasir':[100,80],'Gudang (Toko)':[120,100],'Toilet (Toko)':[80,80],'Ruang Karyawan':[120,80],'Teras/Parkir':[200,80],'Dapur/Pantry':[120,80],'Ruang Sholat':[400,300],'Tempat Wudhu Pria':[200,120],'Tempat Wudhu Wanita':[200,120],'Selasar/Teras':[400,80],'Ruang Imam':[80,80],'Menara':[60,60],'Ruang Penyimpanan':[80,100]};
 
 var _origNewProject=null;
 
