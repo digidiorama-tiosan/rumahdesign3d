@@ -14,6 +14,7 @@ window.destroyInterior3D=function(){
   _saveFurnToMain();
   if(i3d.tourFrame)cancelAnimationFrame(i3d.tourFrame);
   if(i3d.animFrame)cancelAnimationFrame(i3d.animFrame);
+  if(i3d._keyListener)document.removeEventListener('keydown',i3d._keyListener);
   if(i3d.renderer)i3d.renderer.dispose();
   window.removeEventListener('resize',_onResize);
   var el=document.getElementById('i3dOverlay');if(el)el.remove();
@@ -379,29 +380,50 @@ window.i3dScreenshot=function(){
 };
 
 // ── Interaction ────────────────────────────────────────────
+function _i3dKey(e){
+  if(!i3d)return;
+  if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'))return;
+  var step=2.5,handled=true;
+  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')i3d.orb.theta-=step;
+  else if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')i3d.orb.theta+=step;
+  else if(e.key==='ArrowUp'||e.key==='w'||e.key==='W')i3d.orb.r=Math.max(1.2,i3d.orb.r-0.5);
+  else if(e.key==='ArrowDown'||e.key==='s'||e.key==='S')i3d.orb.r=Math.min(18,i3d.orb.r+0.5);
+  else if(e.key==='q'||e.key==='Q')i3d.orb.phi=Math.max(4,i3d.orb.phi-step);
+  else if(e.key==='e'||e.key==='E')i3d.orb.phi=Math.min(89,i3d.orb.phi+step);
+  else handled=false;
+  if(handled){e.preventDefault();_updateCam();}
+}
 function _setupEvents(cv){
   i3d.canvas=cv;
   cv.addEventListener('mousedown',_mdown);
   cv.addEventListener('mousemove',_mmove);
-  cv.addEventListener('mouseup',function(){i3d.drag.on=false;});
+  cv.addEventListener('mouseup',function(e){
+    if(!i3d.drag.moved&&Date.now()-i3d._tapT<250)_handleTap(i3d._tapX,i3d._tapY);
+    i3d.drag.on=false;
+  });
   cv.addEventListener('contextmenu',function(e){e.preventDefault();});
   cv.addEventListener('wheel',function(e){i3d.orb.r=Math.max(1.2,Math.min(18,i3d.orb.r+e.deltaY*0.012));_updateCam();},{passive:true});
+  // Keyboard controls for interior3d
+  document.addEventListener('keydown',_i3dKey);
+  cv.setAttribute('tabindex','0');cv.focus();
+  i3d._keyListener=_i3dKey;
   cv.addEventListener('touchstart',_tstart,{passive:false});
   cv.addEventListener('touchmove',_tmove,{passive:false});
   cv.addEventListener('touchend',_tend,{passive:false});
 }
 function _mdown(e){
-  if(e.button===2){i3d.drag={on:true,orb:true,ox:e.clientX,oy:e.clientY};return;}
-  i3d.drag={on:true,orb:false,ox:e.clientX,oy:e.clientY};
-  _handleTap(e.clientX,e.clientY);
+  i3d.drag={on:true,orb:true,ox:e.clientX,oy:e.clientY,moved:false};
+  i3d._tapX=e.clientX;i3d._tapY=e.clientY;i3d._tapT=Date.now();
 }
 function _mmove(e){
   var dr=i3d.drag;if(!dr.on)return;
   var dx=e.clientX-dr.ox,dy=e.clientY-dr.oy;dr.ox=e.clientX;dr.oy=e.clientY;
-  if(dr.orb){i3d.orb.theta-=dx*0.4;i3d.orb.phi=Math.max(4,Math.min(89,i3d.orb.phi-dy*0.3));_updateCam();}
-  else if(i3d.mode==='move'&&i3d.selected){
+  if(Math.abs(dx)>1||Math.abs(dy)>1)dr.moved=true;
+  if(i3d.mode==='move'&&i3d.selected&&dr.moved){
     var pt=_floorPt(e.clientX,e.clientY);
-    if(pt){var o=i3d.selected;o.position.x=Math.max(0,Math.min(i3d.rw,pt.x));o.position.z=Math.max(0,Math.min(i3d.rd,pt.z));}
+    if(pt){i3d.selected.position.x=Math.max(0,Math.min(i3d.rw,pt.x));i3d.selected.position.z=Math.max(0,Math.min(i3d.rd,pt.z));}
+  } else if(dr.moved){
+    i3d.orb.theta-=dx*0.4;i3d.orb.phi=Math.max(4,Math.min(89,i3d.orb.phi-dy*0.3));_updateCam();
   }
 }
 function _tstart(e){
