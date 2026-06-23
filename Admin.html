@@ -267,11 +267,11 @@ function renderRows(){
         </select>
       </td>
       <td>
-        <select class="sel" onchange="setPlan('${u.id}',this.value)">
-          <option value="free" ${u.plan==='free'?'selected':''}>🆓 Free</option>
-          <option value="pro" ${u.plan==='pro'?'selected':''}>⭐ Pro</option>
-          <option value="dev" ${u.plan==='dev'?'selected':''}>👑 Dev</option>
-        </select>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <button onclick="setPlan('${u.id}','free')" style="padding:4px 8px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${u.plan==='free'?'#8b8fa8':'#2a2d3e'};background:${u.plan==='free'?'#252836':'transparent'};color:${u.plan==='free'?'#e2e8f0':'#5a607a'};">🆓 Free</button>
+          <button onclick="setPlan('${u.id}','pro')" style="padding:4px 8px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${u.plan==='pro'?'#f5a623':'#2a2d3e'};background:${u.plan==='pro'?'rgba(245,166,35,.15)':'transparent'};color:${u.plan==='pro'?'#f5a623':'#5a607a'};">⭐ Pro</button>
+          <button onclick="setPlan('${u.id}','dev')" style="padding:4px 8px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${u.plan==='dev'?'#a78bfa':'#2a2d3e'};background:${u.plan==='dev'?'rgba(167,139,250,.15)':'transparent'};color:${u.plan==='dev'?'#a78bfa':'#5a607a'};">👑 Dev</button>
+        </div>
       </td>
       <td><span class="pill ${u.projects?'pro':'free'}">${u.projects}</span></td>
       <td style="color:var(--text3);font-size:12px;white-space:nowrap;">${dateStr}</td>
