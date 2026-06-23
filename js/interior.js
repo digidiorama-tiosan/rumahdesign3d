@@ -29,6 +29,7 @@ let interiorState={active:false,roomIdx:0,light:'siang',theme:null,subtab:'tema'
     <div class="int-h">Tambah Furnitur</div>
     <div class="int-sub">Klik untuk menaruh di ruangan terpilih, lalu <b>seret di 3D</b> untuk memindah. Pilih furnitur lalu pakai tombol di bawah.</div>
     <select class="int-roomsel" onchange="setIntRoom(this.value)">${roomOptions()}</select>
+    <button onclick="openInterior3D(activeFloor().rooms[interiorState.roomIdx]?.id)" style="width:100%;margin:6px 0 10px;padding:10px;background:linear-gradient(135deg,#1e3a5f,#2a5298);border:1px solid #4a9eff;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">🛋️ Buka Editor Interior 3D</button>
     <div class="int-fcats" id="intFcats">${FURN_CATS.map(c=>`<button class="int-fcat${c===intFurnCat?' active':''}"onclick="setIntFurnCat('${c}')">${c}</button>`).join('')}</div>
     <div class="int-fgrid" id="intFgrid"></div>
     <div class="int-sel-actions" id="intSelActions" style="display:none;">
