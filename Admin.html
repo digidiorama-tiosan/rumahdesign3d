@@ -333,10 +333,10 @@ async function savePlanRole(id){
   const changes=_pending[id];if(!changes)return;
   const u=_users.find(x=>x.id===id);if(!u)return;
   try{
-    if(changes.plan!==undefined&&changes.plan!==u.plan){await Cloud.adminSetPlan(id,changes.plan);u.plan=changes.plan;}
+    if(changes.plan!==undefined&&changes.plan!==u.plan){await Cloud.adminSetPlan(id,changes.plan);}
     delete _pending[id];
-    const sb=document.getElementById('savebtn_'+id);if(sb)sb.style.display='none';
-    toast('✅ Tersimpan — '+(u.name||u.email)+' → '+PLAN_NAMES[u.plan]);
+    toast('✅ Tersimpan — '+(u.name||u.email)+' → '+PLAN_NAMES[changes.plan||u.plan]);
+    await loadAll();
   }catch(e){toast('Gagal: '+e.message);}
 }
 async function setRole(id, role){
