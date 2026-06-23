@@ -1,11 +1,726 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=Floor%20Planner%202.0.html">
-  <title>RumahDesign3D</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RumahDesign3D — Desain Rumah, Toko & Masjid dalam 3D</title>
+<meta name="description" content="Platform desain bangunan 3D berbasis web. Buat denah, preview 3D, interior realistik, RAB otomatis, dan render AI — langsung di browser.">
+<link rel="icon" href="icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<template id="__bundler_thumbnail"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#0d0f14"/><rect x="20" y="35" width="60" height="40" rx="3" fill="#f5a623" opacity=".8"/><polygon points="50,15 15,38 85,38" fill="#f5a623"/></svg></template>
+<style>
+:root {
+  --bg: #0d0f14;
+  --bg2: #111420;
+  --surface: #161925;
+  --border: #232740;
+  --accent: #f5a623;
+  --accent2: #ff6b35;
+  --blue: #4a9eff;
+  --purple: #a78bfa;
+  --green: #3ecf8e;
+  --text: #e8eaf2;
+  --text2: #9aa0b8;
+  --text3: #5a607a;
+  --r: 12px;
+}
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+/* ── Grid BG ── */
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 60px 60px; opacity: .35;
+}
+
+/* ── Nav ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 5%;
+  background: rgba(13,15,20,.85); backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.nav-logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.nav-logo span { font-size: 16px; font-weight: 800; color: var(--text); }
+.nav-links { display: flex; align-items: center; gap: 28px; }
+.nav-links a { color: var(--text2); text-decoration: none; font-size: 14px; font-weight: 500; transition: color .2s; }
+.nav-links a:hover { color: var(--accent); }
+.nav-cta { display: flex; gap: 10px; }
+.btn-ghost { padding: 8px 18px; border: 1px solid var(--border); border-radius: 8px; color: var(--text2); text-decoration: none; font-size: 13px; font-weight: 600; transition: all .2s; }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn-primary { padding: 8px 18px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; color: #000; text-decoration: none; font-size: 13px; font-weight: 700; transition: opacity .2s; }
+.btn-primary:hover { opacity: .88; }
+
+/* ── Hero ── */
+#hero {
+  min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 120px 5% 80px; position: relative; z-index: 1;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px; border-radius: 20px;
+  border: 1px solid rgba(245,166,35,.3); background: rgba(245,166,35,.08);
+  font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 28px;
+  animation: fadeUp .6s ease both;
+}
+.hero-badge::before { content: '✦'; }
+h1 {
+  font-size: clamp(2.4rem, 6vw, 5rem); font-weight: 900; line-height: 1.08;
+  margin-bottom: 22px;
+  animation: fadeUp .7s .1s ease both;
+}
+.gradient-text {
+  background: linear-gradient(135deg, var(--accent), var(--accent2), var(--purple));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-sub {
+  font-size: clamp(1rem, 2vw, 1.2rem); color: var(--text2); max-width: 600px; line-height: 1.7;
+  margin: 0 auto 40px;
+  animation: fadeUp .7s .2s ease both;
+}
+.hero-cta {
+  display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+  animation: fadeUp .7s .3s ease both;
+}
+.btn-hero {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 28px; border-radius: 10px;
+  font-size: 15px; font-weight: 700; text-decoration: none; transition: all .25s;
+}
+.btn-hero-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #000; box-shadow: 0 8px 32px rgba(245,166,35,.35);
+}
+.btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 40px rgba(245,166,35,.45); }
+.btn-hero-ghost {
+  border: 1px solid var(--border); color: var(--text);
+  background: rgba(255,255,255,.04);
+}
+.btn-hero-ghost:hover { border-color: var(--blue); color: var(--blue); transform: translateY(-2px); }
+
+/* App preview mockup */
+.hero-preview {
+  margin-top: 64px; position: relative; width: 100%; max-width: 900px;
+  animation: fadeUp .8s .4s ease both;
+}
+.hero-preview-frame {
+  border: 1px solid var(--border); border-radius: 16px;
+  background: var(--surface); overflow: hidden;
+  box-shadow: 0 40px 120px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.05);
+}
+.preview-bar {
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+  background: #0d0f14; border-bottom: 1px solid var(--border);
+}
+.preview-dot { width: 10px; height: 10px; border-radius: 50%; }
+.preview-screen {
+  height: 380px; background: linear-gradient(135deg, #0d0f14 0%, #161925 50%, #0d1520 100%);
+  display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;
+}
+.preview-screen svg { width: 100%; height: 100%; position: absolute; inset: 0; }
+.glow-orb {
+  position: absolute; border-radius: 50%; filter: blur(60px); pointer-events: none;
+}
+
+/* ── Stats ── */
+.stats-bar {
+  display: flex; justify-content: center; gap: 0; flex-wrap: wrap;
+  border: 1px solid var(--border); border-radius: var(--r); overflow: hidden;
+  margin: 0 auto; max-width: 900px; position: relative; z-index: 1;
+}
+.stat-item {
+  flex: 1; min-width: 160px; padding: 28px 24px; text-align: center;
+  border-right: 1px solid var(--border); background: var(--surface);
+}
+.stat-item:last-child { border-right: none; }
+.stat-num { font-size: 2.2rem; font-weight: 900; color: var(--accent); line-height: 1; margin-bottom: 6px; }
+.stat-label { font-size: 12px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
+
+/* ── Sections ── */
+section { padding: 100px 5%; position: relative; z-index: 1; }
+.section-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px;
+  border: 1px solid rgba(74,158,255,.3); background: rgba(74,158,255,.08);
+  font-size: 11px; font-weight: 700; color: var(--blue); margin-bottom: 16px;
+  text-transform: uppercase; letter-spacing: .8px;
+}
+.section-title { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; line-height: 1.2; margin-bottom: 14px; }
+.section-sub { color: var(--text2); font-size: 16px; line-height: 1.7; max-width: 540px; }
+.text-center { text-align: center; }
+.text-center .section-sub { margin: 0 auto; }
+
+/* ── Features ── */
+.feat-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 56px;
+}
+.feat-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 28px; transition: border-color .2s, transform .2s;
+  position: relative; overflow: hidden;
+}
+.feat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0; transition: opacity .3s;
+}
+.feat-card:hover { border-color: rgba(245,166,35,.3); transform: translateY(-4px); }
+.feat-card:hover::before { opacity: 1; }
+.feat-icon {
+  width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  font-size: 22px; margin-bottom: 18px;
+}
+.feat-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+.feat-desc { font-size: 13px; color: var(--text2); line-height: 1.65; }
+
+/* ── How it works ── */
+.steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; margin-top: 56px; }
+.step {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 32px 24px; text-align: center; position: relative;
+}
+.step-num {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 900; color: #000; margin: 0 auto 20px;
+}
+.step-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.step-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+/* ── Pricing ── */
+.pricing-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 20px; margin-top: 56px; max-width: 900px; margin-left: auto; margin-right: auto;
+}
+.price-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 32px; position: relative; transition: transform .2s;
+}
+.price-card.popular {
+  border-color: var(--accent); background: linear-gradient(135deg, rgba(245,166,35,.06), var(--surface));
+}
+.price-card:hover { transform: translateY(-4px); }
+.popular-badge {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #000; font-size: 11px; font-weight: 800; padding: 3px 14px; border-radius: 20px;
+  white-space: nowrap;
+}
+.price-plan { font-size: 13px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px; }
+.price-amount { font-size: 2.6rem; font-weight: 900; color: var(--text); line-height: 1; }
+.price-amount span { font-size: 14px; font-weight: 500; color: var(--text3); }
+.price-desc { font-size: 13px; color: var(--text2); margin: 10px 0 22px; }
+.price-divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+.price-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+.price-features li { font-size: 13px; color: var(--text2); display: flex; align-items: flex-start; gap: 8px; }
+.price-features li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
+.price-features li.dim { color: var(--text3); }
+.price-features li.dim::before { content: '—'; color: var(--text3); }
+.btn-plan {
+  display: block; width: 100%; padding: 12px; border-radius: 8px;
+  text-align: center; font-size: 14px; font-weight: 700; text-decoration: none; transition: all .2s;
+}
+.btn-plan-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #000; }
+.btn-plan-primary:hover { opacity: .88; }
+.btn-plan-ghost { border: 1px solid var(--border); color: var(--text2); }
+.btn-plan-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── FAQ ── */
+.faq-list { max-width: 700px; margin: 56px auto 0; display: flex; flex-direction: column; gap: 12px; }
+.faq-item {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden;
+}
+.faq-q {
+  width: 100%; padding: 18px 22px; display: flex; align-items: center; justify-content: space-between;
+  background: none; border: none; color: var(--text); font-size: 14px; font-weight: 600;
+  cursor: pointer; text-align: left; gap: 12px;
+}
+.faq-q:hover { color: var(--accent); }
+.faq-icon { flex-shrink: 0; font-size: 18px; color: var(--accent); transition: transform .25s; }
+.faq-a {
+  padding: 0 22px; max-height: 0; overflow: hidden; font-size: 13px; color: var(--text2); line-height: 1.7;
+  transition: max-height .3s, padding .3s;
+}
+.faq-item.open .faq-a { max-height: 200px; padding: 0 22px 18px; }
+.faq-item.open .faq-icon { transform: rotate(45deg); }
+
+/* ── CTA Banner ── */
+.cta-banner {
+  margin: 0 5% 80px; border-radius: 16px;
+  background: linear-gradient(135deg, rgba(245,166,35,.12), rgba(167,139,250,.08));
+  border: 1px solid rgba(245,166,35,.2);
+  padding: 64px 40px; text-align: center; position: relative; overflow: hidden;
+}
+.cta-banner::before {
+  content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 400px; height: 400px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(245,166,35,.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+.cta-banner h2 { font-size: clamp(1.8rem, 3.5vw, 2.4rem); font-weight: 900; margin-bottom: 14px; }
+.cta-banner p { color: var(--text2); font-size: 16px; margin-bottom: 32px; }
+
+/* ── Footer ── */
+footer {
+  border-top: 1px solid var(--border); padding: 48px 5% 32px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 40px;
+  position: relative; z-index: 1;
+}
+.footer-brand { grid-column: 1; }
+.footer-brand p { font-size: 13px; color: var(--text3); line-height: 1.7; margin-top: 12px; max-width: 220px; }
+.footer-col h4 { font-size: 12px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 16px; }
+.footer-col a { display: block; font-size: 13px; color: var(--text2); text-decoration: none; margin-bottom: 10px; transition: color .2s; }
+.footer-col a:hover { color: var(--accent); }
+.footer-bottom {
+  grid-column: 1 / -1; border-top: 1px solid var(--border); padding-top: 24px;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+}
+.footer-bottom p { font-size: 12px; color: var(--text3); }
+
+/* ── Animations ── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes gradMove { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+.animate-float { animation: float 4s ease-in-out infinite; }
+
+/* Scroll reveal */
+.reveal { opacity: 0; transform: translateY(32px); transition: opacity .7s, transform .7s; }
+.reveal.visible { opacity: 1; transform: none; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  footer { grid-template-columns: 1fr 1fr; }
+  .footer-brand { grid-column: 1 / -1; }
+  .stats-bar { flex-direction: column; }
+  .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
+  .stat-item:last-child { border-bottom: none; }
+}
+</style>
 </head>
 <body>
-  <script>window.location.replace('Floor%20Planner%202.0.html');</script>
+
+<!-- ── NAV ── -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-icon">🏠</div>
+    <span>RumahDesign3D</span>
+  </a>
+  <div class="nav-links">
+    <a href="#fitur">Fitur</a>
+    <a href="#harga">Harga</a>
+    <a href="#cara-pakai">Cara Pakai</a>
+    <a href="#faq">FAQ</a>
+  </div>
+  <div class="nav-cta">
+    <a href="Akun.html" class="btn-ghost">Masuk</a>
+    <a href="Floor Planner 2.0.html" class="btn-primary">Coba Gratis →</a>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <div class="hero-badge">Tersedia di Web & Android</div>
+  <h1>Desain <span class="gradient-text">Rumah, Toko</span><br>& Masjid dalam 3D</h1>
+  <p class="hero-sub">Platform desain bangunan berbasis AI. Buat denah 2D, lihat preview 3D, tata interior secara realistik, hitung RAB otomatis — langsung dari browser atau HP.</p>
+  <div class="hero-cta">
+    <a href="Floor Planner 2.0.html" class="btn-hero btn-hero-primary">🚀 Coba Gratis Sekarang</a>
+    <a href="#harga" class="btn-hero btn-hero-ghost">Lihat Paket →</a>
+  </div>
+
+  <div class="hero-preview animate-float">
+    <div class="hero-preview-frame">
+      <div class="preview-bar">
+        <div class="preview-dot" style="background:#e8523a"></div>
+        <div class="preview-dot" style="background:#f5a623"></div>
+        <div class="preview-dot" style="background:#3ecf8e"></div>
+        <span style="margin-left:12px;font-size:12px;color:#5a607a;">rumahdesign3d.vercel.app</span>
+      </div>
+      <div class="preview-screen">
+        <div class="glow-orb" style="width:300px;height:300px;background:rgba(245,166,35,.12);top:-80px;left:10%;"></div>
+        <div class="glow-orb" style="width:250px;height:250px;background:rgba(74,158,255,.1);bottom:-60px;right:15%;"></div>
+        <!-- Stylized app mockup SVG -->
+        <svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          <!-- Header bar -->
+          <rect x="0" y="0" width="900" height="46" fill="#111420"/>
+          <rect x="16" y="13" width="80" height="20" rx="4" fill="#1e2235"/>
+          <rect x="108" y="13" width="70" height="20" rx="4" fill="#f5a623" opacity=".9"/>
+          <rect x="190" y="13" width="70" height="20" rx="4" fill="#1e2235"/>
+          <rect x="272" y="13" width="50" height="20" rx="4" fill="#1e2235"/>
+          <rect x="750" y="13" width="60" height="20" rx="4" fill="#3ecf8e" rx="4"/>
+          <rect x="822" y="13" width="64" height="20" rx="4" fill="#f5a623"/>
+          <!-- Left panel -->
+          <rect x="0" y="46" width="52" height="334" fill="#0d0f14"/>
+          <rect x="10" y="60" width="32" height="32" rx="6" fill="#1e2235"/>
+          <rect x="10" y="100" width="32" height="32" rx="6" fill="#1e2235"/>
+          <rect x="10" y="140" width="32" height="32" rx="6" fill="#1e2235"/>
+          <!-- Canvas area -->
+          <rect x="52" y="46" width="618" height="334" fill="#0d1520"/>
+          <!-- Grid lines -->
+          <g stroke="#1a2035" stroke-width="1" opacity=".8">
+            <line x1="52" y1="86" x2="670" y2="86"/><line x1="52" y1="126" x2="670" y2="126"/>
+            <line x1="52" y1="166" x2="670" y2="166"/><line x1="52" y1="206" x2="670" y2="206"/>
+            <line x1="52" y1="246" x2="670" y2="246"/><line x1="52" y1="286" x2="670" y2="286"/>
+            <line x1="52" y1="326" x2="670" y2="326"/>
+            <line x1="132" y1="46" x2="132" y2="380"/><line x1="212" y1="46" x2="212" y2="380"/>
+            <line x1="292" y1="46" x2="292" y2="380"/><line x1="372" y1="46" x2="372" y2="380"/>
+            <line x1="452" y1="46" x2="452" y2="380"/><line x1="532" y1="46" x2="532" y2="380"/>
+            <line x1="612" y1="46" x2="612" y2="380"/>
+          </g>
+          <!-- Land boundary dashed -->
+          <rect x="100" y="70" width="420" height="280" rx="2" fill="none" stroke="#f5a623" stroke-width="1.5" stroke-dasharray="6,4" opacity=".5"/>
+          <!-- Rooms -->
+          <rect x="120" y="90" width="180" height="130" rx="2" fill="#4a9eff" opacity=".18"/>
+          <rect x="120" y="90" width="180" height="130" rx="2" fill="none" stroke="#4a9eff" stroke-width="1.5"/>
+          <text x="210" y="162" text-anchor="middle" fill="#4a9eff" font-size="12" font-family="sans-serif" font-weight="600">Ruang Tamu</text>
+          <text x="210" y="177" text-anchor="middle" fill="#4a9eff" font-size="10" font-family="sans-serif" opacity=".7">54.0 m²</text>
+
+          <rect x="300" y="90" width="150" height="130" rx="2" fill="#3ecf8e" opacity=".18"/>
+          <rect x="300" y="90" width="150" height="130" rx="2" fill="none" stroke="#3ecf8e" stroke-width="1.5"/>
+          <text x="375" y="162" text-anchor="middle" fill="#3ecf8e" font-size="12" font-family="sans-serif" font-weight="600">Kamar Tidur</text>
+          <text x="375" y="177" text-anchor="middle" fill="#3ecf8e" font-size="10" font-family="sans-serif" opacity=".7">37.5 m²</text>
+
+          <rect x="120" y="225" width="130" height="100" rx="2" fill="#f5a623" opacity=".18"/>
+          <rect x="120" y="225" width="130" height="100" rx="2" fill="none" stroke="#f5a623" stroke-width="1.5"/>
+          <text x="185" y="280" text-anchor="middle" fill="#f5a623" font-size="12" font-family="sans-serif" font-weight="600">Dapur</text>
+
+          <rect x="255" y="225" width="80" height="100" rx="2" fill="#a78bfa" opacity=".18"/>
+          <rect x="255" y="225" width="80" height="100" rx="2" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+          <text x="295" y="280" text-anchor="middle" fill="#a78bfa" font-size="10" font-family="sans-serif" font-weight="600">KM</text>
+
+          <!-- Right panel -->
+          <rect x="670" y="46" width="230" height="334" fill="#111420"/>
+          <rect x="680" y="58" width="210" height="24" rx="4" fill="#1e2235"/>
+          <text x="785" y="75" text-anchor="middle" fill="#9aa0b8" font-size="11" font-family="sans-serif">LANTAI AKTIF</text>
+          <rect x="680" y="90" width="210" height="54" rx="6" fill="#1e2235"/>
+          <text x="695" y="112" fill="#e8eaf2" font-size="13" font-family="sans-serif" font-weight="700">Lantai 1</text>
+          <text x="695" y="130" fill="#9aa0b8" font-size="11" font-family="sans-serif">4 ruangan · 0🚪</text>
+          <text x="870" y="122" text-anchor="end" fill="#f5a623" font-size="14" font-family="sans-serif" font-weight="900">182 m²</text>
+          <!-- Feature list in panel -->
+          <rect x="680" y="156" width="210" height="32" rx="4" fill="#f5a623" opacity=".9"/>
+          <text x="785" y="177" text-anchor="middle" fill="#000" font-size="12" font-family="sans-serif" font-weight="700">✏️ Gambar Dinding</text>
+          <rect x="680" y="196" width="210" height="32" rx="4" fill="#1e2235"/>
+          <text x="785" y="217" text-anchor="middle" fill="#f5a623" font-size="12" font-family="sans-serif" font-weight="600">🧱 Buat Dinding Otomatis</text>
+          <rect x="680" y="236" width="210" height="32" rx="4" fill="#1e2235"/>
+          <text x="785" y="257" text-anchor="middle" fill="#3ecf8e" font-size="12" font-family="sans-serif" font-weight="600">🚪 Pintu Otomatis</text>
+          <!-- Status bar bottom -->
+          <rect x="52" y="350" width="618" height="30" fill="#0a0c12" opacity=".9"/>
+          <text x="62" y="370" fill="#5a607a" font-size="10" font-family="sans-serif">Select — Klik pilih · Drag untuk pindah · Delete untuk hapus</text>
+          <!-- Floor tabs bottom -->
+          <rect x="52" y="350" width="80" height="30" fill="#f5a623"/>
+          <text x="92" y="370" text-anchor="middle" fill="#000" font-size="11" font-family="sans-serif" font-weight="700">Lantai 1</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── STATS ── -->
+<div style="padding:0 5% 80px;position:relative;z-index:1;">
+  <div class="stats-bar reveal">
+    <div class="stat-item">
+      <div class="stat-num">3</div>
+      <div class="stat-label">Jenis Bangunan</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">50+</div>
+      <div class="stat-label">Furnitur 3D</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">AI</div>
+      <div class="stat-label">Render Fotorealistik</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">PWA</div>
+      <div class="stat-label">Web + Android</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">Rp 0</div>
+      <div class="stat-label">Mulai Gratis</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FEATURES ── -->
+<section id="fitur">
+  <div class="text-center reveal">
+    <div class="section-badge">Fitur Unggulan</div>
+    <h2 class="section-title">Semua yang Anda Butuhkan<br><span class="gradient-text">dalam Satu Platform</span></h2>
+    <p class="section-sub">Dari sketsa denah hingga render AI fotorealistik — semuanya tersedia tanpa software tambahan.</p>
+  </div>
+  <div class="feat-grid">
+    <div class="feat-card reveal">
+      <div class="feat-icon" style="background:rgba(74,158,255,.12);">🏗️</div>
+      <div class="feat-title">Denah 2D Cerdas</div>
+      <div class="feat-desc">Gambar dinding, taruh pintu & jendela, atur ruangan dengan snap otomatis. Support multi-lantai hingga rooftop.</div>
+    </div>
+    <div class="feat-card reveal">
+      <div class="feat-icon" style="background:rgba(245,166,35,.12);">🏠</div>
+      <div class="feat-title">Preview 3D Real-time</div>
+      <div class="feat-desc">Lihat bangunan dari sudut manapun secara 3D langsung dari denah yang sudah dibuat. Keyboard & touch-friendly.</div>
+    </div>
+    <div class="feat-card reveal">
+      <div class="feat-icon" style="background:rgba(62,207,142,.12);">🛋️</div>
+      <div class="feat-title">Interior 3D Editor</div>
+      <div class="feat-desc">Drag & taruh furnitur 3D ke dalam ruangan secara realistik. Toggle isometrik ↔ first-person, lalu tur otomatis.</div>
+    </div>
+    <div class="feat-card reveal">
+      <div class="feat-icon" style="background:rgba(167,139,250,.12);">✨</div>
+      <div class="feat-title">AI Render Fotorealistik</div>
+      <div class="feat-desc">Ubah tampilan 3D menjadi foto berkualitas tinggi menggunakan AI. Pilih gaya modern, minimalis, atau mewah.</div>
+    </div>
+    <div class="feat-card reveal">
+      <div class="feat-icon" style="background:rgba(255,107,53,.12);">📊</div>
+      <div class="feat-title">RAB Otomatis</div>
+      <div class="feat-desc">Rencana Anggaran Biaya dihitung otomatis berdasarkan luas, material, dan furnitur. Ekspor ke Excel/PDF.</div>
+    </div>
+    <div class="feat-card reveal">
+      <div class="feat-icon" style="background:rgba(245,166,35,.12);">🏪</div>
+      <div class="feat-title">Rumah, Toko & Masjid</div>
+      <div class="feat-desc">Pilih jenis bangunan saat mulai proyek. Ruangan, furnitur, dan auto-arrange menyesuaikan jenis bangunan.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section id="cara-pakai" style="background:var(--bg2);">
+  <div class="text-center reveal">
+    <div class="section-badge">Cara Pakai</div>
+    <h2 class="section-title">Mulai Desain dalam<br><span class="gradient-text">3 Langkah Mudah</span></h2>
+  </div>
+  <div class="steps">
+    <div class="step reveal">
+      <div class="step-num">1</div>
+      <div class="step-title">Pilih Jenis Bangunan</div>
+      <div class="step-desc">Pilih Rumah, Toko, atau Masjid. Tambahkan ruangan dengan ukuran bebas, atau gunakan Auto Arrange.</div>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">2</div>
+      <div class="step-title">Bangun Dinding & Interior</div>
+      <div class="step-desc">Klik "Buat Dinding & Pintu Otomatis" lalu buka Interior 3D untuk taruh furnitur secara realistik.</div>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">3</div>
+      <div class="step-title">Preview, Render & Ekspor</div>
+      <div class="step-desc">Lihat di Preview 3D, render dengan AI fotorealistik, lalu ekspor RAB, PDF, DXF, atau gambar kerja.</div>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">4</div>
+      <div class="step-title">Simpan & Bagikan</div>
+      <div class="step-desc">Simpan proyek ke cloud, akses dari perangkat apapun, atau download APK untuk pakai offline.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING ── -->
+<section id="harga">
+  <div class="text-center reveal">
+    <div class="section-badge">Harga</div>
+    <h2 class="section-title">Mulai Gratis,<br><span class="gradient-text">Upgrade Kapan Saja</span></h2>
+    <p class="section-sub">Tidak ada kartu kredit. Batalkan kapan saja.</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="price-card reveal">
+      <div class="price-plan">🆓 Free</div>
+      <div class="price-amount">Rp 0<span> / selamanya</span></div>
+      <div class="price-desc">Untuk coba-coba & desain sederhana</div>
+      <hr class="price-divider">
+      <ul class="price-features">
+        <li>Denah 2D + Smart Wall</li>
+        <li>1 lantai</li>
+        <li>Preview 3D + Tur Jalan</li>
+        <li>RAB Ringkas</li>
+        <li>Ekspor PNG / JPG</li>
+        <li class="dim">Multi-lantai</li>
+        <li class="dim">AI Render</li>
+        <li class="dim">Ekspor PDF / DXF</li>
+      </ul>
+      <a href="Floor Planner 2.0.html" class="btn-plan btn-plan-ghost">Mulai Gratis</a>
+    </div>
+    <div class="price-card popular reveal">
+      <div class="popular-badge">⭐ Paling Populer</div>
+      <div class="price-plan">⭐ Pro</div>
+      <div class="price-amount">Rp 99rb<span> / bulan</span></div>
+      <div class="price-desc">Untuk arsitek, drafter & kontraktor</div>
+      <hr class="price-divider">
+      <ul class="price-features">
+        <li>Semua fitur Free</li>
+        <li>Multi-lantai + Rooftop</li>
+        <li>Site Plan & MEP</li>
+        <li>RAB Konstruksi + Take-Off</li>
+        <li>Ekspor PDF + DXF (AutoCAD)</li>
+        <li>AI Studio + Scan Denah</li>
+        <li>AI Render (1× gratis/bulan)</li>
+        <li>Gambar Kerja A4/A3</li>
+      </ul>
+      <a href="Akun.html" class="btn-plan btn-plan-primary" onclick="openUpgrade('pro'); return false;">Upgrade ke Pro</a>
+    </div>
+    <div class="price-card reveal">
+      <div class="price-plan">👑 Developer</div>
+      <div class="price-amount">Rp 299rb<span> / bulan</span></div>
+      <div class="price-desc">Untuk developer perumahan</div>
+      <hr class="price-divider">
+      <ul class="price-features">
+        <li>Semua fitur Pro</li>
+        <li>Developer Mode</li>
+        <li>Siteplan otomatis 2D + 3D</li>
+        <li>Marketplace Template</li>
+        <li>AI Render (3× gratis/bulan)</li>
+        <li>Prioritas dukungan</li>
+        <li>Export massal</li>
+        <li>Multi-proyek cloud</li>
+      </ul>
+      <a href="Akun.html" class="btn-plan btn-plan-ghost" onclick="openUpgrade('dev'); return false;">Upgrade ke Developer</a>
+    </div>
+  </div>
+  <p style="text-align:center;margin-top:24px;font-size:13px;color:var(--text3);">
+    AI Render tambahan: <strong style="color:var(--accent);">Rp 5.000 / render</strong> · Pembayaran via QRIS, Transfer Bank, e-Wallet
+  </p>
+</section>
+
+<!-- ── FAQ ── -->
+<section id="faq" style="background:var(--bg2);">
+  <div class="text-center reveal">
+    <div class="section-badge">FAQ</div>
+    <h2 class="section-title">Pertanyaan yang<br><span class="gradient-text">Sering Ditanyakan</span></h2>
+  </div>
+  <div class="faq-list">
+    <div class="faq-item reveal">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Apakah bisa dipakai di HP? <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">Ya! RumahDesign3D tersedia sebagai web app (buka di browser HP) dan juga bisa diinstall sebagai APK Android langsung. Semua fitur termasuk denah, 3D, dan interior bisa diakses dari HP maupun tablet.</div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Apakah perlu koneksi internet terus? <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">Sebagian besar fitur (denah, 3D, interior, RAB) bisa dipakai offline setelah pertama kali dibuka. Fitur cloud (simpan & sinkronisasi) dan AI Render memerlukan internet.</div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Apakah data desain saya aman? <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">Data disimpan di perangkat Anda (localStorage) secara default. Jika mengaktifkan cloud (perlu akun), data tersimpan di Supabase dengan enkripsi. Anda bisa ekspor/hapus data kapan saja.</div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Bisa ekspor ke AutoCAD / format lain? <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">Paket Pro mendukung ekspor ke DXF (AutoCAD/DraftSight), PDF gambar kerja A4/A3, PNG/JPG, dan CSV untuk RAB. Semua ekspor tersedia langsung dari dalam aplikasi.</div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Bagaimana cara berlangganan atau bayar? <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">Buat akun gratis terlebih dahulu, lalu pilih paket di menu Akun. Pembayaran didukung via QRIS, transfer bank, dan dompet digital (OVO, GoPay, Dana) melalui Midtrans.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA BANNER ── -->
+<div class="cta-banner reveal">
+  <h2>Siap Mulai Desain<br><span class="gradient-text">Bangunan Impian Anda?</span></h2>
+  <p>Gratis selamanya untuk fitur dasar. Tidak perlu kartu kredit.</p>
+  <div class="hero-cta">
+    <a href="Floor Planner 2.0.html" class="btn-hero btn-hero-primary">🚀 Buka Aplikasi Gratis</a>
+    <a href="Akun.html" class="btn-hero btn-hero-ghost">Buat Akun →</a>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-brand">
+    <a href="#" class="nav-logo" style="display:inline-flex;">
+      <div class="nav-logo-icon">🏠</div>
+      <span>RumahDesign3D</span>
+    </a>
+    <p>Platform desain bangunan 3D berbasis AI untuk semua kalangan.</p>
+  </div>
+  <div class="footer-col">
+    <h4>Produk</h4>
+    <a href="Floor Planner 2.0.html">Floor Planner</a>
+    <a href="#fitur">Fitur</a>
+    <a href="#harga">Harga</a>
+    <a href="Akun.html">Akun</a>
+  </div>
+  <div class="footer-col">
+    <h4>Bangunan</h4>
+    <a href="Floor Planner 2.0.html">Rumah Tinggal</a>
+    <a href="Floor Planner 2.0.html">Toko & Ritel</a>
+    <a href="Floor Planner 2.0.html">Masjid & Mushola</a>
+  </div>
+  <div class="footer-col">
+    <h4>Legal</h4>
+    <a href="Syarat & Ketentuan.html">Syarat & Ketentuan</a>
+    <a href="Kebijakan Privasi.html">Kebijakan Privasi</a>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 RumahDesign3D. Hak cipta dilindungi.</p>
+    <p style="color:var(--text3);">Dibuat dengan ❤️ untuk Indonesia</p>
+  </div>
+</footer>
+
+<!-- ── Upgrade Modal ── -->
+<div id="upgradeModal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px;max-width:420px;width:90%;text-align:center;">
+    <div id="upgradeIcon" style="font-size:40px;margin-bottom:12px;">⭐</div>
+    <h3 id="upgradeTitle" style="font-size:20px;font-weight:800;margin-bottom:8px;">Upgrade ke Pro</h3>
+    <p id="upgradeDesc" style="color:var(--text2);font-size:14px;margin-bottom:24px;line-height:1.6;">Akses semua fitur Pro termasuk multi-lantai, AI Render, ekspor DXF, dan lebih banyak lagi.</p>
+    <a href="Akun.html" id="upgradeLink" style="display:block;padding:13px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;border-radius:8px;font-weight:700;text-decoration:none;margin-bottom:10px;">Bayar & Aktifkan</a>
+    <button onclick="document.getElementById('upgradeModal').style.display='none'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;">Batal</button>
+  </div>
+</div>
+
+<script>
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// FAQ toggle
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+// Upgrade modal
+function openUpgrade(plan) {
+  const modal = document.getElementById('upgradeModal');
+  const plans = {
+    pro: { icon: '⭐', title: 'Upgrade ke Pro', desc: 'Rp 99.000/bulan — Multi-lantai, AI Render, ekspor DXF, RAB lengkap & lebih banyak lagi.', link: 'Akun.html?upgrade=pro' },
+    dev: { icon: '👑', title: 'Upgrade ke Developer', desc: 'Rp 299.000/bulan — Semua fitur Pro + Developer Mode, Siteplan otomatis, Marketplace Template.', link: 'Akun.html?upgrade=dev' }
+  };
+  const p = plans[plan] || plans.pro;
+  document.getElementById('upgradeIcon').textContent = p.icon;
+  document.getElementById('upgradeTitle').textContent = p.title;
+  document.getElementById('upgradeDesc').textContent = p.desc;
+  document.getElementById('upgradeLink').href = p.link;
+  modal.style.display = 'flex';
+}
+document.getElementById('upgradeModal').addEventListener('click', function(e) {
+  if (e.target === this) this.style.display = 'none';
+});
+
+// Smooth nav active
+const sections = document.querySelectorAll('section[id]');
+window.addEventListener('scroll', () => {
+  const y = window.scrollY + 80;
+  sections.forEach(s => {
+    const a = document.querySelector(`.nav-links a[href="#${s.id}"]`);
+    if (a) a.style.color = (s.offsetTop <= y && s.offsetTop + s.offsetHeight > y) ? 'var(--accent)' : '';
+  });
+});
+</script>
 </body>
 </html>
