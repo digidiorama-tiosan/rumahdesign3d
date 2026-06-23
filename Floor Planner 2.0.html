@@ -59,6 +59,7 @@
     <button class="btn-sm icon-btn" onclick="redo()" title="Redo (Ctrl+Y)">↪</button>
     <div class="sep-v"></div>
     <button class="btn-sm" onclick="newProject()" title="Mulai proyek baru (kanvas kosong)">🆕 Baru</button>
+    <span id="buildingTypeIndicator" onclick="document.getElementById('buildingTypeModal').classList.add('show')" title="Klik untuk ganti jenis bangunan" style="cursor:pointer;font-size:12px;padding:4px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text3);">🏠 Rumah</span>
     <button class="btn-sm" onclick="saveProject()" title="Simpan (Ctrl+S)">💾 Simpan</button>
     <button class="btn-sm" onclick="saveAndNew()" title="Simpan lalu kosongkan kanvas">💾 Simpan & Baru</button>
     <button class="btn-sm" onclick="loadProject()" title="Muat proyek tersimpan">📂 Muat</button>
@@ -667,5 +668,6 @@
 <script src="js/mobile.js"></script>
 <script src="js/pwa.js"></script>
 <script src="js/app.js"></script>
+<script src="js/building-types.js"></script>
 </body>
 </html>
