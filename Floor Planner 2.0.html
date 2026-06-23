@@ -58,6 +58,8 @@
     <button class="btn-sm icon-btn" onclick="undo()" title="Undo (Ctrl+Z)">↩</button>
     <button class="btn-sm icon-btn" onclick="redo()" title="Redo (Ctrl+Y)">↪</button>
     <div class="sep-v"></div>
+    <button class="btn-sm" onclick="openTemplates()" title="Template bangunan siap pakai">🏠 Template</button>
+    <button class="btn-sm" onclick="shareDesign()" title="Bagikan desain via link">🔗 Bagikan</button>
     <button class="btn-sm" onclick="newProject()" title="Mulai proyek baru (kanvas kosong)">🆕 Baru</button>
     <span id="buildingTypeIndicator" onclick="document.getElementById('buildingTypeModal').classList.add('show')" title="Klik untuk ganti jenis bangunan" style="cursor:pointer;font-size:12px;padding:4px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text3);">🏠 Rumah</span>
     <button class="btn-sm" onclick="saveProject()" title="Simpan (Ctrl+S)">💾 Simpan</button>
@@ -142,6 +144,7 @@
 
       <div class="furn-infobar" id="furnInfobar">
         <span id="furnInfoName" class="furn-infobar-name"></span>
+        <div id="furnColorSwatches" style="display:flex;gap:4px;align-items:center;"></div>
         <button class="furn-infobar-btn" onclick="rotateFurn()">↻ Putar</button>
         <button class="furn-infobar-btn del" onclick="deleteFurn()">🗑 Hapus</button>
       </div>
@@ -673,5 +676,8 @@
 <script src="js/app.js"></script>
 <script src="js/building-types.js"></script>
 <script src="js/interior3d.js"></script>
+<script src="js/furnwizard.js"></script>
+<script src="js/templates.js"></script>
+<script src="js/sharelink.js"></script>
 </body>
 </html>
