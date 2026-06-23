@@ -286,15 +286,15 @@ function renderRows(){
 }
 
 async function setRole(id, role){
-  try{ await Cloud.adminSetRole(id, role); const u=_users.find(x=>x.id===id); if(u)u.role=role; loadAll(); toast('Peran diperbarui → '+role); }
+  try{ await Cloud.adminSetRole(id, role); const u=_users.find(x=>x.id===id); if(u)u.role=role; renderRows(); toast('Peran diperbarui → '+role); }
   catch(e){ toast('Gagal: '+e.message); }
 }
 async function setPlan(id, plan){
-  try{ await Cloud.adminSetPlan(id, plan); const u=_users.find(x=>x.id===id); if(u)u.plan=plan; loadAll(); toast('Paket diperbarui → '+PLAN_NAMES[plan]); }
+  try{ await Cloud.adminSetPlan(id, plan); const u=_users.find(x=>x.id===id); if(u)u.plan=plan; renderRows(); toast('Paket diperbarui → '+PLAN_NAMES[plan]); }
   catch(e){ toast('Gagal: '+e.message); }
 }
 async function toggleActive(id, currentlyActive){
-  try{ await Cloud.adminSetActive(id, !currentlyActive); loadAll(); toast(currentlyActive?'User dinonaktifkan':'User diaktifkan'); }
+  try{ await Cloud.adminSetActive(id, !currentlyActive); const u=_users.find(x=>x.id===id); if(u)u.active=!currentlyActive; renderRows(); toast(currentlyActive?'User dinonaktifkan':'User diaktifkan'); }
   catch(e){ toast('Gagal: '+e.message); }
 }
 async function delUser(id, email){
