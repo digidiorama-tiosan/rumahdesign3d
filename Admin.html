@@ -279,7 +279,7 @@ function renderRows(){
         <div class="act-btns">
           ${me?'' : `<button class="mini" onclick="toggleActive('${u.id}',${active})">${active?'Nonaktifkan':'Aktifkan'}</button>
           <button class="mini danger" onclick="delUser('${u.id}','${esc(u.email)}')">Hapus</button>
-          <button class="mini" id="savebtn_${u.id}" style="display:none;background:#3ecf8e;color:#000;border-color:#3ecf8e;" onclick="savePlanRole('${u.id}')">💾 Simpan</button>`}
+          <button class="mini" id="savebtn_${u.id}" style="background:#3ecf8e;color:#000;border-color:#3ecf8e;" onclick="savePlanRole('${u.id}')">💾 Simpan</button>`}
         </div>
       </td>
     </tr>`;
