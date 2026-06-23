@@ -42,8 +42,15 @@ window.selectBuildingType=function(type){
   if(_origNewProject)_origNewProject(true);
   updateRoomDropdown();
   updateBuildingTypeIndicator();
+  var isMultiFloor=type==='rumah_2lantai';
+  var actualType=isMultiFloor?'rumah':type;
+  window.buildingType=actualType;
   var preset=ROOM_PRESETS[type];
-  if(preset&&type!=='rumah'){
+  if(isMultiFloor&&preset.floors&&preset.floors>1){
+    if(confirm('Buat '+preset.floors+' lantai dengan layout otomatis?')){
+      applyMultiFloor(preset);
+    }
+  } else if(preset&&type!=='rumah'&&!isMultiFloor){
     var label=type==='toko'?'Toko/Ritel':'Masjid/Mushola';
     if(confirm('Tambahkan ruangan '+label+' secara otomatis?')){applyDefaultRooms(preset);}
   }
@@ -72,7 +79,7 @@ function updateRoomDropdown(){
 function updateBuildingTypeIndicator(){
   var el=document.getElementById('buildingTypeIndicator');
   if(!el)return;
-  var labels={rumah:'🏠 Rumah',toko:'🏪 Toko',masjid:'🕌 Masjid'};
+  var labels={rumah:'🏠 Rumah',toko:'🏪 Toko',masjid:'🕌 Masjid',ruko:'🏢 Ruko'};
   el.textContent=labels[window.buildingType]||'🏠 Rumah';
 }
 
@@ -80,6 +87,7 @@ window.autoArrangeByBuildingType=function(){
   var type=window.buildingType||'rumah';
   if(type==='toko')autoArrangeStore();
   else if(type==='masjid')autoArrangeMasjid();
+  else if(type==='ruko')autoArrangeRuko();
   else if(typeof autoArrangeRooms==='function')autoArrangeRooms();
 };
 
