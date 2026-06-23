@@ -755,9 +755,9 @@ header {
 
 @media (max-width: 860px) {
   .m-only { display: flex; }
-  /* floating Undo/Redo */
-  .m-undo-wrap { display: flex; gap: 8px; position: fixed; left: 12px; bottom: 78px; z-index: 1250; }
-  .m-undo-btn { width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 20px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; }
+  /* floating Undo/Redo — di bawah tombol zoom +/− (kanan-atas) */
+  .m-undo-wrap { display: flex; flex-direction: column; gap: 8px; position: fixed; right: 8px; top: 56px; left: auto; bottom: auto; z-index: 1250; }
+  .m-undo-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 19px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; }
   .m-undo-btn:active { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
 
   /* --- HEADER --- */
