@@ -1,45 +1,4 @@
-// ===================== DEVELOPER MODE · RENOVATION · SCAN · MARKETPLACE =====================
-
-// ---------- shared underlay (used by Scan) ----------
-let underlay = { img:null, dataUrl:null, x:60, y:60, scale:1, opacity:0.5, visible:false };
-function drawUnderlay(invZ) {
-  if (!underlay.visible || !underlay.img) return;
-  ctx.save();
-  ctx.globalAlpha = underlay.opacity;
-  const w = underlay.img.width * underlay.scale, h = underlay.img.height * underlay.scale;
-  ctx.drawImage(underlay.img, underlay.x, underlay.y, w, h);
-  ctx.restore();
-}
-
-// =====================================================================
-// DEVELOPER MODE — land → N units + auto siteplan
-// =====================================================================
-const UNIT_TYPES = {
-  21: { kavW:5,  kavD:12, name:'Tipe 21' },
-  36: { kavW:6,  kavD:12, name:'Tipe 36' },
-  45: { kavW:6,  kavD:15, name:'Tipe 45' },
-  54: { kavW:6,  kavD:16, name:'Tipe 54' },
-  60: { kavW:8,  kavD:15, name:'Tipe 60' },
-  70: { kavW:8,  kavD:15, name:'Tipe 70' },
-};
-let devState = { landW:50, landH:100, type:36, roadW:6 };
-let devLastPlan = null;
-
-function computeDevPlan(W, H, typeKey, roadW) {
-  const u = UNIT_TYPES[typeKey]; if (!u) return null;
-  const cols = Math.max(1, Math.floor(W / u.kavW));
-  // a "block" = road + two back-to-back rows of kavling
-  const blockH = roadW + u.kavD*2;
-  const blocks = Math.max(1, Math.floor((H + roadW) / blockH));
-  const units = blocks * cols * 2;
-  const saleable = units * (u.kavW*u.kavD);
-  const totalLand = W*H;
-  const roadArea = totalLand - saleable;
-  return { u, cols, blocks, units, saleable, totalLand, roadArea, eff: saleable/totalLand, roadW };
-}
-function renderDevMode(c) {
-  const d = devState;
-  c.innerHTML = `
+let underlay={img:null,dataUrl:null,x:60,y:60,scale:1,opacity:0.5,visible:false};function drawUnderlay(invZ){if(!underlay.visible||!underlay.img)return;ctx.save();ctx.globalAlpha=underlay.opacity;const w=underlay.img.width*underlay.scale,h=underlay.img.height*underlay.scale;ctx.drawImage(underlay.img,underlay.x,underlay.y,w,h);ctx.restore();}const UNIT_TYPES={21:{kavW:5,kavD:12,name:'Tipe 21'},36:{kavW:6,kavD:12,name:'Tipe 36'},45:{kavW:6,kavD:15,name:'Tipe 45'},54:{kavW:6,kavD:16,name:'Tipe 54'},60:{kavW:8,kavD:15,name:'Tipe 60'},70:{kavW:8,kavD:15,name:'Tipe 70'},};let devState={landW:50,landH:100,type:36,roadW:6};let devLastPlan=null;function computeDevPlan(W,H,typeKey,roadW){const u=UNIT_TYPES[typeKey];if(!u)return null;const cols=Math.max(1,Math.floor(W/u.kavW));const blockH=roadW+u.kavD*2;const blocks=Math.max(1,Math.floor((H+roadW)/blockH));const units=blocks*cols*2;const saleable=units*(u.kavW*u.kavD);const totalLand=W*H;const roadArea=totalLand-saleable;return{u,cols,blocks,units,saleable,totalLand,roadArea,eff:saleable/totalLand,roadW};}function renderDevMode(c){const d=devState;c.innerHTML=`
     <div class="ai-title">🏘️ Developer Mode</div>
     <div class="ai-sub">Untuk developer perumahan: masukkan luas lahan & tipe rumah → sistem hitung <b>jumlah unit</b> dan susun <b>siteplan otomatis</b> (kavling + jalan).</div>
     <div class="ai-card">
@@ -47,22 +6,13 @@ function renderDevMode(c) {
         <div class="ai-field"><label>Lebar lahan (m)</label><input class="ai-input" type="number" id="dvW" value="${d.landW}" min="10" max="500"></div>
         <div class="ai-field"><label>Panjang lahan (m)</label><input class="ai-input" type="number" id="dvH" value="${d.landH}" min="10" max="500"></div>
         <div class="ai-field"><label>Tipe rumah</label>
-          <select class="ai-input" id="dvType">${Object.keys(UNIT_TYPES).map(k=>`<option value="${k}" ${+k===d.type?'selected':''}>${UNIT_TYPES[k].name} — kavling ${UNIT_TYPES[k].kavW}×${UNIT_TYPES[k].kavD}m</option>`).join('')}</select>
+          <select class="ai-input" id="dvType">${Object.keys(UNIT_TYPES).map(k=>`<option value="${k}"${+k===d.type?'selected':''}>${UNIT_TYPES[k].name}—kavling ${UNIT_TYPES[k].kavW}×${UNIT_TYPES[k].kavD}m</option>`).join('')}</select>
         </div>
         <div class="ai-field"><label>Lebar jalan (m)</label><input class="ai-input" type="number" id="dvRoad" value="${d.roadW}" min="3" max="12" step="0.5"></div>
       </div>
       <button class="ai-btn-primary" style="margin-top:14px;" onclick="runDevMode()">🏗️ Generate Siteplan</button>
     </div>
-    <div id="dvResult"></div>`;
-}
-function runDevMode() {
-  devState = { landW:+document.getElementById('dvW').value||50, landH:+document.getElementById('dvH').value||100,
-               type:+document.getElementById('dvType').value, roadW:+document.getElementById('dvRoad').value||6 };
-  const p = computeDevPlan(devState.landW, devState.landH, devState.type, devState.roadW);
-  if (!p) return;
-  devLastPlan = p;
-  const box = document.getElementById('dvResult');
-  box.innerHTML = `
+    <div id="dvResult"></div>`;}function runDevMode(){devState={landW:+document.getElementById('dvW').value||50,landH:+document.getElementById('dvH').value||100,type:+document.getElementById('dvType').value,roadW:+document.getElementById('dvRoad').value||6};const p=computeDevPlan(devState.landW,devState.landH,devState.type,devState.roadW);if(!p)return;devLastPlan=p;const box=document.getElementById('dvResult');box.innerHTML=`
     <div class="opt-total"><div class="opt-total-label">KAPASITAS LAHAN ${devState.landW}×${devState.landH} m (${(p.totalLand).toLocaleString('id')} m²)</div>
       <div class="opt-total-value" style="color:#a78bfa">${p.units} unit ${p.u.name}</div>
       <div class="rab-total-sub">${p.blocks} blok × ${p.cols} kolom × 2 baris · efisiensi lahan ${(p.eff*100).toFixed(0)}%</div></div>
@@ -74,139 +24,11 @@ function runDevMode() {
       <div class="mat-card"><div class="mc-ic">🛣️</div><div class="mc-q">${Math.round(p.roadArea).toLocaleString('id')}</div><div class="mc-u">m²</div><div class="mc-n">Jalan + fasum</div></div>
       <div class="mat-card"><div class="mc-ic">📊</div><div class="mc-q">${(p.eff*100).toFixed(0)}</div><div class="mc-u">%</div><div class="mc-n">Efisiensi</div></div>
     </div>
-    <div class="ai-sub" style="margin-top:10px;">💡 Klik salah satu unit konsep lalu pakai <b>Marketplace Template</b> untuk mendesain tipe rumahnya.</div>`;
-  const cv = document.getElementById('devCanvas'); if (cv) drawDevSiteplan(cv.getContext('2d'), cv.width, cv.height, devState, p);
-  showNotif(`🏘️ ${p.units} unit ${p.u.name} tersusun`);
-}
-function drawDevSiteplan(g, CW, CH, d, p) {
-  g.fillStyle = '#11131a'; g.fillRect(0,0,CW,CH);
-  const pad = 26;
-  const sc = Math.min((CW-pad*2)/d.landW, (CH-pad*2)/d.landH);
-  const ox = (CW - d.landW*sc)/2, oy = (CH - d.landH*sc)/2;
-  // land + road base
-  g.fillStyle = '#3a3d47'; g.fillRect(ox, oy, d.landW*sc, d.landH*sc);
-  g.strokeStyle = '#7a8b5a'; g.lineWidth = 2; g.strokeRect(ox, oy, d.landW*sc, d.landH*sc);
-  const blockH = d.roadW + p.u.kavD*2;
-  const colors = ['#4a9eff','#3ecf8e','#a78bfa','#f5a623','#34d399','#fb923c'];
-  let n = 0;
-  for (let bl=0; bl<p.blocks; bl++) {
-    const blockTop = oy + bl*blockH*sc;
-    // road strip at top of block
-    g.fillStyle = '#52565f'; g.fillRect(ox, blockTop, d.landW*sc, d.roadW*sc);
-    // dashes
-    g.strokeStyle='#d9c14a'; g.setLineDash([6,6]); g.lineWidth=1; g.beginPath(); g.moveTo(ox, blockTop+d.roadW*sc/2); g.lineTo(ox+d.landW*sc, blockTop+d.roadW*sc/2); g.stroke(); g.setLineDash([]);
-    // two rows of kavling under the road
-    [0,1].forEach(rowi=>{
-      const rowY = blockTop + d.roadW*sc + rowi*p.u.kavD*sc;
-      for (let cx=0; cx<p.cols; cx++) {
-        const ux = ox + cx*p.u.kavW*sc;
-        g.fillStyle = colors[n % colors.length] + '55';
-        g.fillRect(ux+1, rowY+1, p.u.kavW*sc-2, p.u.kavD*sc-2);
-        g.strokeStyle = colors[n % colors.length]; g.lineWidth=1; g.strokeRect(ux+1, rowY+1, p.u.kavW*sc-2, p.u.kavD*sc-2);
-        // house footprint inside kavling
-        g.fillStyle = '#cfd6e6'; g.fillRect(ux+3, rowY+ (rowi?p.u.kavD*sc*0.45:3), p.u.kavW*sc-6, p.u.kavD*sc*0.5);
-        if (sc*p.u.kavW > 22) { g.fillStyle='#fff'; g.font=`bold ${Math.min(10,sc*p.u.kavW/4)}px 'Space Mono',monospace`; g.textAlign='center'; g.fillText('T'+d.type, ux+p.u.kavW*sc/2, rowY+p.u.kavD*sc/2); }
-        n++;
-      }
-    });
-  }
-  g.fillStyle='#8b8fa8'; g.font="11px 'Space Mono',monospace"; g.textAlign='left'; g.textBaseline='bottom';
-  g.fillText(`${d.landW}×${d.landH} m · ${p.units} unit ${p.u.name}`, ox, oy-6);
-}
-
-// =====================================================================
-// RENOVATION MODE — edit the current plan with AI / heuristics
-// =====================================================================
-const ROOM_KEYWORDS = [
-  [/dapur|kitchen/,'Dapur'],[/kamar mandi|km\/wc|wc|toilet|mandi/,'Kamar Mandi'],
-  [/kamar utama|master/,'Kamar Utama'],[/kamar|bedroom/,'Kamar Tidur'],
-  [/ruang tamu|tamu|living/,'Ruang Tamu'],[/ruang makan|makan|dining/,'Ruang Makan'],
-  [/ruang keluarga|keluarga|family/,'Ruang Keluarga'],[/garasi|garage/,'Garasi'],
-  [/teras/,'Teras'],[/gudang/,'Gudang'],[/kerja|kantor|wfh/,'Ruang Kerja'],[/gaming/,'Ruang Gaming'],
-];
-function detectRoomType(s){ for(const [re,t] of ROOM_KEYWORDS) if(re.test(s)) return t; return null; }
-function renderRenovation(c) {
-  const has = activeFloor().rooms.length>0;
-  c.innerHTML = `
+    <div class="ai-sub" style="margin-top:10px;">💡 Klik salah satu unit konsep lalu pakai <b>Marketplace Template</b> untuk mendesain tipe rumahnya.</div>`;const cv=document.getElementById('devCanvas');if(cv)drawDevSiteplan(cv.getContext('2d'),cv.width,cv.height,devState,p);showNotif(`🏘️ ${p.units} unit ${p.u.name} tersusun`);}function drawDevSiteplan(g,CW,CH,d,p){g.fillStyle='#11131a';g.fillRect(0,0,CW,CH);const pad=26;const sc=Math.min((CW-pad*2)/d.landW,(CH-pad*2)/d.landH);const ox=(CW-d.landW*sc)/2,oy=(CH-d.landH*sc)/2;g.fillStyle='#3a3d47';g.fillRect(ox,oy,d.landW*sc,d.landH*sc);g.strokeStyle='#7a8b5a';g.lineWidth=2;g.strokeRect(ox,oy,d.landW*sc,d.landH*sc);const blockH=d.roadW+p.u.kavD*2;const colors=['#4a9eff','#3ecf8e','#a78bfa','#f5a623','#34d399','#fb923c'];let n=0;for(let bl=0;bl<p.blocks;bl++){const blockTop=oy+bl*blockH*sc;g.fillStyle='#52565f';g.fillRect(ox,blockTop,d.landW*sc,d.roadW*sc);g.strokeStyle='#d9c14a';g.setLineDash([6,6]);g.lineWidth=1;g.beginPath();g.moveTo(ox,blockTop+d.roadW*sc/2);g.lineTo(ox+d.landW*sc,blockTop+d.roadW*sc/2);g.stroke();g.setLineDash([]);[0,1].forEach(rowi=>{const rowY=blockTop+d.roadW*sc+rowi*p.u.kavD*sc;for(let cx=0;cx<p.cols;cx++){const ux=ox+cx*p.u.kavW*sc;g.fillStyle=colors[n%colors.length]+'55';g.fillRect(ux+1,rowY+1,p.u.kavW*sc-2,p.u.kavD*sc-2);g.strokeStyle=colors[n%colors.length];g.lineWidth=1;g.strokeRect(ux+1,rowY+1,p.u.kavW*sc-2,p.u.kavD*sc-2);g.fillStyle='#cfd6e6';g.fillRect(ux+3,rowY+(rowi?p.u.kavD*sc*0.45:3),p.u.kavW*sc-6,p.u.kavD*sc*0.5);if(sc*p.u.kavW>22){g.fillStyle='#fff';g.font=`bold ${Math.min(10,sc*p.u.kavW/4)}px 'Space Mono',monospace`;g.textAlign='center';g.fillText('T'+d.type,ux+p.u.kavW*sc/2,rowY+p.u.kavD*sc/2);}n++;}});}g.fillStyle='#8b8fa8';g.font="11px 'Space Mono',monospace";g.textAlign='left';g.textBaseline='bottom';g.fillText(`${d.landW}×${d.landH} m · ${p.units} unit ${p.u.name}`,ox,oy-6);}const ROOM_KEYWORDS=[[/dapur|kitchen/,'Dapur'],[/kamar mandi|km\/wc|wc|toilet|mandi/,'Kamar Mandi'],[/kamar utama|master/,'Kamar Utama'],[/kamar|bedroom/,'Kamar Tidur'],[/ruang tamu|tamu|living/,'Ruang Tamu'],[/ruang makan|makan|dining/,'Ruang Makan'],[/ruang keluarga|keluarga|family/,'Ruang Keluarga'],[/garasi|garage/,'Garasi'],[/teras/,'Teras'],[/gudang/,'Gudang'],[/kerja|kantor|wfh/,'Ruang Kerja'],[/gaming/,'Ruang Gaming'],];function detectRoomType(s){for(const[re,t]of ROOM_KEYWORDS)if(re.test(s))return t;return null;}function renderRenovation(c){const has=activeFloor().rooms.length>0;c.innerHTML=`
     <div class="ai-title">🔨 Renovation Mode</div>
     <div class="ai-sub">Ubah denah yang sedang aktif: perbesar ruang, tambah kamar, atau hapus. Ketik instruksi biasa atau pakai tombol cepat.</div>
-    ${!has?`<div class="ai-result">⚠️ Belum ada denah di lantai aktif. Buat dulu via <b>AI Auto Layout</b>, <b>Marketplace Template</b>, atau <b>Scan Denah</b>.</div>`:`
-    <div class="ai-card">
-      <textarea class="ai-prompt" id="renoPrompt" placeholder="cth: perbesar dapur · tambah kamar tidur · perkecil garasi · hapus gudang"></textarea>
-      <div class="ai-examples">
-        ${['perbesar dapur','tambah kamar tidur','tambah kamar mandi','perbesar ruang tamu','tambah ruang kerja'].map(e=>`<span class="ai-ex" onclick="document.getElementById('renoPrompt').value='${e}'">${e}</span>`).join('')}
-      </div>
-      <button class="ai-btn-primary" style="margin-top:12px;" onclick="runRenovation()">🔨 Terapkan Renovasi</button>
-    </div>
-    <div class="ai-card">
-      <div class="ai-card-title">Aksi Cepat</div>
-      <div class="ai-toggle-row">
-        <div class="ai-chip" onclick="renoOp({op:'enlarge',room:'Dapur'})">＋ Perbesar Dapur</div>
-        <div class="ai-chip" onclick="renoOp({op:'add',room:'Kamar Tidur'})">＋ Kamar Tidur</div>
-        <div class="ai-chip" onclick="renoOp({op:'add',room:'Kamar Mandi'})">＋ Kamar Mandi</div>
-        <div class="ai-chip" onclick="renoOp({op:'enlarge',room:'Ruang Tamu'})">＋ Perbesar R. Tamu</div>
-        <div class="ai-chip" onclick="renoOp({op:'add',room:'Ruang Kerja'})">＋ Ruang Kerja</div>
-      </div>
-    </div>`}
-    <div id="renoResult"></div>`;
-}
-async function runRenovation() {
-  const prompt = document.getElementById('renoPrompt').value.trim();
-  if (!prompt) { showNotif('⚠️ Tulis instruksi renovasi'); return; }
-  let op = null;
-  if (aiAvailable()) {
-    const txt = await aiComplete(`Ubah instruksi renovasi rumah ini jadi JSON. Jawab HANYA JSON. Schema: {"op":"enlarge"|"shrink"|"add"|"remove","room":"Dapur|Kamar Tidur|Kamar Utama|Kamar Mandi|Ruang Tamu|Ruang Makan|Ruang Keluarga|Garasi|Teras|Gudang|Ruang Kerja|Ruang Gaming","factor":number(opsional, default 1.3)}. Instruksi: "${prompt.replace(/"/g,"'")}"`);
-    op = extractJSON(txt);
-  }
-  if (!op || !op.op) op = heuristicReno(prompt);
-  if (!op) { showNotif('⚠️ Tidak paham instruksi — coba tombol cepat'); return; }
-  renoOp(op);
-}
-function heuristicReno(p) {
-  p = p.toLowerCase();
-  const room = detectRoomType(p);
-  let opType = null;
-  if (/tambah|add|baru/.test(p)) opType = 'add';
-  else if (/perbesar|besar|luas|lebar|gede/.test(p)) opType = 'enlarge';
-  else if (/perkecil|kecil/.test(p)) opType = 'shrink';
-  else if (/hapus|buang|hilang/.test(p)) opType = 'remove';
-  if (!opType || (!room && opType!=='add')) return room?{op:opType||'enlarge',room}:null;
-  return { op:opType, room: room||'Kamar Tidur' };
-}
-function renoOp(op) {
-  const f = activeFloor();
-  saveSnapshot();
-  let msg = '';
-  if (op.op === 'add') {
-    const sizes = { 'Ruang Tamu':[200,160],'Kamar Tidur':[160,160],'Kamar Utama':[200,160],'Dapur':[160,120],'Kamar Mandi':[80,80],'Ruang Makan':[160,120],'Garasi':[200,120],'Teras':[200,80],'Gudang':[80,100],'Ruang Kerja':[140,120],'Ruang Gaming':[160,140] };
-    const [w,h] = sizes[op.room]||[160,120];
-    const b = (typeof floorBounds==='function') ? floorBounds(f.rooms) : null;
-    const nx = b ? b.maxX + 20 : 80, ny = b ? b.minY : 80;
-    addRoom(op.room, nx, ny, w, h);
-    msg = `➕ ${op.room} ditambahkan`;
-  } else {
-    const r = f.rooms.find(x=>x.type===op.room) || f.rooms.find(x=>x.type.includes(op.room));
-    if (!r) { showNotif('⚠️ Ruang "'+op.room+'" tidak ada di denah'); return; }
-    if (op.op === 'remove') { deleteRoom(r.id); msg = `🗑 ${op.room} dihapus`; }
-    else {
-      const fac = op.factor && op.factor>0.3 && op.factor<3 ? op.factor : (op.op==='shrink'?0.75:1.3);
-      r.w = Math.max(GRID, Math.round(r.w*fac/GRID)*GRID);
-      r.h = Math.max(GRID, Math.round(r.h*fac/GRID)*GRID);
-      msg = `${op.op==='shrink'?'➖':'➕'} ${op.room} di${op.op==='shrink'?'perkecil':'perbesar'} (${(r.w/PX_PER_M).toFixed(1)}×${(r.h/PX_PER_M).toFixed(1)}m)`;
-    }
-  }
-  if (typeof detectRooms==='function') detectRooms();
-  updateRoomList(); updateStats(); recalcRAB(); renderSelectedRoomProps(); render();
-  showNotif(msg);
-  const box = document.getElementById('renoResult');
-  if (box) box.innerHTML = `<div class="ai-result"><b>✅ ${msg}</b>\nDenah, RAB & 3D sudah diperbarui. <a style="color:#a78bfa;cursor:pointer" onclick="closeAIStudio()">Lihat denah →</a></div>`;
-}
-
-// =====================================================================
-// SCAN FLOORPLAN — photo as tracing underlay (honest, no CV model)
-// =====================================================================
-function renderScan(c) {
-  c.innerHTML = `
+    ${!has?`<div class="ai-result">⚠️Belum ada denah di lantai aktif.Buat dulu via<b>AI Auto Layout</b>,<b>Marketplace Template</b>,atau<b>Scan Denah</b>.</div>`:`<div class="ai-card"><textarea class="ai-prompt"id="renoPrompt"placeholder="cth: perbesar dapur · tambah kamar tidur · perkecil garasi · hapus gudang"></textarea><div class="ai-examples">${['perbesar dapur','tambah kamar tidur','tambah kamar mandi','perbesar ruang tamu','tambah ruang kerja'].map(e=>`<span class="ai-ex" onclick="document.getElementById('renoPrompt').value='${e}'">${e}</span>`).join('')}</div><button class="ai-btn-primary"style="margin-top:12px;"onclick="runRenovation()">🔨Terapkan Renovasi</button></div><div class="ai-card"><div class="ai-card-title">Aksi Cepat</div><div class="ai-toggle-row"><div class="ai-chip"onclick="renoOp({op:'enlarge',room:'Dapur'})">＋Perbesar Dapur</div><div class="ai-chip"onclick="renoOp({op:'add',room:'Kamar Tidur'})">＋Kamar Tidur</div><div class="ai-chip"onclick="renoOp({op:'add',room:'Kamar Mandi'})">＋Kamar Mandi</div><div class="ai-chip"onclick="renoOp({op:'enlarge',room:'Ruang Tamu'})">＋Perbesar R.Tamu</div><div class="ai-chip"onclick="renoOp({op:'add',room:'Ruang Kerja'})">＋Ruang Kerja</div></div></div>`}
+    <div id="renoResult"></div>`;}async function runRenovation(){const prompt=document.getElementById('renoPrompt').value.trim();if(!prompt){showNotif('⚠️ Tulis instruksi renovasi');return;}let op=null;if(aiAvailable()){const txt=await aiComplete(`Ubah instruksi renovasi rumah ini jadi JSON. Jawab HANYA JSON. Schema: {"op":"enlarge"|"shrink"|"add"|"remove","room":"Dapur|Kamar Tidur|Kamar Utama|Kamar Mandi|Ruang Tamu|Ruang Makan|Ruang Keluarga|Garasi|Teras|Gudang|Ruang Kerja|Ruang Gaming","factor":number(opsional, default 1.3)}. Instruksi: "${prompt.replace(/"/g,"'")}"`);op=extractJSON(txt);}if(!op||!op.op)op=heuristicReno(prompt);if(!op){showNotif('⚠️ Tidak paham instruksi — coba tombol cepat');return;}renoOp(op);}function heuristicReno(p){p=p.toLowerCase();const room=detectRoomType(p);let opType=null;if(/tambah|add|baru/.test(p))opType='add';else if(/perbesar|besar|luas|lebar|gede/.test(p))opType='enlarge';else if(/perkecil|kecil/.test(p))opType='shrink';else if(/hapus|buang|hilang/.test(p))opType='remove';if(!opType||(!room&&opType!=='add'))return room?{op:opType||'enlarge',room}:null;return{op:opType,room:room||'Kamar Tidur'};}function renoOp(op){const f=activeFloor();saveSnapshot();let msg='';if(op.op==='add'){const sizes={'Ruang Tamu':[200,160],'Kamar Tidur':[160,160],'Kamar Utama':[200,160],'Dapur':[160,120],'Kamar Mandi':[80,80],'Ruang Makan':[160,120],'Garasi':[200,120],'Teras':[200,80],'Gudang':[80,100],'Ruang Kerja':[140,120],'Ruang Gaming':[160,140]};const[w,h]=sizes[op.room]||[160,120];const b=(typeof floorBounds==='function')?floorBounds(f.rooms):null;const nx=b?b.maxX+20:80,ny=b?b.minY:80;addRoom(op.room,nx,ny,w,h);msg=`➕ ${op.room} ditambahkan`;}else{const r=f.rooms.find(x=>x.type===op.room)||f.rooms.find(x=>x.type.includes(op.room));if(!r){showNotif('⚠️ Ruang "'+op.room+'" tidak ada di denah');return;}if(op.op==='remove'){deleteRoom(r.id);msg=`🗑 ${op.room} dihapus`;}else{const fac=op.factor&&op.factor>0.3&&op.factor<3?op.factor:(op.op==='shrink'?0.75:1.3);r.w=Math.max(GRID,Math.round(r.w*fac/GRID)*GRID);r.h=Math.max(GRID,Math.round(r.h*fac/GRID)*GRID);msg=`${op.op==='shrink'?'➖':'➕'} ${op.room} di${op.op==='shrink'?'perkecil':'perbesar'} (${(r.w/PX_PER_M).toFixed(1)}×${(r.h/PX_PER_M).toFixed(1)}m)`;}}if(typeof detectRooms==='function')detectRooms();updateRoomList();updateStats();recalcRAB();renderSelectedRoomProps();render();showNotif(msg);const box=document.getElementById('renoResult');if(box)box.innerHTML=`<div class="ai-result"><b>✅ ${msg}</b>\nDenah, RAB & 3D sudah diperbarui. <a style="color:#a78bfa;cursor:pointer" onclick="closeAIStudio()">Lihat denah →</a></div>`;}function renderScan(c){c.innerHTML=`
     <div class="ai-title">📷 Scan Denah</div>
     <div class="ai-sub">Ubah foto denah jadi denah editable.</div>
     <div class="ai-result" style="margin-bottom:16px;">ℹ️ <b>Catatan jujur:</b> konversi foto→vektor 100% otomatis butuh model computer-vision yang belum tersedia di lingkungan ini. Cara paling akurat & dipakai profesional: jadikan foto sebagai <b>underlay (kalkir digital)</b>, lalu <b>trace</b> pakai tool Smart Wall 🧱 — ruang akan otomatis terdeteksi.</div>
@@ -230,72 +52,9 @@ function renderScan(c) {
       <div class="ai-card-title">3. Trace</div>
       <div class="ai-sub" style="margin:0 0 10px;">Tutup panel ini, pilih tool <b>Smart Wall 🧱</b>, lalu jiplak dinding di atas foto. Ruang otomatis terdeteksi.</div>
       <button class="ai-btn-primary" onclick="closeAIStudio(); setTool('swall');">🧱 Mulai Trace dengan Smart Wall</button>
-    </div>`;
-}
-function scanLoad(e) {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const img = new Image();
-    img.onload = () => {
-      underlay.img = img; underlay.dataUrl = ev.target.result; underlay.visible = true;
-      // center on canvas world
-      underlay.x = 80; underlay.y = 80;
-      underlay.scale = Math.min(1, 600/img.width);
-      render(); renderScan(document.getElementById('aiContent'));
-      showNotif('📷 Underlay dimuat — atur skala lalu trace');
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-function scanRemove() { underlay.img=null; underlay.dataUrl=null; underlay.visible=false; render(); renderScan(document.getElementById('aiContent')); showNotif('🗑 Underlay dihapus'); }
-
-// =====================================================================
-// MARKETPLACE TEMPLATE — ready-made house types
-// =====================================================================
-const TEMPLATES = [
-  { id:'t36', name:'Rumah Tipe 36', tag:'Minimalis · 1 lantai', spec:{landW:6, landH:12, beds:2, baths:1, floors:1, garage:false, roof:'pelana', style:'Minimalis Modern'}, luas:36 },
-  { id:'t45', name:'Rumah Tipe 45', tag:'Minimalis · 1 lantai', spec:{landW:8, landH:12, beds:2, baths:1, floors:1, garage:true, roof:'pelana', style:'Scandinavian'}, luas:45 },
-  { id:'t60', name:'Rumah Tipe 60', tag:'Modern · 1 lantai', spec:{landW:8, landH:15, beds:3, baths:2, floors:1, garage:true, roof:'limas', style:'Japandi'}, luas:60 },
-  { id:'t90', name:'Rumah Tipe 90', tag:'Modern · 2 lantai', spec:{landW:9, landH:14, beds:4, baths:3, floors:2, garage:true, roof:'dak', style:'Modern Luxury'}, luas:90 },
-];
-function renderMarketplace(c) {
-  c.innerHTML = `
+    </div>`;}function scanLoad(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{const img=new Image();img.onload=()=>{underlay.img=img;underlay.dataUrl=ev.target.result;underlay.visible=true;underlay.x=80;underlay.y=80;underlay.scale=Math.min(1,600/img.width);render();renderScan(document.getElementById('aiContent'));showNotif('📷 Underlay dimuat — atur skala lalu trace');};img.src=ev.target.result;};reader.readAsDataURL(file);}function scanRemove(){underlay.img=null;underlay.dataUrl=null;underlay.visible=false;render();renderScan(document.getElementById('aiContent'));showNotif('🗑 Underlay dihapus');}const TEMPLATES=[{id:'t36',name:'Rumah Tipe 36',tag:'Minimalis · 1 lantai',spec:{landW:6,landH:12,beds:2,baths:1,floors:1,garage:false,roof:'pelana',style:'Minimalis Modern'},luas:36},{id:'t45',name:'Rumah Tipe 45',tag:'Minimalis · 1 lantai',spec:{landW:8,landH:12,beds:2,baths:1,floors:1,garage:true,roof:'pelana',style:'Scandinavian'},luas:45},{id:'t60',name:'Rumah Tipe 60',tag:'Modern · 1 lantai',spec:{landW:8,landH:15,beds:3,baths:2,floors:1,garage:true,roof:'limas',style:'Japandi'},luas:60},{id:'t90',name:'Rumah Tipe 90',tag:'Modern · 2 lantai',spec:{landW:9,landH:14,beds:4,baths:3,floors:2,garage:true,roof:'dak',style:'Modern Luxury'},luas:90},];function renderMarketplace(c){c.innerHTML=`
     <div class="ai-title">🏪 Marketplace Template</div>
     <div class="ai-sub">Denah siap pakai — klik untuk langsung membangun, lalu sesuaikan. Semua terhubung ke RAB, 3D & gambar kerja.</div>
     <div class="tpl-grid">
-      ${TEMPLATES.map(t=>`
-        <div class="tpl-card">
-          <canvas class="tpl-thumb" id="thumb-${t.id}" width="240" height="150"></canvas>
-          <div class="tpl-body">
-            <div class="tpl-name">${t.name}</div>
-            <div class="tpl-tag">${t.tag}</div>
-            <div class="tpl-specs">${t.luas} m² · ${t.spec.beds} KT · ${t.spec.baths} KM${t.spec.garage?' · garasi':''}</div>
-            <button class="ai-btn-primary" style="width:100%; margin-top:10px; font-size:13px; padding:9px;" onclick="useTemplate('${t.id}')">Pakai Template</button>
-          </div>
-        </div>`).join('')}
-    </div>`;
-  // draw thumbnails
-  TEMPLATES.forEach(t=>{ const cv=document.getElementById('thumb-'+t.id); if(cv) drawTemplateThumb(cv.getContext('2d'), cv.width, cv.height, t.spec); });
-}
-function drawTemplateThumb(g, W, H, spec) {
-  g.fillStyle = '#1b1d26'; g.fillRect(0,0,W,H);
-  // build a quick program + treemap for the ground floor
-  const prog = buildProgram(spec.beds, spec.baths, spec.garage, 1, {})[0];
-  const items = prog.slice().sort((a,b)=>b.weight-a.weight);
-  treemap(items, 0, 0, spec.landW, spec.landH*0.6);
-  const pad=14; const sc=Math.min((W-pad*2)/spec.landW, (H-pad*2)/(spec.landH*0.6));
-  const ox=(W-spec.landW*sc)/2, oy=(H-spec.landH*0.6*sc)/2;
-  const colors=['#4a9eff','#3ecf8e','#a78bfa','#f5a623','#34d399','#fb923c','#22d3ee','#f472b6'];
-  items.forEach((it,i)=>{ const r=it.rect; g.fillStyle=colors[i%colors.length]+'66'; g.fillRect(ox+r.x*sc+1, oy+r.y*sc+1, r.w*sc-2, r.h*sc-2); g.strokeStyle=colors[i%colors.length]; g.lineWidth=1; g.strokeRect(ox+r.x*sc+1, oy+r.y*sc+1, r.w*sc-2, r.h*sc-2); });
-  g.strokeStyle='#7a8b5a'; g.lineWidth=1.5; g.strokeRect(ox,oy,spec.landW*sc,spec.landH*0.6*sc);
-}
-function useTemplate(id) {
-  const t = TEMPLATES.find(x=>x.id===id); if (!t) return;
-  generateHouse({ ...t.spec, extras:{} });
-  if (t.spec.style && typeof styleIdFromName==='function') aiState.interiorStyle = styleIdFromName(t.spec.style);
-  showNotif('🏪 '+t.name+' dibuat — silakan sesuaikan');
-  const c = document.getElementById('aiContent');
-  c.insertAdjacentHTML('afterbegin', `<div class="ai-result" style="margin-bottom:14px;"><b>✅ ${t.name} dibuat!</b> <a style="color:#a78bfa;cursor:pointer" onclick="closeAIStudio()">Lihat denah →</a> · <a style="color:#a78bfa;cursor:pointer" onclick="closeAIStudio(); setView('3d')">Lihat 3D →</a></div>`);
-}
+      ${TEMPLATES.map(t=>`<div class="tpl-card"><canvas class="tpl-thumb"id="thumb-${t.id}"width="240"height="150"></canvas><div class="tpl-body"><div class="tpl-name">${t.name}</div><div class="tpl-tag">${t.tag}</div><div class="tpl-specs">${t.luas}m²·${t.spec.beds}KT·${t.spec.baths}KM${t.spec.garage?' · garasi':''}</div><button class="ai-btn-primary"style="width:100%; margin-top:10px; font-size:13px; padding:9px;"onclick="useTemplate('${t.id}')">Pakai Template</button></div></div>`).join('')}
+    </div>`;TEMPLATES.forEach(t=>{const cv=document.getElementById('thumb-'+t.id);if(cv)drawTemplateThumb(cv.getContext('2d'),cv.width,cv.height,t.spec);});}function drawTemplateThumb(g,W,H,spec){g.fillStyle='#1b1d26';g.fillRect(0,0,W,H);const prog=buildProgram(spec.beds,spec.baths,spec.garage,1,{})[0];const items=prog.slice().sort((a,b)=>b.weight-a.weight);treemap(items,0,0,spec.landW,spec.landH*0.6);const pad=14;const sc=Math.min((W-pad*2)/spec.landW,(H-pad*2)/(spec.landH*0.6));const ox=(W-spec.landW*sc)/2,oy=(H-spec.landH*0.6*sc)/2;const colors=['#4a9eff','#3ecf8e','#a78bfa','#f5a623','#34d399','#fb923c','#22d3ee','#f472b6'];items.forEach((it,i)=>{const r=it.rect;g.fillStyle=colors[i%colors.length]+'66';g.fillRect(ox+r.x*sc+1,oy+r.y*sc+1,r.w*sc-2,r.h*sc-2);g.strokeStyle=colors[i%colors.length];g.lineWidth=1;g.strokeRect(ox+r.x*sc+1,oy+r.y*sc+1,r.w*sc-2,r.h*sc-2);});g.strokeStyle='#7a8b5a';g.lineWidth=1.5;g.strokeRect(ox,oy,spec.landW*sc,spec.landH*0.6*sc);}function useTemplate(id){const t=TEMPLATES.find(x=>x.id===id);if(!t)return;generateHouse({...t.spec,extras:{}});if(t.spec.style&&typeof styleIdFromName==='function')aiState.interiorStyle=styleIdFromName(t.spec.style);showNotif('🏪 '+t.name+' dibuat — silakan sesuaikan');const c=document.getElementById('aiContent');c.insertAdjacentHTML('afterbegin',`<div class="ai-result" style="margin-bottom:14px;"><b>✅ ${t.name} dibuat!</b> <a style="color:#a78bfa;cursor:pointer" onclick="closeAIStudio()">Lihat denah →</a> · <a style="color:#a78bfa;cursor:pointer" onclick="closeAIStudio(); setView('3d')">Lihat 3D →</a></div>`);}

@@ -1,179 +1,35 @@
-// ===================== MODE INTERIOR =====================
-// Desain interior di atas denah: material dinding/lantai/plafon per ruangan,
-// penataan furnitur 3D (klik-seret), pencahayaan, tema siap pakai, RAB interior,
-// dan render fotorealistik. Terintegrasi dengan engine 3D (three3d.js).
-
-let interiorState = { active:false, roomIdx:0, light:'siang', theme:null, subtab:'tema' };
-
-// --- Palet material (kurasi + warna bebas) ---
-const WALL_COLORS = [
-  {n:'Putih Tulang', h:'#f5f3ec'}, {n:'Putih Bersih', h:'#ffffff'}, {n:'Abu Muda', h:'#d9dade'},
-  {n:'Abu Beton', h:'#b8b5ad'}, {n:'Krem', h:'#ece2cf'}, {n:'Beige Hangat', h:'#e3d4bd'},
-  {n:'Sage', h:'#c2ccb6'}, {n:'Hijau Muda', h:'#bcd0bf'}, {n:'Biru Kabut', h:'#bcc9d6'},
-  {n:'Terracotta', h:'#cf9a7e'}, {n:'Mustard', h:'#d8b257'}, {n:'Navy', h:'#3b4a63'},
-  {n:'Charcoal', h:'#4a4a4f'}, {n:'Mocha', h:'#8a6f5b'},
-];
-const FLOOR_MATS = [
-  {id:'keramik_putih', n:'Keramik Putih', h:'#eceae5', price:165000},
-  {id:'keramik_krem',  n:'Keramik Krem',  h:'#e3d8c4', price:165000},
-  {id:'granit_abu',    n:'Granit Abu',    h:'#cfcdc8', price:295000},
-  {id:'granit_hitam',  n:'Granit Hitam',  h:'#3a3a3e', price:320000},
-  {id:'marmer',        n:'Marmer Krem',   h:'#e8e2d4', price:480000},
-  {id:'kayu_terang',   n:'Parket Kayu Terang', h:'#c8a877', price:240000},
-  {id:'kayu_walnut',   n:'Parket Walnut', h:'#7a5638', price:260000},
-  {id:'vinyl_kayu',    n:'Vinyl Motif Kayu', h:'#b89366', price:135000},
-  {id:'semen_aci',     n:'Semen Ekspos',  h:'#a8a49a', price:95000},
-  {id:'teraso',        n:'Teraso',        h:'#d2cdbf', price:210000},
-];
-const CEIL_COLORS = [
-  {n:'Putih', h:'#f6f3ec'}, {n:'Putih Hangat', h:'#efe9dc'}, {n:'Abu Muda', h:'#d8d8da'},
-  {n:'Kayu', h:'#b08c5e'}, {n:'Charcoal', h:'#48484c'},
-];
-
-// --- Tema siap pakai ---
-const INT_THEMES = {
-  minimalis:   { n:'Minimalis', emo:'◻️', wall:'#f5f3ec', floor:'#eceae5', ceil:'#f6f3ec', light:'siang', lamp:true },
-  skandinavia: { n:'Skandinavia', emo:'🌿', wall:'#eef1f3', floor:'#c8a877', ceil:'#ffffff', light:'siang', lamp:true },
-  industrial:  { n:'Industrial', emo:'🏭', wall:'#b8b5ad', floor:'#a8a49a', ceil:'#48484c', light:'sore', lamp:true },
-  hangat:      { n:'Modern Hangat', emo:'🔥', wall:'#e3d4bd', floor:'#7a5638', ceil:'#efe9dc', light:'sore', lamp:true },
-  jepang:      { n:'Japandi', emo:'🎋', wall:'#ece2cf', floor:'#c8a877', ceil:'#f6f3ec', light:'siang', lamp:true },
-  mewah:       { n:'Mewah Gelap', emo:'💎', wall:'#3b4a63', floor:'#3a3a3e', ceil:'#48484c', light:'malam', lamp:true },
-};
-
-// --- Harga furnitur (Rp, perkiraan ritel; default per kategori) ---
-const INT_CAT_PRICE = { 'Ruang Tamu':2500000,'Ruang Makan':2000000,'Kamar Tidur':3000000,'Kamar Anak':1800000,'Dapur':2200000,'Kamar Mandi':900000,'Kantor':1500000,'Outdoor':1200000,'Garasi':500000,'Laundry':1500000,'Komersial':1800000,'Gym':3500000,'Lainnya':600000 };
-const INT_PRICE = {
-  sofa3:4500000, sofa2:3200000, sofa_l:7500000, kursi:1500000, meja_kopi:1200000, lemari_tv:3500000, meja_tv:1800000,
-  kasur_king:6500000, kasur_queen:5000000, kasur_single:2800000, lemari_pakaian:4500000, lemari_2pintu:2800000, meja_rias:2200000,
-  meja_makan6:4500000, meja_makan4:3000000, meja_makan8:6500000, kursi_makan:650000, buffet:3200000,
-  kulkas:4500000, kompor:2500000, oven:3500000, island:6000000, kabinet_bawah:2500000, kabinet_atas:1800000,
-  toilet:1800000, bathtub:6500000, shower:2500000, wastafel:1200000, water_heater:2200000,
-  meja_kerja:2500000, kursi_kantor:1500000, meeting:6000000, rak_buku:1800000,
-  treadmill:9000000, sepeda_statis:4500000, bench_press:3500000, piano:25000000, mobil:0, motor:0,
-  tv:4500000, ac:4500000, tanaman:250000, tanaman_besar:600000, karpet:1500000, lampu:450000,
-};
-function furnPrice(def){ return INT_PRICE[def.id] != null ? INT_PRICE[def.id] : (INT_CAT_PRICE[def.cat]||600000); }
-function rp(n){ return 'Rp ' + Math.round(n).toLocaleString('id-ID'); }
-
-// ===================== BUKA / TUTUP =====================
-function openInterior() {
-  if (!floors.some(f=>f.rooms.length)) { showNotif('⚠️ Buat ruangan dulu di Denah 2D'); return; }
-  interiorState.active = true;
-  interiorState.roomIdx = Math.min(interiorState.roomIdx, Math.max(0, activeFloor().rooms.length-1));
-  showRoof = false;                  // tanpa atap agar interior terlihat
-  document.getElementById('modal3d').classList.add('show');
-  document.getElementById('modal3d').classList.add('interior-mode');
-  setTimeout(() => { init3DScene(); setupInteriorInput(); renderInteriorPanel(); }, 140);
-}
-function closeInterior() {
-  interiorState.active = false; interiorSelFid = null;
-  document.getElementById('modal3d').classList.remove('interior-mode');
-  close3DModal();
-}
-
-// ===================== PANEL UI =====================
-function renderInteriorPanel() {
-  const panel = document.getElementById('interiorPanel'); if (!panel) return;
-  panel.style.display = 'flex';
-  const tabs = [['tema','🎨 Tema'],['material','🧱 Material'],['furnitur','🛋️ Furnitur'],['cahaya','💡 Cahaya'],['rab','📋 RAB']];
-  panel.querySelector('#intTabs').innerHTML = tabs.map(([k,l])=>
-    `<button class="int-tab${interiorState.subtab===k?' active':''}" onclick="setInteriorTab('${k}')">${l}</button>`).join('');
-  renderInteriorBody();
-}
-function setInteriorTab(k){ interiorState.subtab=k; renderInteriorPanel(); }
-
-function roomOptions(){
-  const rooms = activeFloor().rooms;
-  return rooms.map((r,i)=>`<option value="${i}" ${i===interiorState.roomIdx?'selected':''}>${r.type||r.name||('Ruang '+(i+1))}</option>`).join('');
-}
-function setIntRoom(i){ interiorState.roomIdx = +i; renderInteriorBody(); }
-
-function renderInteriorBody(){
-  const b = document.getElementById('intBody'); if (!b) return;
-  const t = interiorState.subtab;
-  if (t==='tema') return renderIntTema(b);
-  if (t==='material') return renderIntMaterial(b);
-  if (t==='furnitur') return renderIntFurnitur(b);
-  if (t==='cahaya') return renderIntCahaya(b);
-  if (t==='rab') return renderIntRAB(b);
-}
-
-// ---- Tema ----
-function renderIntTema(b){
-  b.innerHTML = `<div class="int-h">Tema Siap Pakai</div>
+let interiorState={active:false,roomIdx:0,light:'siang',theme:null,subtab:'tema'};const WALL_COLORS=[{n:'Putih Tulang',h:'#f5f3ec'},{n:'Putih Bersih',h:'#ffffff'},{n:'Abu Muda',h:'#d9dade'},{n:'Abu Beton',h:'#b8b5ad'},{n:'Krem',h:'#ece2cf'},{n:'Beige Hangat',h:'#e3d4bd'},{n:'Sage',h:'#c2ccb6'},{n:'Hijau Muda',h:'#bcd0bf'},{n:'Biru Kabut',h:'#bcc9d6'},{n:'Terracotta',h:'#cf9a7e'},{n:'Mustard',h:'#d8b257'},{n:'Navy',h:'#3b4a63'},{n:'Charcoal',h:'#4a4a4f'},{n:'Mocha',h:'#8a6f5b'},];const FLOOR_MATS=[{id:'keramik_putih',n:'Keramik Putih',h:'#eceae5',price:165000},{id:'keramik_krem',n:'Keramik Krem',h:'#e3d8c4',price:165000},{id:'granit_abu',n:'Granit Abu',h:'#cfcdc8',price:295000},{id:'granit_hitam',n:'Granit Hitam',h:'#3a3a3e',price:320000},{id:'marmer',n:'Marmer Krem',h:'#e8e2d4',price:480000},{id:'kayu_terang',n:'Parket Kayu Terang',h:'#c8a877',price:240000},{id:'kayu_walnut',n:'Parket Walnut',h:'#7a5638',price:260000},{id:'vinyl_kayu',n:'Vinyl Motif Kayu',h:'#b89366',price:135000},{id:'semen_aci',n:'Semen Ekspos',h:'#a8a49a',price:95000},{id:'teraso',n:'Teraso',h:'#d2cdbf',price:210000},];const CEIL_COLORS=[{n:'Putih',h:'#f6f3ec'},{n:'Putih Hangat',h:'#efe9dc'},{n:'Abu Muda',h:'#d8d8da'},{n:'Kayu',h:'#b08c5e'},{n:'Charcoal',h:'#48484c'},];const INT_THEMES={minimalis:{n:'Minimalis',emo:'◻️',wall:'#f5f3ec',floor:'#eceae5',ceil:'#f6f3ec',light:'siang',lamp:true},skandinavia:{n:'Skandinavia',emo:'🌿',wall:'#eef1f3',floor:'#c8a877',ceil:'#ffffff',light:'siang',lamp:true},industrial:{n:'Industrial',emo:'🏭',wall:'#b8b5ad',floor:'#a8a49a',ceil:'#48484c',light:'sore',lamp:true},hangat:{n:'Modern Hangat',emo:'🔥',wall:'#e3d4bd',floor:'#7a5638',ceil:'#efe9dc',light:'sore',lamp:true},jepang:{n:'Japandi',emo:'🎋',wall:'#ece2cf',floor:'#c8a877',ceil:'#f6f3ec',light:'siang',lamp:true},mewah:{n:'Mewah Gelap',emo:'💎',wall:'#3b4a63',floor:'#3a3a3e',ceil:'#48484c',light:'malam',lamp:true},};const INT_CAT_PRICE={'Ruang Tamu':2500000,'Ruang Makan':2000000,'Kamar Tidur':3000000,'Kamar Anak':1800000,'Dapur':2200000,'Kamar Mandi':900000,'Kantor':1500000,'Outdoor':1200000,'Garasi':500000,'Laundry':1500000,'Komersial':1800000,'Gym':3500000,'Lainnya':600000};const INT_PRICE={sofa3:4500000,sofa2:3200000,sofa_l:7500000,kursi:1500000,meja_kopi:1200000,lemari_tv:3500000,meja_tv:1800000,kasur_king:6500000,kasur_queen:5000000,kasur_single:2800000,lemari_pakaian:4500000,lemari_2pintu:2800000,meja_rias:2200000,meja_makan6:4500000,meja_makan4:3000000,meja_makan8:6500000,kursi_makan:650000,buffet:3200000,kulkas:4500000,kompor:2500000,oven:3500000,island:6000000,kabinet_bawah:2500000,kabinet_atas:1800000,toilet:1800000,bathtub:6500000,shower:2500000,wastafel:1200000,water_heater:2200000,meja_kerja:2500000,kursi_kantor:1500000,meeting:6000000,rak_buku:1800000,treadmill:9000000,sepeda_statis:4500000,bench_press:3500000,piano:25000000,mobil:0,motor:0,tv:4500000,ac:4500000,tanaman:250000,tanaman_besar:600000,karpet:1500000,lampu:450000,};function furnPrice(def){return INT_PRICE[def.id]!=null?INT_PRICE[def.id]:(INT_CAT_PRICE[def.cat]||600000);}function rp(n){return'Rp '+Math.round(n).toLocaleString('id-ID');}function openInterior(){if(!floors.some(f=>f.rooms.length)){showNotif('⚠️ Buat ruangan dulu di Denah 2D');return;}interiorState.active=true;interiorState.roomIdx=Math.min(interiorState.roomIdx,Math.max(0,activeFloor().rooms.length-1));showRoof=false;document.getElementById('modal3d').classList.add('show');document.getElementById('modal3d').classList.add('interior-mode');setTimeout(()=>{init3DScene();setupInteriorInput();renderInteriorPanel();},140);}function closeInterior(){interiorState.active=false;interiorSelFid=null;document.getElementById('modal3d').classList.remove('interior-mode');close3DModal();}function renderInteriorPanel(){const panel=document.getElementById('interiorPanel');if(!panel)return;panel.style.display='flex';const tabs=[['tema','🎨 Tema'],['material','🧱 Material'],['furnitur','🛋️ Furnitur'],['cahaya','💡 Cahaya'],['rab','📋 RAB']];panel.querySelector('#intTabs').innerHTML=tabs.map(([k,l])=>`<button class="int-tab${interiorState.subtab===k?' active':''}" onclick="setInteriorTab('${k}')">${l}</button>`).join('');renderInteriorBody();}function setInteriorTab(k){interiorState.subtab=k;renderInteriorPanel();}function roomOptions(){const rooms=activeFloor().rooms;return rooms.map((r,i)=>`<option value="${i}" ${i===interiorState.roomIdx?'selected':''}>${r.type||r.name||('Ruang '+(i+1))}</option>`).join('');}function setIntRoom(i){interiorState.roomIdx=+i;renderInteriorBody();}function renderInteriorBody(){const b=document.getElementById('intBody');if(!b)return;const t=interiorState.subtab;if(t==='tema')return renderIntTema(b);if(t==='material')return renderIntMaterial(b);if(t==='furnitur')return renderIntFurnitur(b);if(t==='cahaya')return renderIntCahaya(b);if(t==='rab')return renderIntRAB(b);}function renderIntTema(b){b.innerHTML=`<div class="int-h">Tema Siap Pakai</div>
     <div class="int-sub">Sekali klik mengubah material dinding, lantai, plafon & suasana untuk SEMUA ruangan.</div>
     <div class="int-theme-grid">
-      ${Object.entries(INT_THEMES).map(([k,t])=>`
-        <button class="int-theme${interiorState.theme===k?' active':''}" onclick="applyTheme('${k}')">
-          <span class="int-theme-emo">${t.emo}</span>
-          <span class="int-theme-name">${t.n}</span>
-          <span class="int-theme-sw"><i style="background:${t.wall}"></i><i style="background:${t.floor}"></i><i style="background:${t.ceil}"></i></span>
-        </button>`).join('')}
+      ${Object.entries(INT_THEMES).map(([k,t])=>`<button class="int-theme${interiorState.theme===k?' active':''}"onclick="applyTheme('${k}')"><span class="int-theme-emo">${t.emo}</span><span class="int-theme-name">${t.n}</span><span class="int-theme-sw"><i style="background:${t.wall}"></i><i style="background:${t.floor}"></i><i style="background:${t.ceil}"></i></span></button>`).join('')}
     </div>
-    <button class="int-reset" onclick="resetInterior()">↺ Reset ke polos</button>`;
-}
-function applyTheme(k){
-  const t = INT_THEMES[k]; if(!t) return;
-  interiorState.theme = k; interiorState.light = t.light;
-  activeFloor().rooms.forEach(r => { r.iWall=t.wall; r.iFloor=t.floor; r.iCeil=t.ceil; r.iLamp=t.lamp; });
-  rebuildInterior(); renderInteriorPanel();
-  showNotif('🎨 Tema '+t.n+' diterapkan');
-}
-function resetInterior(){
-  interiorState.theme=null;
-  activeFloor().rooms.forEach(r=>{ delete r.iWall; delete r.iFloor; delete r.iCeil; delete r.iLamp; });
-  rebuildInterior(); renderInteriorPanel(); showNotif('↺ Interior direset');
-}
-
-// ---- Material per ruangan ----
-function renderIntMaterial(b){
-  const r = activeFloor().rooms[interiorState.roomIdx];
-  if(!r){ b.innerHTML='<div class="int-sub">Tidak ada ruangan.</div>'; return; }
-  b.innerHTML = `
+    <button class="int-reset" onclick="resetInterior()">↺ Reset ke polos</button>`;}function applyTheme(k){const t=INT_THEMES[k];if(!t)return;interiorState.theme=k;interiorState.light=t.light;activeFloor().rooms.forEach(r=>{r.iWall=t.wall;r.iFloor=t.floor;r.iCeil=t.ceil;r.iLamp=t.lamp;});rebuildInterior();renderInteriorPanel();showNotif('🎨 Tema '+t.n+' diterapkan');}function resetInterior(){interiorState.theme=null;activeFloor().rooms.forEach(r=>{delete r.iWall;delete r.iFloor;delete r.iCeil;delete r.iLamp;});rebuildInterior();renderInteriorPanel();showNotif('↺ Interior direset');}function renderIntMaterial(b){const r=activeFloor().rooms[interiorState.roomIdx];if(!r){b.innerHTML='<div class="int-sub">Tidak ada ruangan.</div>';return;}b.innerHTML=`
     <div class="int-h">Material Ruangan</div>
     <select class="int-roomsel" onchange="setIntRoom(this.value)">${roomOptions()}</select>
 
     <div class="int-label">Warna Dinding</div>
     <div class="int-swatches">
-      ${WALL_COLORS.map(c=>`<button class="int-sw${r.iWall===c.h?' active':''}" title="${c.n}" style="background:${c.h}" onclick="setRoomMat('iWall','${c.h}')"></button>`).join('')}
+      ${WALL_COLORS.map(c=>`<button class="int-sw${r.iWall===c.h?' active':''}"title="${c.n}"style="background:${c.h}"onclick="setRoomMat('iWall','${c.h}')"></button>`).join('')}
       <label class="int-sw int-sw-custom" title="Warna bebas" style="background:${r.iWall||'#ffffff'}"><input type="color" value="${r.iWall||'#f5f3ec'}" oninput="setRoomMat('iWall',this.value)"></label>
     </div>
 
     <div class="int-label">Material Lantai</div>
     <div class="int-mat-list">
-      ${FLOOR_MATS.map(m=>`<button class="int-mat${r.iFloor===m.h?' active':''}" onclick="setRoomMat('iFloor','${m.h}','${m.id}')">
-        <i style="background:${m.h}"></i><span>${m.n}</span><b>${rp(m.price)}/m²</b></button>`).join('')}
+      ${FLOOR_MATS.map(m=>`<button class="int-mat${r.iFloor===m.h?' active':''}"onclick="setRoomMat('iFloor','${m.h}','${m.id}')"><i style="background:${m.h}"></i><span>${m.n}</span><b>${rp(m.price)}/m²</b></button>`).join('')}
     </div>
 
     <div class="int-label">Warna Plafon</div>
     <div class="int-swatches">
-      ${CEIL_COLORS.map(c=>`<button class="int-sw${r.iCeil===c.h?' active':''}" title="${c.n}" style="background:${c.h}" onclick="setRoomMat('iCeil','${c.h}')"></button>`).join('')}
+      ${CEIL_COLORS.map(c=>`<button class="int-sw${r.iCeil===c.h?' active':''}"title="${c.n}"style="background:${c.h}"onclick="setRoomMat('iCeil','${c.h}')"></button>`).join('')}
       <label class="int-sw int-sw-custom" title="Warna bebas" style="background:${r.iCeil||'#ffffff'}"><input type="color" value="${r.iCeil||'#f6f3ec'}" oninput="setRoomMat('iCeil',this.value)"></label>
     </div>
 
     <label class="int-check"><input type="checkbox" ${r.iLamp?'checked':''} onchange="setRoomLamp(this.checked)"> Lampu plafon (terlihat di Tur Jalan / malam)</label>
-    <button class="int-apply-all" onclick="applyMatAll()">Terapkan material ini ke semua ruangan</button>`;
-}
-function setRoomMat(key, hex, floorId){
-  const r = activeFloor().rooms[interiorState.roomIdx]; if(!r) return;
-  r[key]=hex; if(key==='iFloor' && floorId) r.iFloorId=floorId;
-  rebuildInterior(); renderInteriorBody();
-}
-function setRoomLamp(on){ const r=activeFloor().rooms[interiorState.roomIdx]; if(r){ r.iLamp=on; rebuildInterior(); } }
-function applyMatAll(){
-  const r = activeFloor().rooms[interiorState.roomIdx]; if(!r) return;
-  activeFloor().rooms.forEach(x=>{ x.iWall=r.iWall; x.iFloor=r.iFloor; x.iFloorId=r.iFloorId; x.iCeil=r.iCeil; x.iLamp=r.iLamp; });
-  rebuildInterior(); showNotif('✅ Material disalin ke semua ruangan');
-}
-
-// ---- Furnitur (katalog ringkas) ----
-let intFurnCat = 'Semua';
-function renderIntFurnitur(b){
-  b.innerHTML = `
+    <button class="int-apply-all" onclick="applyMatAll()">Terapkan material ini ke semua ruangan</button>`;}function setRoomMat(key,hex,floorId){const r=activeFloor().rooms[interiorState.roomIdx];if(!r)return;r[key]=hex;if(key==='iFloor'&&floorId)r.iFloorId=floorId;rebuildInterior();renderInteriorBody();}function setRoomLamp(on){const r=activeFloor().rooms[interiorState.roomIdx];if(r){r.iLamp=on;rebuildInterior();}}function applyMatAll(){const r=activeFloor().rooms[interiorState.roomIdx];if(!r)return;activeFloor().rooms.forEach(x=>{x.iWall=r.iWall;x.iFloor=r.iFloor;x.iFloorId=r.iFloorId;x.iCeil=r.iCeil;x.iLamp=r.iLamp;});rebuildInterior();showNotif('✅ Material disalin ke semua ruangan');}let intFurnCat='Semua';function renderIntFurnitur(b){b.innerHTML=`
     <div class="int-h">Tambah Furnitur</div>
     <div class="int-sub">Klik untuk menaruh di ruangan terpilih, lalu <b>seret di 3D</b> untuk memindah. Pilih furnitur lalu pakai tombol di bawah.</div>
     <select class="int-roomsel" onchange="setIntRoom(this.value)">${roomOptions()}</select>
-    <div class="int-fcats" id="intFcats">${FURN_CATS.map(c=>`<button class="int-fcat${c===intFurnCat?' active':''}" onclick="setIntFurnCat('${c}')">${c}</button>`).join('')}</div>
+    <div class="int-fcats" id="intFcats">${FURN_CATS.map(c=>`<button class="int-fcat${c===intFurnCat?' active':''}"onclick="setIntFurnCat('${c}')">${c}</button>`).join('')}</div>
     <div class="int-fgrid" id="intFgrid"></div>
     <div class="int-sel-actions" id="intSelActions" style="display:none;">
       <div class="int-sel-name" id="intSelName"></div>
@@ -182,156 +38,14 @@ function renderIntFurnitur(b){
         <button onclick="duplicateInteriorFurn()">⧉ Gandakan</button>
         <button class="danger" onclick="deleteInteriorFurn()">🗑 Hapus</button>
       </div>
-    </div>`;
-  renderIntFurnGrid();
-  updateIntSelActions();
-}
-function setIntFurnCat(c){ intFurnCat=c; document.querySelectorAll('#intFcats .int-fcat').forEach(x=>x.classList.toggle('active', x.textContent===c)); renderIntFurnGrid(); }
-function renderIntFurnGrid(){
-  const items = FURN_LIB.filter(f=>intFurnCat==='Semua'||f.cat===intFurnCat);
-  document.getElementById('intFgrid').innerHTML = items.map(f=>`
+    </div>`;renderIntFurnGrid();updateIntSelActions();}function setIntFurnCat(c){intFurnCat=c;document.querySelectorAll('#intFcats .int-fcat').forEach(x=>x.classList.toggle('active',x.textContent===c));renderIntFurnGrid();}function renderIntFurnGrid(){const items=FURN_LIB.filter(f=>intFurnCat==='Semua'||f.cat===intFurnCat);document.getElementById('intFgrid').innerHTML=items.map(f=>`
     <button class="int-fcard" onclick="addInteriorFurn('${f.id}')">
-      <span>${f.icon}</span><div>${f.name}</div></button>`).join('');
-}
-function addInteriorFurn(id){
-  const def = FURN_LIB.find(f=>f.id===id); if(!def) return;
-  const r = activeFloor().rooms[interiorState.roomIdx] || activeFloor().rooms[0];
-  const cx = r ? r.x + r.w/2 : 200, cy = r ? r.y + r.h/2 : 200;
-  const fid = Date.now()+Math.random();
-  activeFloor().furnitures.push({ fid, defId:id, name:def.name, icon:def.icon,
-    x:cx-(def.w*PX_PER_M)/2, y:cy-(def.h*PX_PER_M)/2, w:def.w*PX_PER_M, h:def.h*PX_PER_M, color:def.color, rotation:0 });
-  interiorSelFid = fid; rebuildInterior(); updateIntSelActions();
-  showNotif('✅ '+def.name+' ditambahkan — seret di 3D untuk memindah');
-}
-function rotateInteriorFurn(){ const ft=findFurn(interiorSelFid); if(!ft) return; ft.rotation=(ft.rotation+90)%360; rebuildInterior(); }
-function deleteInteriorFurn(){ if(!interiorSelFid) return; const f=activeFloor(); f.furnitures=f.furnitures.filter(x=>x.fid!==interiorSelFid); furnitures=f.furnitures; interiorSelFid=null; rebuildInterior(); updateIntSelActions(); }
-function duplicateInteriorFurn(){ const ft=findFurn(interiorSelFid); if(!ft) return; const c=Object.assign({},ft); c.fid=Date.now()+Math.random(); c.x+=20; c.y+=20; activeFloor().furnitures.push(c); interiorSelFid=c.fid; rebuildInterior(); updateIntSelActions(); }
-function findFurn(fid){ return activeFloor().furnitures.find(x=>x.fid===fid); }
-function updateIntSelActions(){
-  const box=document.getElementById('intSelActions'); if(!box) return;
-  const ft=findFurn(interiorSelFid);
-  box.style.display = ft?'block':'none';
-  if(ft) document.getElementById('intSelName').textContent = '✓ '+ft.name;
-}
-
-// ---- Cahaya ----
-function renderIntCahaya(b){
-  const modes=[['siang','☀️ Siang','Terang & netral'],['sore','🌇 Sore','Hangat keemasan'],['malam','🌙 Malam','Gelap, andalkan lampu']];
-  b.innerHTML = `<div class="int-h">Suasana Cahaya</div>
+      <span>${f.icon}</span><div>${f.name}</div></button>`).join('');}function addInteriorFurn(id){const def=FURN_LIB.find(f=>f.id===id);if(!def)return;const r=activeFloor().rooms[interiorState.roomIdx]||activeFloor().rooms[0];const cx=r?r.x+r.w/2:200,cy=r?r.y+r.h/2:200;const fid=Date.now()+Math.random();activeFloor().furnitures.push({fid,defId:id,name:def.name,icon:def.icon,x:cx-(def.w*PX_PER_M)/2,y:cy-(def.h*PX_PER_M)/2,w:def.w*PX_PER_M,h:def.h*PX_PER_M,color:def.color,rotation:0});interiorSelFid=fid;rebuildInterior();updateIntSelActions();showNotif('✅ '+def.name+' ditambahkan — seret di 3D untuk memindah');}function rotateInteriorFurn(){const ft=findFurn(interiorSelFid);if(!ft)return;ft.rotation=(ft.rotation+90)%360;rebuildInterior();}function deleteInteriorFurn(){if(!interiorSelFid)return;const f=activeFloor();f.furnitures=f.furnitures.filter(x=>x.fid!==interiorSelFid);furnitures=f.furnitures;interiorSelFid=null;rebuildInterior();updateIntSelActions();}function duplicateInteriorFurn(){const ft=findFurn(interiorSelFid);if(!ft)return;const c=Object.assign({},ft);c.fid=Date.now()+Math.random();c.x+=20;c.y+=20;activeFloor().furnitures.push(c);interiorSelFid=c.fid;rebuildInterior();updateIntSelActions();}function findFurn(fid){return activeFloor().furnitures.find(x=>x.fid===fid);}function updateIntSelActions(){const box=document.getElementById('intSelActions');if(!box)return;const ft=findFurn(interiorSelFid);box.style.display=ft?'block':'none';if(ft)document.getElementById('intSelName').textContent='✓ '+ft.name;}function renderIntCahaya(b){const modes=[['siang','☀️ Siang','Terang & netral'],['sore','🌇 Sore','Hangat keemasan'],['malam','🌙 Malam','Gelap, andalkan lampu']];b.innerHTML=`<div class="int-h">Suasana Cahaya</div>
     <div class="int-light-grid">
-      ${modes.map(([k,l,d])=>`<button class="int-light${interiorState.light===k?' active':''}" onclick="setInteriorLight('${k}')">
-        <span>${l}</span><small>${d}</small></button>`).join('')}
+      ${modes.map(([k,l,d])=>`<button class="int-light${interiorState.light===k?' active':''}"onclick="setInteriorLight('${k}')"><span>${l}</span><small>${d}</small></button>`).join('')}
     </div>
-    <div class="int-sub" style="margin-top:14px;">💡 Lampu plafon per ruangan diatur di tab <b>Material</b>. Saat <b>Malam</b>, lampu plafon paling terasa.</div>`;
-}
-function setInteriorLight(k){ interiorState.light=k; applyInteriorLighting(); document.querySelectorAll('.int-light').forEach(x=>x.classList.toggle('active', x.querySelector('span').textContent.includes(({siang:'Siang',sore:'Sore',malam:'Malam'})[k]))); }
-
-function applyInteriorLighting(){
-  if(!threeScene || !threeScene.userData.lights) return;
-  const L = threeScene.userData.lights;
-  if(!interiorState.active){ return; }
-  const m = interiorState.light;
-  if(m==='siang'){ L.amb.intensity=0.55; L.amb.color.set(0xffffff); L.sun.intensity=2.4; L.sun.color.set(0xfff4e2); L.hemi.intensity=0.9; threeScene.background=new THREE.Color(0xbcd2ea); if(threeScene.fog)threeScene.fog.color.set(0xbcd2ea); }
-  else if(m==='sore'){ L.amb.intensity=0.4; L.amb.color.set(0xffe2c4); L.sun.intensity=2.0; L.sun.color.set(0xff9d52); L.hemi.intensity=0.6; threeScene.background=new THREE.Color(0xe8b07a); if(threeScene.fog)threeScene.fog.color.set(0xe8b07a); }
-  else { L.amb.intensity=0.16; L.amb.color.set(0x4a5a7a); L.sun.intensity=0.25; L.sun.color.set(0x5a6f9a); L.hemi.intensity=0.18; threeScene.background=new THREE.Color(0x10141f); if(threeScene.fog)threeScene.fog.color.set(0x10141f); }
-}
-
-// ---- RAB Interior ----
-function computeInteriorRAB(){
-  const f = activeFloor();
-  // furnitur dikelompokkan
-  const groups = {};
-  f.furnitures.forEach(ft=>{ const def=FURN_LIB.find(d=>d.id===ft.defId); if(!def) return; const key=ft.defId;
-    if(!groups[key]) groups[key]={name:def.name, icon:def.icon, unit:furnPrice(def), qty:0}; groups[key].qty++; });
-  const furnItems = Object.values(groups).map(g=>({...g, sub:g.qty*g.unit})).filter(g=>g.unit>0);
-  // material: cat dinding + lantai (luas dari ruangan)
-  const wallH = parseFloat(val('wallHeight')||3);
-  let floorArea=0, wallArea=0, floorCost=0;
-  f.rooms.forEach(r=>{ const a=(r.w/PX_PER_M)*(r.h/PX_PER_M); floorArea+=a; wallArea+=2*((r.w+r.h)/PX_PER_M)*wallH;
-    const fm = FLOOR_MATS.find(m=>m.h===r.iFloor); floorCost += a*((fm?fm.price:0)); });
-  const paintPrice=55000; const paintCost = wallArea*paintPrice;
-  const matItems=[];
-  if(floorCost>0) matItems.push({name:'Pasang lantai (sesuai material ruangan)', icon:'🧱', qty:+floorArea.toFixed(1), unit:'m²', sub:floorCost});
-  if(paintCost>0) matItems.push({name:'Cat dinding interior', icon:'🎨', qty:+wallArea.toFixed(1), unit:'m²', sub:paintCost});
-  const furnTotal=furnItems.reduce((s,g)=>s+g.sub,0);
-  const matTotal=matItems.reduce((s,g)=>s+g.sub,0);
-  return { furnItems, matItems, furnTotal, matTotal, total:furnTotal+matTotal };
-}
-function renderIntRAB(b){
-  const d = computeInteriorRAB();
-  b.innerHTML = `<div class="int-h">Estimasi Biaya Interior</div>
+    <div class="int-sub" style="margin-top:14px;">💡 Lampu plafon per ruangan diatur di tab <b>Material</b>. Saat <b>Malam</b>, lampu plafon paling terasa.</div>`;}function setInteriorLight(k){interiorState.light=k;applyInteriorLighting();document.querySelectorAll('.int-light').forEach(x=>x.classList.toggle('active',x.querySelector('span').textContent.includes(({siang:'Siang',sore:'Sore',malam:'Malam'})[k])));}function applyInteriorLighting(){if(!threeScene||!threeScene.userData.lights)return;const L=threeScene.userData.lights;if(!interiorState.active){return;}const m=interiorState.light;if(m==='siang'){L.amb.intensity=0.55;L.amb.color.set(0xffffff);L.sun.intensity=2.4;L.sun.color.set(0xfff4e2);L.hemi.intensity=0.9;threeScene.background=new THREE.Color(0xbcd2ea);if(threeScene.fog)threeScene.fog.color.set(0xbcd2ea);}else if(m==='sore'){L.amb.intensity=0.4;L.amb.color.set(0xffe2c4);L.sun.intensity=2.0;L.sun.color.set(0xff9d52);L.hemi.intensity=0.6;threeScene.background=new THREE.Color(0xe8b07a);if(threeScene.fog)threeScene.fog.color.set(0xe8b07a);}else{L.amb.intensity=0.16;L.amb.color.set(0x4a5a7a);L.sun.intensity=0.25;L.sun.color.set(0x5a6f9a);L.hemi.intensity=0.18;threeScene.background=new THREE.Color(0x10141f);if(threeScene.fog)threeScene.fog.color.set(0x10141f);}}function computeInteriorRAB(){const f=activeFloor();const groups={};f.furnitures.forEach(ft=>{const def=FURN_LIB.find(d=>d.id===ft.defId);if(!def)return;const key=ft.defId;if(!groups[key])groups[key]={name:def.name,icon:def.icon,unit:furnPrice(def),qty:0};groups[key].qty++;});const furnItems=Object.values(groups).map(g=>({...g,sub:g.qty*g.unit})).filter(g=>g.unit>0);const wallH=parseFloat(val('wallHeight')||3);let floorArea=0,wallArea=0,floorCost=0;f.rooms.forEach(r=>{const a=(r.w/PX_PER_M)*(r.h/PX_PER_M);floorArea+=a;wallArea+=2*((r.w+r.h)/PX_PER_M)*wallH;const fm=FLOOR_MATS.find(m=>m.h===r.iFloor);floorCost+=a*((fm?fm.price:0));});const paintPrice=55000;const paintCost=wallArea*paintPrice;const matItems=[];if(floorCost>0)matItems.push({name:'Pasang lantai (sesuai material ruangan)',icon:'🧱',qty:+floorArea.toFixed(1),unit:'m²',sub:floorCost});if(paintCost>0)matItems.push({name:'Cat dinding interior',icon:'🎨',qty:+wallArea.toFixed(1),unit:'m²',sub:paintCost});const furnTotal=furnItems.reduce((s,g)=>s+g.sub,0);const matTotal=matItems.reduce((s,g)=>s+g.sub,0);return{furnItems,matItems,furnTotal,matTotal,total:furnTotal+matTotal};}function renderIntRAB(b){const d=computeInteriorRAB();b.innerHTML=`<div class="int-h">Estimasi Biaya Interior</div>
     ${d.total===0?'<div class="int-sub">Belum ada furnitur/material. Tambah di tab Furnitur & Material.</div>':''}
-    ${d.furnItems.length?`<div class="int-label">Furnitur</div>
-      <table class="int-rab">${d.furnItems.map(g=>`<tr><td>${g.icon} ${g.name}</td><td>${g.qty}×</td><td>${rp(g.sub)}</td></tr>`).join('')}</table>`:''}
-    ${d.matItems.length?`<div class="int-label">Material & Finishing</div>
-      <table class="int-rab">${d.matItems.map(g=>`<tr><td>${g.icon} ${g.name}</td><td>${g.qty} ${g.unit}</td><td>${rp(g.sub)}</td></tr>`).join('')}</table>`:''}
-    ${d.total>0?`<div class="int-rab-total"><span>Total Interior</span><b>${rp(d.total)}</b></div>
-      <div class="int-sub">Furnitur ${rp(d.furnTotal)} · Material ${rp(d.matTotal)}. Harga perkiraan ritel, belum termasuk jasa desain & ongkir.</div>
-      <button class="int-apply-all" onclick="exportInteriorRAB()">⬇️ Unduh RAB Interior (CSV)</button>`:''}`;
-}
-function exportInteriorRAB(){
-  const d=computeInteriorRAB(); const rows=[['Kategori','Item','Qty','Subtotal (Rp)']];
-  d.furnItems.forEach(g=>rows.push(['Furnitur',g.name,g.qty,Math.round(g.sub)]));
-  d.matItems.forEach(g=>rows.push(['Material',g.name,g.qty+' '+g.unit,Math.round(g.sub)]));
-  rows.push(['','','TOTAL',Math.round(d.total)]);
-  const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='RAB_Interior.csv'; a.click();
-  showNotif('⬇️ RAB Interior diunduh');
-}
-
-// ===================== RENDER ULANG SCENE =====================
-function rebuildInterior(){ if(typeof build3DScene==='function'){ build3DScene(); applyInteriorLighting(); } }
-
-// ===================== INTERAKSI 3D: pilih & seret furnitur =====================
-let intDrag = null; let _intInputInit=false;
-function setupInteriorInput(){
-  if(_intInputInit) return; _intInputInit=true;
-  document.addEventListener('mousedown', intDown, true);
-  document.addEventListener('mousemove', intMove, true);
-  document.addEventListener('mouseup', intUp, true);
-  document.addEventListener('touchstart', intDown, {capture:true, passive:false});
-  document.addEventListener('touchmove', intMove, {capture:true, passive:false});
-  document.addEventListener('touchend', intUp, true);
-}
-function _evPoint(e){ const p=e.touches&&e.touches[0]?e.touches[0]:e; return {x:p.clientX, y:p.clientY}; }
-function pickFurniture(cx,cy){
-  if(!threeRenderer||!threeCamera||!furnMeshes.length) return null;
-  const rect=threeRenderer.domElement.getBoundingClientRect();
-  const ndc=new THREE.Vector2(((cx-rect.left)/rect.width)*2-1, -((cy-rect.top)/rect.height)*2+1);
-  const ray=new THREE.Raycaster(); ray.setFromCamera(ndc, threeCamera);
-  const hits=ray.intersectObjects(furnMeshes, false);
-  return hits.length? hits[0].object : null;
-}
-function groundPoint(cx,cy){
-  const rect=threeRenderer.domElement.getBoundingClientRect();
-  const ndc=new THREE.Vector2(((cx-rect.left)/rect.width)*2-1, -((cy-rect.top)/rect.height)*2+1);
-  const ray=new THREE.Raycaster(); ray.setFromCamera(ndc, threeCamera);
-  const plane=new THREE.Plane(new THREE.Vector3(0,1,0), 0);
-  const pt=new THREE.Vector3(); return ray.ray.intersectPlane(plane, pt)?pt:null;
-}
-function intDown(e){
-  if(!interiorState.active || nav3dMode!=='orbit') return;
-  if(!threeRenderer || e.target!==threeRenderer.domElement) return;
-  const p=_evPoint(e); const mesh=pickFurniture(p.x,p.y);
-  if(mesh){
-    e.stopPropagation(); if(e.cancelable) e.preventDefault();
-    interiorSelFid = mesh.userData.fid;
-    const ft=findFurn(interiorSelFid);
-    const gp=groundPoint(p.x,p.y);
-    intDrag = ft && gp ? { fid:ft.fid, mesh, offx:(ft.x*SCALE-sceneCenter.cx + (ft.w*SCALE)/2)-gp.x, offz:(ft.y*SCALE-sceneCenter.cz + (ft.h*SCALE)/2)-gp.z } : null;
-    rebuildInterior();
-    if(interiorState.subtab==='furnitur') updateIntSelActions();
-  }
-}
-function intMove(e){
-  if(!intDrag) return;
-  const p=_evPoint(e); const gp=groundPoint(p.x,p.y); if(!gp) return;
-  e.stopPropagation(); if(e.cancelable) e.preventDefault();
-  const ft=findFurn(intDrag.fid); if(!ft) return;
-  const fw=ft.w*SCALE, fh=ft.h*SCALE;
-  const centerX=gp.x+intDrag.offx, centerZ=gp.z+intDrag.offz;
-  ft.x=(centerX - fw/2 + sceneCenter.cx)/SCALE;
-  ft.y=(centerZ - fh/2 + sceneCenter.cz)/SCALE;
-  if(intDrag.mesh){ intDrag.mesh.position.x=centerX; intDrag.mesh.position.z=centerZ; }
-}
-function intUp(e){ if(intDrag){ intDrag=null; if(typeof render==='function') render(); } }
+    ${d.furnItems.length?`<div class="int-label">Furnitur</div><table class="int-rab">${d.furnItems.map(g=>`<tr><td>${g.icon} ${g.name}</td><td>${g.qty}×</td><td>${rp(g.sub)}</td></tr>`).join('')}</table>`:''}
+    ${d.matItems.length?`<div class="int-label">Material&Finishing</div><table class="int-rab">${d.matItems.map(g=>`<tr><td>${g.icon} ${g.name}</td><td>${g.qty} ${g.unit}</td><td>${rp(g.sub)}</td></tr>`).join('')}</table>`:''}
+    ${d.total>0?`<div class="int-rab-total"><span>Total Interior</span><b>${rp(d.total)}</b></div><div class="int-sub">Furnitur ${rp(d.furnTotal)}·Material ${rp(d.matTotal)}.Harga perkiraan ritel,belum termasuk jasa desain&ongkir.</div><button class="int-apply-all"onclick="exportInteriorRAB()">⬇️Unduh RAB Interior(CSV)</button>`:''}`;}function exportInteriorRAB(){const d=computeInteriorRAB();const rows=[['Kategori','Item','Qty','Subtotal (Rp)']];d.furnItems.forEach(g=>rows.push(['Furnitur',g.name,g.qty,Math.round(g.sub)]));d.matItems.forEach(g=>rows.push(['Material',g.name,g.qty+' '+g.unit,Math.round(g.sub)]));rows.push(['','','TOTAL',Math.round(d.total)]);const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='RAB_Interior.csv';a.click();showNotif('⬇️ RAB Interior diunduh');}function rebuildInterior(){if(typeof build3DScene==='function'){build3DScene();applyInteriorLighting();}}let intDrag=null;let _intInputInit=false;function setupInteriorInput(){if(_intInputInit)return;_intInputInit=true;document.addEventListener('mousedown',intDown,true);document.addEventListener('mousemove',intMove,true);document.addEventListener('mouseup',intUp,true);document.addEventListener('touchstart',intDown,{capture:true,passive:false});document.addEventListener('touchmove',intMove,{capture:true,passive:false});document.addEventListener('touchend',intUp,true);}function _evPoint(e){const p=e.touches&&e.touches[0]?e.touches[0]:e;return{x:p.clientX,y:p.clientY};}function pickFurniture(cx,cy){if(!threeRenderer||!threeCamera||!furnMeshes.length)return null;const rect=threeRenderer.domElement.getBoundingClientRect();const ndc=new THREE.Vector2(((cx-rect.left)/rect.width)*2-1,-((cy-rect.top)/rect.height)*2+1);const ray=new THREE.Raycaster();ray.setFromCamera(ndc,threeCamera);const hits=ray.intersectObjects(furnMeshes,false);return hits.length?hits[0].object:null;}function groundPoint(cx,cy){const rect=threeRenderer.domElement.getBoundingClientRect();const ndc=new THREE.Vector2(((cx-rect.left)/rect.width)*2-1,-((cy-rect.top)/rect.height)*2+1);const ray=new THREE.Raycaster();ray.setFromCamera(ndc,threeCamera);const plane=new THREE.Plane(new THREE.Vector3(0,1,0),0);const pt=new THREE.Vector3();return ray.ray.intersectPlane(plane,pt)?pt:null;}function intDown(e){if(!interiorState.active||nav3dMode!=='orbit')return;if(!threeRenderer||e.target!==threeRenderer.domElement)return;const p=_evPoint(e);const mesh=pickFurniture(p.x,p.y);if(mesh){e.stopPropagation();if(e.cancelable)e.preventDefault();interiorSelFid=mesh.userData.fid;const ft=findFurn(interiorSelFid);const gp=groundPoint(p.x,p.y);intDrag=ft&&gp?{fid:ft.fid,mesh,offx:(ft.x*SCALE-sceneCenter.cx+(ft.w*SCALE)/2)-gp.x,offz:(ft.y*SCALE-sceneCenter.cz+(ft.h*SCALE)/2)-gp.z}:null;rebuildInterior();if(interiorState.subtab==='furnitur')updateIntSelActions();}}function intMove(e){if(!intDrag)return;const p=_evPoint(e);const gp=groundPoint(p.x,p.y);if(!gp)return;e.stopPropagation();if(e.cancelable)e.preventDefault();const ft=findFurn(intDrag.fid);if(!ft)return;const fw=ft.w*SCALE,fh=ft.h*SCALE;const centerX=gp.x+intDrag.offx,centerZ=gp.z+intDrag.offz;ft.x=(centerX-fw/2+sceneCenter.cx)/SCALE;ft.y=(centerZ-fh/2+sceneCenter.cz)/SCALE;if(intDrag.mesh){intDrag.mesh.position.x=centerX;intDrag.mesh.position.z=centerZ;}}function intUp(e){if(intDrag){intDrag=null;if(typeof render==='function')render();}}

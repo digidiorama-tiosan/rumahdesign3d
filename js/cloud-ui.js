@@ -1,51 +1,4 @@
-// =====================================================================
-// CLOUD UI — integrasi Supabase ke aplikasi (init, simpan/muat cloud)
-// =====================================================================
-let _cloudCurrentId = null;   // id proyek cloud yang sedang dibuka
-
-function initCloud() {
-  if (typeof Cloud === 'undefined') return;
-  const ok = Cloud.init();
-  if (!ok) return;            // Supabase belum dikonfigurasi → tetap pakai localStorage
-  Cloud.onChange(user => {
-    const btn = document.getElementById('btnCloud');
-    if (btn) btn.style.display = user ? '' : 'none';
-    // sinkronkan langganan dari cloud (jika ada) ke badge lokal
-    if (user) syncCloudSubscription();
-  });
-}
-
-async function syncCloudSubscription() {
-  try {
-    const sub = await Cloud.getSubscription();
-    if (sub && sub.plan) {
-      localStorage.setItem('rumah3d_user_plan', sub.plan);
-      if (typeof renderPlanBadge === 'function') renderPlanBadge();
-      if (typeof applyPlanLocks === 'function') applyPlanLocks();
-    }
-  } catch(e) {}
-}
-
-// ---------------- modal ----------------
-function openCloudProjects() {
-  if (!Cloud.isLoggedIn()) {
-    showNotif('☁ Masuk dulu untuk memakai cloud');
-    window.location.href = 'Akun.html';
-    return;
-  }
-  document.getElementById('modalCloud').classList.add('show');
-  document.getElementById('cloudSaveName').value = (floors[0]?.name ? 'Proyek ' + new Date().toLocaleDateString('id-ID') : '');
-  refreshCloudList();
-}
-function closeCloudProjects() { document.getElementById('modalCloud').classList.remove('show'); }
-
-async function refreshCloudList() {
-  const el = document.getElementById('cloudList');
-  el.innerHTML = '<div class="empty-state mini">Memuat…</div>';
-  try {
-    const list = await Cloud.listProjects();
-    if (!list || !list.length) { el.innerHTML = '<div class="empty-state mini">Belum ada proyek tersimpan di cloud.</div>'; return; }
-    el.innerHTML = list.map(p => `
+let _cloudCurrentId=null;function initCloud(){if(typeof Cloud==='undefined')return;const ok=Cloud.init();if(!ok)return;Cloud.onChange(user=>{const btn=document.getElementById('btnCloud');if(btn)btn.style.display=user?'':'none';if(user)syncCloudSubscription();});}async function syncCloudSubscription(){try{const sub=await Cloud.getSubscription();if(sub&&sub.plan){localStorage.setItem('rumah3d_user_plan',sub.plan);if(typeof renderPlanBadge==='function')renderPlanBadge();if(typeof applyPlanLocks==='function')applyPlanLocks();}}catch(e){}}function openCloudProjects(){if(!Cloud.isLoggedIn()){showNotif('☁ Masuk dulu untuk memakai cloud');window.location.href='Akun.html';return;}document.getElementById('modalCloud').classList.add('show');document.getElementById('cloudSaveName').value=(floors[0]?.name?'Proyek '+new Date().toLocaleDateString('id-ID'):'');refreshCloudList();}function closeCloudProjects(){document.getElementById('modalCloud').classList.remove('show');}async function refreshCloudList(){const el=document.getElementById('cloudList');el.innerHTML='<div class="empty-state mini">Memuat…</div>';try{const list=await Cloud.listProjects();if(!list||!list.length){el.innerHTML='<div class="empty-state mini">Belum ada proyek tersimpan di cloud.</div>';return;}el.innerHTML=list.map(p=>`
       <div class="room-item" style="padding:10px;">
         <div class="proj-thumb" style="width:36px;height:36px;font-size:16px;margin-right:10px;">🏠</div>
         <div style="flex:1;">
@@ -54,29 +7,4 @@ async function refreshCloudList() {
         </div>
         <button class="floor-act" onclick="loadFromCloud('${p.id}')">Buka</button>
         <span class="room-del" onclick="deleteFromCloud('${p.id}')">✕</span>
-      </div>`).join('');
-  } catch(e) { el.innerHTML = '<div class="empty-state mini">Gagal memuat: ' + escHtmlCloud(e.message) + '</div>'; }
-}
-
-async function saveCurrentToCloud() {
-  const name = (document.getElementById('cloudSaveName').value || '').trim() || ('Proyek ' + new Date().toLocaleDateString('id-ID'));
-  try {
-    const data = getProjectState();
-    const id = await Cloud.saveProjectCloud(name, data, _cloudCurrentId);
-    _cloudCurrentId = id;
-    showNotif('☁ Tersimpan ke cloud!');
-    refreshCloudList();
-  } catch(e) { showNotif('⚠️ Gagal simpan cloud: ' + e.message); }
-}
-async function loadFromCloud(id) {
-  try {
-    const row = await Cloud.loadProjectCloud(id);
-    if (row?.data) { applyProjectState(row.data); _cloudCurrentId = id; closeCloudProjects(); showNotif('☁ Proyek dimuat dari cloud'); }
-  } catch(e) { showNotif('⚠️ Gagal memuat: ' + e.message); }
-}
-async function deleteFromCloud(id) {
-  if (!confirm('Hapus proyek ini dari cloud?')) return;
-  try { await Cloud.deleteProjectCloud(id); if (_cloudCurrentId===id) _cloudCurrentId=null; refreshCloudList(); showNotif('🗑 Dihapus dari cloud'); }
-  catch(e) { showNotif('⚠️ Gagal hapus: ' + e.message); }
-}
-function escHtmlCloud(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+      </div>`).join('');}catch(e){el.innerHTML='<div class="empty-state mini">Gagal memuat: '+escHtmlCloud(e.message)+'</div>';}}async function saveCurrentToCloud(){const name=(document.getElementById('cloudSaveName').value||'').trim()||('Proyek '+new Date().toLocaleDateString('id-ID'));try{const data=getProjectState();const id=await Cloud.saveProjectCloud(name,data,_cloudCurrentId);_cloudCurrentId=id;showNotif('☁ Tersimpan ke cloud!');refreshCloudList();}catch(e){showNotif('⚠️ Gagal simpan cloud: '+e.message);}}async function loadFromCloud(id){try{const row=await Cloud.loadProjectCloud(id);if(row?.data){applyProjectState(row.data);_cloudCurrentId=id;closeCloudProjects();showNotif('☁ Proyek dimuat dari cloud');}}catch(e){showNotif('⚠️ Gagal memuat: '+e.message);}}async function deleteFromCloud(id){if(!confirm('Hapus proyek ini dari cloud?'))return;try{await Cloud.deleteProjectCloud(id);if(_cloudCurrentId===id)_cloudCurrentId=null;refreshCloudList();showNotif('🗑 Dihapus dari cloud');}catch(e){showNotif('⚠️ Gagal hapus: '+e.message);}}function escHtmlCloud(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
