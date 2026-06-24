@@ -25,4 +25,55 @@ document.addEventListener('keydown',function(e){
   else handled=false;
   if(handled){e.preventDefault();if(typeof updateCameraPosition==='function')updateCameraPosition();}
 });
-function onWalkKey(e){const k=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(k)){walkState.keys[k]=true;e.preventDefault();}if(k==='escape')exitWalkMode();}function onWalkKeyUp(e){walkState.keys[e.key.toLowerCase()]=false;}function applyWalkLook(){const cp=Math.cos(walkState.pitch),fx=Math.sin(walkState.yaw)*cp,fy=Math.sin(walkState.pitch),fz=-Math.cos(walkState.yaw)*cp;threeCamera.lookAt(threeCamera.position.x+fx,threeCamera.position.y+fy,threeCamera.position.z+fz);}function buildWalkCollision(){walkCollide=[];const f=floors[currentFloorIndex];if(!f)return;const Wx=x=>x*SCALE-sceneCenter.cx,Wz=y=>y*SCALE-sceneCenter.cz;function edgeSolids(p0,p1,openings){const lenM=Math.hypot(p1.x-p0.x,p1.y-p0.y)/PX_PER_M;if(lenM<0.05)return;const gaps=openings.map(o=>{const hw=(o.w/lenM)/2;return[Math.max(0,o.c-hw),Math.min(1,o.c+hw)];}).sort((a,b)=>a[0]-b[0]);let cur=0;const segs=[];gaps.forEach(g=>{if(g[0]>cur+0.001)segs.push([cur,g[0]]);cur=Math.max(cur,g[1]);});if(cur<0.999)segs.push([cur,1]);segs.forEach(([s,e])=>{const ax=p0.x+(p1.x-p0.x)*s,ay=p0.y+(p1.y-p0.y)*s,bx=p0.x+(p1.x-p0.x)*e,by=p0.y+(p1.y-p0.y)*e;walkCollide.push({x1:Wx(ax),z1:Wz(ay),x2:Wx(bx),z2:Wz(by)});});}f.rooms.forEach(r=>{['n','s','e','w'].forEach(edge=>{const dE=f.doors.filter(d=>d.roomId===r.id&&d.edge===edge).map(d=>({c:d.pos,w:d.width}));let p0,p1;if(edge==='n'){p0={x:r.x,y:r.y};p1={x:r.x+r.w,y:r.y};}else if(edge==='s'){p0={x:r.x,y:r.y+r.h};p1={x:r.x+r.w,y:r.y+r.h};}else if(edge==='w'){p0={x:r.x,y:r.y};p1={x:r.x,y:r.y+r.h};}else{p0={x:r.x+r.w,y:r.y};p1={x:r.x+r.w,y:r.y+r.h};}edgeSolids(p0,p1,dE);});});(f.wallSegs||[]).forEach(s=>{const dE=f.doors.filter(d=>d.segId===s.id).map(d=>({c:d.pos,w:d.width}));edgeSolids({x:s.a.x,y:s.a.y},{x:s.b.x,y:s.b.y},dE);});}function walkClear(x,z){for(let i=0;i<walkCollide.length;i++){const s=walkCollide[i];const dx=s.x2-s.x1,dz=s.z2-s.z1,L2=dx*dx+dz*dz;let t=L2?((x-s.x1)*dx+(z-s.z1)*dz)/L2:0;t=Math.max(0,Math.min(1,t));const px=s.x1+dx*t,pz=s.z1+dz*t;if(Math.hypot(x-px,z-pz)<WALK_RADIUS)return false;}return true;}function updateWalk(dt){const ls=1-Math.exp(-20*dt);walkState.yaw+=(walkState.targetYaw-walkState.yaw)*ls;walkState.pitch+=(walkState.targetPitch-walkState.pitch)*ls;const k=walkState.keys;const fast=k['shift']?1.9:1;const fHx=Math.sin(walkState.yaw),fHz=-Math.cos(walkState.yaw);const rx=Math.cos(walkState.yaw),rz=Math.sin(walkState.yaw);let mx=0,mz=0;if(k['w']||k['arrowup']){mx+=fHx;mz+=fHz;}if(k['s']||k['arrowdown']){mx-=fHx;mz-=fHz;}if(k['d']||k['arrowright']){mx+=rx;mz+=rz;}if(k['a']||k['arrowleft']){mx-=rx;mz-=rz;}if(walkState.joy&&(walkState.joy.f||walkState.joy.s)){mx+=fHx*walkState.joy.f+rx*walkState.joy.s;mz+=fHz*walkState.joy.f+rz*walkState.joy.s;}const len=Math.hypot(mx,mz);const target=walkState.speed*fast;const tvx=len>0?(mx/len)*target:0;const tvz=len>0?(mz/len)*target:0;const acc=1-Math.exp(-10*dt);walkState.vel.x+=(tvx-walkState.vel.x)*acc;walkState.vel.z+=(tvz-walkState.vel.z)*acc;const nx=threeCamera.position.x+walkState.vel.x*dt;const nz=threeCamera.position.z+walkState.vel.z*dt;if(walkClear(nx,threeCamera.position.z))threeCamera.position.x=nx;else walkState.vel.x*=0.25;if(walkClear(threeCamera.position.x,nz))threeCamera.position.z=nz;else walkState.vel.z*=0.25;const WALL_H=parseFloat(val('wallHeight')||3);const baseY=(showAllFloors?currentFloorIndex:0)*WALL_H;const speedNow=Math.hypot(walkState.vel.x,walkState.vel.z);const bob=speedNow>0.3?Math.sin(performance.now()*0.011)*0.025:0;threeCamera.position.y=baseY+walkState.eyeY+bob;applyWalkLook();}
+function onWalkKey(e){const k=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(k)){walkState.keys[k]=true;e.preventDefault();}if(k==='escape')exitWalkMode();}function onWalkKeyUp(e){walkState.keys[e.key.toLowerCase()]=false;}function applyWalkLook(){const cp=Math.cos(walkState.pitch),fx=Math.sin(walkState.yaw)*cp,fy=Math.sin(walkState.pitch),fz=-Math.cos(walkState.yaw)*cp;threeCamera.lookAt(threeCamera.position.x+fx,threeCamera.position.y+fy,threeCamera.position.z+fz);}function buildWalkCollision(){walkCollide=[];const f=floors[currentFloorIndex];if(!f)return;const Wx=x=>x*SCALE-sceneCenter.cx,Wz=y=>y*SCALE-sceneCenter.cz;function edgeSolids(p0,p1,openings){const lenM=Math.hypot(p1.x-p0.x,p1.y-p0.y)/PX_PER_M;if(lenM<0.05)return;const gaps=openings.map(o=>{const hw=(o.w/lenM)/2;return[Math.max(0,o.c-hw),Math.min(1,o.c+hw)];}).sort((a,b)=>a[0]-b[0]);let cur=0;const segs=[];gaps.forEach(g=>{if(g[0]>cur+0.001)segs.push([cur,g[0]]);cur=Math.max(cur,g[1]);});if(cur<0.999)segs.push([cur,1]);segs.forEach(([s,e])=>{const ax=p0.x+(p1.x-p0.x)*s,ay=p0.y+(p1.y-p0.y)*s,bx=p0.x+(p1.x-p0.x)*e,by=p0.y+(p1.y-p0.y)*e;walkCollide.push({x1:Wx(ax),z1:Wz(ay),x2:Wx(bx),z2:Wz(by)});});}f.rooms.forEach(r=>{['n','s','e','w'].forEach(edge=>{const dE=f.doors.filter(d=>d.roomId===r.id&&d.edge===edge).map(d=>({c:d.pos,w:d.width}));let p0,p1;if(edge==='n'){p0={x:r.x,y:r.y};p1={x:r.x+r.w,y:r.y};}else if(edge==='s'){p0={x:r.x,y:r.y+r.h};p1={x:r.x+r.w,y:r.y+r.h};}else if(edge==='w'){p0={x:r.x,y:r.y};p1={x:r.x,y:r.y+r.h};}else{p0={x:r.x+r.w,y:r.y};p1={x:r.x+r.w,y:r.y+r.h};}edgeSolids(p0,p1,dE);});});(f.wallSegs||[]).forEach(s=>{const dE=f.doors.filter(d=>d.segId===s.id).map(d=>({c:d.pos,w:d.width}));edgeSolids({x:s.a.x,y:s.a.y},{x:s.b.x,y:s.b.y},dE);});}function walkClear(x,z){for(let i=0;i<walkCollide.length;i++){const s=walkCollide[i];const dx=s.x2-s.x1,dz=s.z2-s.z1,L2=dx*dx+dz*dz;let t=L2?((x-s.x1)*dx+(z-s.z1)*dz)/L2:0;t=Math.max(0,Math.min(1,t));const px=s.x1+dx*t,pz=s.z1+dz*t;if(Math.hypot(x-px,z-pz)<WALK_RADIUS)return false;}return true;}function updateWalk(dt){const ls=1-Math.exp(-20*dt);walkState.yaw+=(walkState.targetYaw-walkState.yaw)*ls;walkState.pitch+=(walkState.targetPitch-walkState.pitch)*ls;if(walkState.lock){if(window._panoAuto)walkState.targetYaw+=0.004;applyWalkLook();return;}const k=walkState.keys;const fast=k['shift']?1.9:1;const fHx=Math.sin(walkState.yaw),fHz=-Math.cos(walkState.yaw);const rx=Math.cos(walkState.yaw),rz=Math.sin(walkState.yaw);let mx=0,mz=0;if(k['w']||k['arrowup']){mx+=fHx;mz+=fHz;}if(k['s']||k['arrowdown']){mx-=fHx;mz-=fHz;}if(k['d']||k['arrowright']){mx+=rx;mz+=rz;}if(k['a']||k['arrowleft']){mx-=rx;mz-=rz;}if(walkState.joy&&(walkState.joy.f||walkState.joy.s)){mx+=fHx*walkState.joy.f+rx*walkState.joy.s;mz+=fHz*walkState.joy.f+rz*walkState.joy.s;}const len=Math.hypot(mx,mz);const target=walkState.speed*fast;const tvx=len>0?(mx/len)*target:0;const tvz=len>0?(mz/len)*target:0;const acc=1-Math.exp(-10*dt);walkState.vel.x+=(tvx-walkState.vel.x)*acc;walkState.vel.z+=(tvz-walkState.vel.z)*acc;const nx=threeCamera.position.x+walkState.vel.x*dt;const nz=threeCamera.position.z+walkState.vel.z*dt;if(walkClear(nx,threeCamera.position.z))threeCamera.position.x=nx;else walkState.vel.x*=0.25;if(walkClear(threeCamera.position.x,nz))threeCamera.position.z=nz;else walkState.vel.z*=0.25;const WALL_H=parseFloat(val('wallHeight')||3);const baseY=(showAllFloors?currentFloorIndex:0)*WALL_H;const speedNow=Math.hypot(walkState.vel.x,walkState.vel.z);const bob=speedNow>0.3?Math.sin(performance.now()*0.011)*0.025:0;threeCamera.position.y=baseY+walkState.eyeY+bob;applyWalkLook();}
+/* ── PANORAMA 360° ──────────────────────────────────────── */
+window._panoAuto=true;let _panoFov=null;
+function togglePanorama(){if(typeof walkState!=='undefined'&&walkState.lock)exitPanorama();else enterPanorama();}
+function enterPanorama(){
+  if(!threeRenderer){if(typeof showNotif==='function')showNotif('⚠️ Buka Preview 3D dulu');return;}
+  if(nav3dMode==='walk'&&!walkState.lock)exitWalkMode();
+  enterWalkMode();
+  walkState.lock=true;window._panoAuto=true;
+  const b=sceneBoundsWorld();const WALL_H=parseFloat(val('wallHeight')||3);
+  const baseY=(showAllFloors?currentFloorIndex:0)*WALL_H;
+  threeCamera.position.set((b.minX+b.maxX)/2,baseY+walkState.eyeY,(b.minZ+b.maxZ)/2);
+  walkState.yaw=walkState.targetYaw=0;walkState.pitch=walkState.targetPitch=0;
+  _panoFov=threeCamera.fov;threeCamera.fov=82;threeCamera.updateProjectionMatrix();
+  applyWalkLook();
+  document.body.classList.add('pano-on');
+  flagBtn('btn3dPano',true);flagBtn('btn3dWalk',false);
+  _showPanoBar();
+  if(typeof showNotif==='function')showNotif('🌐 Mode Panorama 360° — seret untuk melihat sekeliling');
+}
+function exitPanorama(){
+  walkState.lock=false;window._panoAuto=false;
+  if(_panoFov){threeCamera.fov=_panoFov;threeCamera.updateProjectionMatrix();_panoFov=null;}
+  document.body.classList.remove('pano-on');
+  flagBtn('btn3dPano',false);
+  _hidePanoBar();
+  exitWalkMode();
+}
+function _showPanoBar(){
+  if(document.getElementById('panoBar'))return;
+  var host=document.getElementById('view3d')||document.body;
+  var bar=document.createElement('div');bar.id='panoBar';
+  bar.style.cssText='position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:60;display:flex;gap:8px;align-items:center;background:rgba(13,15,20,.94);border:1px solid #2a2d3e;border-radius:30px;padding:8px 14px;box-shadow:0 6px 24px rgba(0,0,0,.5);';
+  bar.innerHTML='<span style="color:#f5a623;font-weight:700;font-size:13px;">🌐 Panorama 360°</span>'+
+    '<button id="panoAutoBtn" onclick="panoToggleAuto()" style="background:#f5a623;color:#000;border:none;border-radius:16px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">⏸ Putar Otomatis</button>'+
+    '<button onclick="panoCapture()" style="background:#252836;color:#e2e8f0;border:1px solid #3a3d4e;border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">📸 Simpan</button>'+
+    '<button onclick="exitPanorama()" style="background:#e8523a;color:#fff;border:none;border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">✕ Keluar</button>';
+  host.appendChild(bar);
+}
+function _hidePanoBar(){var b=document.getElementById('panoBar');if(b)b.remove();}
+function panoToggleAuto(){window._panoAuto=!window._panoAuto;var b=document.getElementById('panoAutoBtn');if(b){b.textContent=window._panoAuto?'⏸ Putar Otomatis':'▶ Putar Otomatis';b.style.background=window._panoAuto?'#f5a623':'#252836';b.style.color=window._panoAuto?'#000':'#e2e8f0';}}
+function panoCapture(){
+  if(!threeRenderer)return;
+  threeRenderer.render(threeScene,threeCamera);
+  try{
+    var url=threeRenderer.domElement.toDataURL('image/png');
+    var a=document.createElement('a');a.href=url;a.download='panorama360.png';a.click();
+    if(typeof showNotif==='function')showNotif('📸 Panorama tersimpan');
+  }catch(e){if(typeof showNotif==='function')showNotif('⚠️ Gagal simpan: '+e.message);}
+}
+window.togglePanorama=togglePanorama;window.enterPanorama=enterPanorama;window.exitPanorama=exitPanorama;
+window.panoToggleAuto=panoToggleAuto;window.panoCapture=panoCapture;

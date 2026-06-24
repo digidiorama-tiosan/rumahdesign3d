@@ -186,18 +186,56 @@ function _furnModel(def){
   g.userData.defId=def.id;g.userData.defName=def.name;g.userData.defIcon=def.icon;
   return g;
 }
+// ── Tekstur prosedural (kayu / kain / logam) — dibuat sekali, di-cache ──
+var _texCache={};
+function _mkTex(key,draw){
+  if(_texCache[key])return _texCache[key];
+  var cv=document.createElement('canvas');cv.width=cv.height=256;
+  draw(cv.getContext('2d'),256);
+  var t=new THREE.CanvasTexture(cv);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  _texCache[key]=t;return t;
+}
+function _woodTex(){return _mkTex('wood',function(x,S){
+  x.fillStyle='#ffffff';x.fillRect(0,0,S,S);
+  for(var i=0;i<46;i++){
+    var y=Math.random()*S, a=0.04+Math.random()*0.10;
+    x.strokeStyle='rgba(70,40,15,'+a+')';x.lineWidth=0.6+Math.random()*2.2;
+    x.beginPath();x.moveTo(0,y);
+    for(var xx=0;xx<=S;xx+=16)x.lineTo(xx,y+Math.sin((xx+i*9)/26)*3.2);
+    x.stroke();
+  }
+});}
+function _fabricTex(){return _mkTex('fabric',function(x,S){
+  x.fillStyle='#ffffff';x.fillRect(0,0,S,S);
+  for(var i=0;i<S;i+=3){for(var j=0;j<S;j+=3){
+    var v=200+Math.floor(Math.random()*55);
+    x.fillStyle='rgba('+v+','+v+','+v+',0.5)';
+    x.fillRect(i,j,((i/3+j/3)%2?2:1),2);
+  }}
+});}
+function _metalTex(){return _mkTex('metal',function(x,S){
+  x.fillStyle='#ffffff';x.fillRect(0,0,S,S);
+  for(var i=0;i<S;i+=1){
+    var v=Math.random()*0.12;
+    x.strokeStyle='rgba(120,120,130,'+v+')';x.beginPath();x.moveTo(i,0);x.lineTo(i,S);x.stroke();
+  }
+});}
 var _lm=function(c){return new THREE.MeshLambertMaterial({color:c});};
-var _wood=_lm(0x8b5e3c),_fabric=function(c){return _lm(c);},_metal=_lm(0xa0a0a0),_white=_lm(0xf5f5f0);
+function _woodMat(c){return new THREE.MeshLambertMaterial({color:c,map:_woodTex()});}
+function _fabricMat(c){var m=new THREE.MeshLambertMaterial({color:c,map:_fabricTex()});m.map.repeat.set(3,3);return m;}
+function _metalMatTx(){return new THREE.MeshLambertMaterial({color:0xb8b8c0,map:_metalTex()});}
+var _wood=_woodMat(0x8b5e3c),_fabric=function(c){return _fabricMat(c);},_metal=_metalMatTx(),_white=_lm(0xf5f5f0);
 function _modelBed(g,w,d,col){
-  g.add(_bx(w,0.22,d,_lm(0x7a4e2d),0,0.11,0));
-  g.add(_bx(w-0.08,0.26,d-0.15,_lm(0xddd0c0),0,0.35,0.07));
-  g.add(_bx(w,0.6,0.1,_lm(0x6b3e22),0,0.51,-d/2+0.07));
-  g.add(_bx(w*0.38,0.1,0.32,_white,-w*0.22,0.5,-d/2+0.3));
-  g.add(_bx(w*0.38,0.1,0.32,_white, w*0.22,0.5,-d/2+0.3));
+  g.add(_bx(w,0.22,d,_woodMat(0x7a4e2d),0,0.11,0));
+  g.add(_bx(w-0.08,0.26,d-0.15,_fabricMat(0xe6dccb),0,0.35,0.07));
+  g.add(_bx(w,0.6,0.1,_woodMat(0x6b3e22),0,0.51,-d/2+0.07));
+  g.add(_bx(w*0.38,0.1,0.32,_fabricMat(0xfafafa),-w*0.22,0.5,-d/2+0.3));
+  g.add(_bx(w*0.38,0.1,0.32,_fabricMat(0xfafafa), w*0.22,0.5,-d/2+0.3));
 }
 function _modelSofa(g,w,d,h,col){
-  var mat=_fabric(col);
-  var leg=_lm(0x3a2a1a);
+  var mat=_fabricMat(col);
+  var leg=_woodMat(0x3a2a1a);
   g.add(_bx(w,0.32,d*0.6,mat,0,0.32,d*0.08));
   g.add(_bx(w,0.58,0.14,mat,0,0.6,-d/2+0.09));
   g.add(_bx(0.14,0.44,d*0.68,mat,-w/2+0.08,0.42,d*0.04));
@@ -205,24 +243,24 @@ function _modelSofa(g,w,d,h,col){
   [[-w/2+0.1,-d/2+0.08],[w/2-0.1,-d/2+0.08],[-w/2+0.1,d/2-0.08],[w/2-0.1,d/2-0.08]].forEach(function(p){g.add(_bx(0.06,0.1,0.06,leg,p[0],0.05,p[1]));});
 }
 function _modelTable(g,w,d,h,col){
-  var top=_lm(col),leg=_lm(col.clone?col.clone().multiplyScalar(0.72):0x6b4226);
+  var top=_woodMat(col),leg=_woodMat(col.clone?col.clone().multiplyScalar(0.72):0x6b4226);
   g.add(_bx(w,0.06,d,top,0,h,0));
   [[-w/2+0.06,-d/2+0.06],[w/2-0.06,-d/2+0.06],[-w/2+0.06,d/2-0.06],[w/2-0.06,d/2-0.06]].forEach(function(p){g.add(_bx(0.06,h,0.06,leg,p[0],h/2,p[1]));});
 }
 function _modelChair(g,w,d,h,col){
-  var mat=_fabric(col),leg=_lm(0x3a2a1a);
+  var mat=_fabricMat(col),leg=_woodMat(0x3a2a1a);
   g.add(_bx(w,0.08,d,mat,0,0.44,0));
   g.add(_bx(w,0.5,0.06,mat,0,0.68,-d/2+0.04));
   [[-w/2+0.05,-d/2+0.05],[w/2-0.05,-d/2+0.05],[-w/2+0.05,d/2-0.05],[w/2-0.05,d/2-0.05]].forEach(function(p){g.add(_bx(0.05,0.44,0.05,leg,p[0],0.22,p[1]));});
 }
 function _modelCabinet(g,w,d,h,col){
-  var mat=_lm(col);
+  var mat=_woodMat(col);
   g.add(_bx(w,h,d,mat,0,h/2,0));
   g.add(_bx(0.04,0.04,0.14,_metal,-w*0.26,h*0.5,-d/2-0.01));
   if(w>0.8)g.add(_bx(0.04,0.04,0.14,_metal,w*0.26,h*0.5,-d/2-0.01));
 }
 function _modelShelf(g,w,d,h,col){
-  var mat=_lm(col),t=0.04;
+  var mat=_woodMat(col),t=0.04;
   g.add(_bx(t,h,d,mat,-w/2,h/2,0));g.add(_bx(t,h,d,mat,w/2,h/2,0));
   [0,h*0.33,h*0.66,h].forEach(function(y){g.add(_bx(w,t,d,mat,0,y,0));});
 }

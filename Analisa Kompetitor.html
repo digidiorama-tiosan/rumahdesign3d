@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analisa Kompetitor — RumahDesign3D</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d0f14; --surface:#161925; --surface2:#1a1d2e; --border:#2a2d3e;
+    --text:#e8eaf2; --text2:#c0c5d4; --text3:#9aa0b8;
+    --accent:#f5a623; --accent2:#ff6b35;
+    --green:#3ecf8e; --red:#e8523a; --yellow:#f5c842; --blue:#4a9eff; --violet:#a78bfa;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .page{max-width:1000px;margin:0 auto;padding:56px 40px 80px;}
+
+  /* Header */
+  .doc-head{border-bottom:2px solid var(--border);padding-bottom:28px;margin-bottom:40px;}
+  .doc-kicker{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:14px;}
+  .doc-title{font-size:38px;font-weight:800;line-height:1.15;letter-spacing:-0.5px;margin-bottom:12px;}
+  .doc-title span{color:var(--accent);}
+  .doc-sub{font-size:16px;color:var(--text3);max-width:680px;}
+  .doc-meta{display:flex;gap:24px;margin-top:20px;font-size:13px;color:var(--text3);flex-wrap:wrap;}
+  .doc-meta b{color:var(--text2);font-weight:600;}
+
+  /* Section */
+  section{margin-bottom:52px;}
+  .sec-label{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+  .sec-num{font-family:'Space Mono',monospace;font-size:13px;color:var(--accent);background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.3);width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px;flex-shrink:0;}
+  .sec-title{font-size:24px;font-weight:800;letter-spacing:-0.3px;}
+  .sec-desc{color:var(--text3);font-size:14.5px;margin:6px 0 24px;max-width:760px;}
+
+  /* Competitor cards */
+  .comp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:8px;}
+  .comp-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 16px;}
+  .comp-card.us{border-color:var(--accent);background:linear-gradient(160deg,rgba(245,166,35,.08),rgba(245,166,35,.01));}
+  .comp-logo{font-size:26px;margin-bottom:8px;}
+  .comp-name{font-weight:800;font-size:15px;margin-bottom:2px;}
+  .comp-tag{font-size:11.5px;color:var(--text3);line-height:1.4;}
+  .comp-origin{display:inline-block;margin-top:10px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);border:1px solid var(--border);border-radius:20px;padding:3px 9px;}
+  .us .comp-origin{color:var(--accent);border-color:rgba(245,166,35,.4);}
+
+  /* Matrix table */
+  .matrix-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px;}
+  table.matrix{width:100%;border-collapse:collapse;font-size:13.5px;min-width:680px;}
+  table.matrix thead th{background:var(--surface2);padding:14px 12px;text-align:center;font-weight:700;font-size:12.5px;border-bottom:2px solid var(--border);position:sticky;top:0;}
+  table.matrix thead th:first-child{text-align:left;width:34%;}
+  table.matrix thead th.us-col{color:var(--accent);background:rgba(245,166,35,.07);}
+  table.matrix td{padding:12px;border-bottom:1px solid var(--border);text-align:center;}
+  table.matrix td:first-child{text-align:left;color:var(--text2);font-weight:500;}
+  table.matrix tr:last-child td{border-bottom:none;}
+  table.matrix td.us-col{background:rgba(245,166,35,.05);}
+  .cat-row td{background:#11131c;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-weight:700;padding:9px 12px !important;}
+  .yes{color:var(--green);font-weight:700;}
+  .no{color:var(--red);opacity:.8;}
+  .partial{color:var(--yellow);}
+  .mark{font-size:16px;}
+
+  /* Strength / weakness */
+  .sw-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .sw-col{border-radius:14px;padding:24px;border:1px solid var(--border);}
+  .sw-col.plus{background:linear-gradient(160deg,rgba(62,207,142,.07),transparent);border-color:rgba(62,207,142,.3);}
+  .sw-col.minus{background:linear-gradient(160deg,rgba(232,82,58,.06),transparent);border-color:rgba(232,82,58,.3);}
+  .sw-h{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800;margin-bottom:16px;}
+  .sw-h.plus{color:var(--green);}
+  .sw-h.minus{color:var(--red);}
+  .sw-list{list-style:none;display:flex;flex-direction:column;gap:13px;}
+  .sw-list li{display:flex;gap:11px;font-size:14px;color:var(--text2);align-items:flex-start;}
+  .sw-list li .ic{flex-shrink:0;margin-top:1px;}
+  .sw-list li b{color:var(--text);font-weight:700;}
+
+  /* Roadmap */
+  .road{display:flex;flex-direction:column;gap:14px;}
+  .road-item{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;}
+  .road-rank{font-family:'Space Mono',monospace;font-weight:700;font-size:20px;color:var(--accent);width:34px;text-align:center;}
+  .road-body h4{font-size:15.5px;font-weight:700;margin-bottom:3px;}
+  .road-body p{font-size:13px;color:var(--text3);}
+  .road-eff{font-size:11px;font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;padding:5px 11px;border-radius:20px;white-space:nowrap;}
+  .eff-low{background:rgba(62,207,142,.12);color:var(--green);border:1px solid rgba(62,207,142,.3);}
+  .eff-mid{background:rgba(245,200,66,.12);color:var(--yellow);border:1px solid rgba(245,200,66,.3);}
+  .eff-high{background:rgba(232,82,58,.12);color:var(--red);border:1px solid rgba(232,82,58,.3);}
+
+  /* Verdict box */
+  .verdict{background:linear-gradient(160deg,rgba(245,166,35,.1),rgba(255,107,53,.03));border:1px solid rgba(245,166,35,.35);border-radius:16px;padding:30px 32px;}
+  .verdict h3{font-size:19px;font-weight:800;margin-bottom:12px;color:var(--accent);}
+  .verdict p{font-size:15px;color:var(--text2);margin-bottom:12px;}
+  .verdict p:last-child{margin-bottom:0;}
+  .verdict .score{display:flex;gap:30px;margin:20px 0;flex-wrap:wrap;}
+  .score-item{text-align:center;}
+  .score-num{font-size:32px;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace;}
+  .score-lbl{font-size:12px;color:var(--text3);}
+
+  .foot{margin-top:48px;padding-top:24px;border-top:1px solid var(--border);font-size:12.5px;color:var(--text3);text-align:center;}
+
+  @media (max-width:760px){
+    .page{padding:32px 18px 60px;}
+    .doc-title{font-size:28px;}
+    .comp-grid{grid-template-columns:1fr 1fr;}
+    .sw-grid{grid-template-columns:1fr;}
+    .road-item{grid-template-columns:auto 1fr;}
+    .road-eff{grid-column:2;justify-self:start;margin-top:6px;}
+  }
+  @media print{
+    body{background:#fff;color:#111;}
+    .page{max-width:100%;}
+    section{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="doc-head">
+    <div class="doc-kicker">Analisa Kompetitif · Juni 2026</div>
+    <h1 class="doc-title">RumahDesign3D vs <span>Planner5D · Coohom · Denahku</span></h1>
+    <p class="doc-sub">Perbandingan fitur menyeluruh, bagan kelebihan & kekurangan, serta rekomendasi prioritas pengembangan agar aplikasi siap bersaing di pasar desain rumah Indonesia.</p>
+    <div class="doc-meta">
+      <span><b>Disusun untuk:</b> Tim RumahDesign3D</span>
+      <span><b>Pembanding:</b> 3 platform global & lokal</span>
+      <span><b>Kriteria:</b> 40+ fitur</span>
+    </div>
+  </div>
+
+  <!-- 1. PEMAIN -->
+  <section>
+    <div class="sec-label"><span class="sec-num">01</span><span class="sec-title">Para Pemain</span></div>
+    <p class="sec-desc">Empat platform dengan posisi pasar berbeda — dari raksasa global berbasis render-farm sampai aplikasi denah lokal.</p>
+    <div class="comp-grid">
+      <div class="comp-card us">
+        <div class="comp-logo">🏠</div>
+        <div class="comp-name">RumahDesign3D</div>
+        <div class="comp-tag">Desain rumah + RAB + AI render, fokus pasar & regulasi Indonesia</div>
+        <span class="comp-origin">Kita · ID</span>
+      </div>
+      <div class="comp-card">
+        <div class="comp-logo">🧊</div>
+        <div class="comp-name">Planner 5D</div>
+        <div class="comp-tag">Desain interior/eksterior konsumen, katalog furnitur masif, AR/VR</div>
+        <span class="comp-origin">Global</span>
+      </div>
+      <div class="comp-card">
+        <div class="comp-logo">🎬</div>
+        <div class="comp-name">Coohom</div>
+        <div class="comp-tag">Platform profesional, render fotorealistik & katalog produk brand</div>
+        <span class="comp-origin">Global · Pro</span>
+      </div>
+      <div class="comp-card">
+        <div class="comp-logo">📐</div>
+        <div class="comp-name">Denahku</div>
+        <div class="comp-tag">Denah rumah & estimasi biaya sederhana, pasar lokal</div>
+        <span class="comp-origin">ID</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. MATRIKS -->
+  <section>
+    <div class="sec-label"><span class="sec-num">02</span><span class="sec-title">Matriks Fitur</span></div>
+    <p class="sec-desc"><span class="yes">✓</span> tersedia &nbsp;·&nbsp; <span class="partial">◐</span> terbatas / dasar &nbsp;·&nbsp; <span class="no">✕</span> tidak ada</p>
+    <div class="matrix-wrap">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>Fitur</th>
+            <th class="us-col">RumahDesign3D</th>
+            <th>Planner 5D</th>
+            <th>Coohom</th>
+            <th>Denahku</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="cat-row"><td colspan="5">Denah & Pemodelan</td></tr>
+          <tr><td>Denah 2D + gambar dinding</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td></tr>
+          <tr><td>Deteksi ruangan otomatis</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark partial">◐</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+          <tr><td>Multi-lantai</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark partial">◐</span></td></tr>
+          <tr><td>Preview 3D + walk-through</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+          <tr><td>Generator atap</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark partial">◐</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+
+          <tr class="cat-row"><td colspan="5">Interior & Furnitur</td></tr>
+          <tr><td>Editor interior 3D drag-drop</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+          <tr><td>Katalog furnitur</td><td class="us-col"><span class="mark partial">◐</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+          <tr><td>Model 3D detail bertekstur</td><td class="us-col"><span class="mark partial">◐</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+          <tr><td>Ganti material/warna</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+          <tr><td>Katalog produk brand (belanja)</td><td class="us-col"><span class="mark no">✕</span></td><td><span class="mark partial">◐</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+
+          <tr class="cat-row"><td colspan="5">Render & Visual</td></tr>
+          <tr><td>AI render fotorealistik</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+          <tr><td>Render farm kualitas tinggi</td><td class="us-col"><span class="mark partial">◐</span></td><td><span class="mark partial">◐</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+          <tr><td>Panorama 360° / VR</td><td class="us-col"><span class="mark no">✕</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+          <tr><td>AR (lihat di ruang nyata)</td><td class="us-col"><span class="mark no">✕</span></td><td><span class="mark yes">✓</span></td><td><span class="mark partial">◐</span></td><td><span class="mark no">✕</span></td></tr>
+
+          <tr class="cat-row"><td colspan="5">Lokal Indonesia (Pembeda)</td></tr>
+          <tr><td>RAB / estimasi biaya (Rupiah)</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td><td><span class="mark no">✕</span></td><td><span class="mark yes">✓</span></td></tr>
+          <tr><td>Cek regulasi KDB/KLB/GSB</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td><td><span class="mark no">✕</span></td><td><span class="mark no">✕</span></td></tr>
+          <tr><td>Gambar kerja arsitektur</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark partial">◐</span></td><td><span class="mark yes">✓</span></td><td><span class="mark partial">◐</span></td></tr>
+          <tr><td>Tipe bangunan lokal (ruko, masjid)</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td><td><span class="mark no">✕</span></td><td><span class="mark partial">◐</span></td></tr>
+          <tr><td>Mode developer (lahan→unit)</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td><td><span class="mark partial">◐</span></td><td><span class="mark no">✕</span></td></tr>
+
+          <tr class="cat-row"><td colspan="5">AI & Otomasi</td></tr>
+          <tr><td>AI auto-layout denah</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+          <tr><td>Wizard isi furnitur otomatis</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark partial">◐</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+          <tr><td>Scan foto denah → trace</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark partial">◐</span></td><td><span class="mark no">✕</span></td></tr>
+
+          <tr class="cat-row"><td colspan="5">Platform & Bisnis</td></tr>
+          <tr><td>Web + PWA + APK</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark partial">◐</span></td><td><span class="mark partial">◐</span></td></tr>
+          <tr><td>App native iOS/Android</td><td class="us-col"><span class="mark partial">◐</span></td><td><span class="mark yes">✓</span></td><td><span class="mark partial">◐</span></td><td><span class="mark no">✕</span></td></tr>
+          <tr><td>Kolaborasi real-time</td><td class="us-col"><span class="mark no">✕</span></td><td><span class="mark partial">◐</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+          <tr><td>Pembayaran & langganan lokal</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark partial">◐</span></td><td><span class="mark partial">◐</span></td><td><span class="mark partial">◐</span></td></tr>
+          <tr><td>Panel admin & manajemen user</td><td class="us-col"><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td><td><span class="mark yes">✓</span></td><td><span class="mark no">✕</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 3. KELEBIHAN & KEKURANGAN -->
+  <section>
+    <div class="sec-label"><span class="sec-num">03</span><span class="sec-title">Bagan Kelebihan & Kekurangan</span></div>
+    <p class="sec-desc">Posisi RumahDesign3D relatif terhadap kompetitor global & lokal.</p>
+    <div class="sw-grid">
+      <div class="sw-col plus">
+        <div class="sw-h plus">✓ Kelebihan</div>
+        <ul class="sw-list">
+          <li><span class="ic">🇮🇩</span><span><b>Paling lokal.</b> RAB Rupiah, cek regulasi KDB/KLB/GSB, harga material per kota — tidak dimiliki Planner5D / Coohom.</span></li>
+          <li><span class="ic">🏢</span><span><b>Tipe bangunan unik.</b> Ruko, masjid, toko, rumah 2 lantai dengan auto-layout — sangat relevan pasar Indonesia.</span></li>
+          <li><span class="ic">🤖</span><span><b>AI lengkap.</b> Auto-layout, wizard furnitur, scan denah, AI render, mode renovasi & developer dalam satu paket.</span></li>
+          <li><span class="ic">📐</span><span><b>Output teknis.</b> Gambar kerja arsitektur + RAB + Excel — cocok untuk kontraktor & developer, bukan cuma konsumen.</span></li>
+          <li><span class="ic">💳</span><span><b>Siap monetisasi.</b> Pembayaran Midtrans, langganan, panel admin & manajemen user sudah jalan.</span></li>
+          <li><span class="ic">⚡</span><span><b>Ringan & gratis dasar.</b> Jalan di browser/PWA tanpa instalasi berat, tanpa biaya cloud render.</span></li>
+        </ul>
+      </div>
+      <div class="sw-col minus">
+        <div class="sw-h minus">✕ Kekurangan</div>
+        <ul class="sw-list">
+          <li><span class="ic">🪑</span><span><b>Katalog furnitur kecil.</b> Planner5D & Coohom punya ribuan model; kita masih puluhan & berbentuk geometris dasar.</span></li>
+          <li><span class="ic">🎬</span><span><b>Kualitas render.</b> Coohom punya render-farm fotorealistik; AI render kita bagus tapi belum sekonsisten itu.</span></li>
+          <li><span class="ic">🥽</span><span><b>Belum ada 360°/VR/AR.</b> Tur imersif & "lihat di ruang nyata" jadi nilai jual kompetitor.</span></li>
+          <li><span class="ic">👥</span><span><b>Tanpa kolaborasi real-time.</b> Belum bisa kerja tim bareng di satu proyek (Coohom unggul).</span></li>
+          <li><span class="ic">🛒</span><span><b>Tanpa katalog produk brand.</b> Coohom terhubung produk nyata yang bisa dibeli — peluang pendapatan.</span></li>
+          <li><span class="ic">📱</span><span><b>Belum native.</b> APK masih wrapper (TWA); performa & integrasi sensor kalah dari app native.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. REKOMENDASI -->
+  <section>
+    <div class="sec-label"><span class="sec-num">04</span><span class="sec-title">Rekomendasi Prioritas</span></div>
+    <p class="sec-desc">Urutan berdasarkan dampak ke daya saing dibanding usaha pengerjaan.</p>
+    <div class="road">
+      <div class="road-item">
+        <div class="road-rank">1</div>
+        <div class="road-body"><h4>🪑 Perbesar katalog furnitur + model lebih detail</h4><p>Tambah model bertekstur (kayu, kain, logam) per kategori. Kelemahan paling terasa vs kompetitor.</p></div>
+        <span class="road-eff eff-mid">Usaha · Sedang</span>
+      </div>
+      <div class="road-item">
+        <div class="road-rank">2</div>
+        <div class="road-body"><h4>🥽 Panorama 360° dari Preview 3D</h4><p>Render equirectangular dari posisi kamera → tur imersif yang bisa dibagikan link. Pembeda besar untuk klien.</p></div>
+        <span class="road-eff eff-mid">Usaha · Sedang</span>
+      </div>
+      <div class="road-item">
+        <div class="road-rank">3</div>
+        <div class="road-body"><h4>🛒 Katalog produk + harga (toko material lokal)</h4><p>Hubungkan furnitur/material ke produk nyata + harga. Memperkuat RAB sekaligus buka jalur komisi/iklan.</p></div>
+        <span class="road-eff eff-high">Usaha · Besar</span>
+      </div>
+      <div class="road-item">
+        <div class="road-rank">4</div>
+        <div class="road-body"><h4>👥 Berbagi proyek untuk revisi klien</h4><p>Link view-only + komentar (belum perlu real-time penuh). Memanfaatkan Supabase yang sudah ada.</p></div>
+        <span class="road-eff eff-low">Usaha · Kecil</span>
+      </div>
+      <div class="road-item">
+        <div class="road-rank">5</div>
+        <div class="road-body"><h4>📚 Galeri template & inspirasi siap pakai</h4><p>Perbanyak template rumah/ruko/masjid jadi per tipe (36/45/60/90) — onboarding cepat untuk pengguna baru.</p></div>
+        <span class="road-eff eff-low">Usaha · Kecil</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- VERDICT -->
+  <section>
+    <div class="verdict">
+      <h3>Kesimpulan</h3>
+      <p><b>RumahDesign3D sudah layak dijual</b> — terutama untuk pasar Indonesia. Keunggulan lokal (RAB, regulasi, tipe bangunan, output teknis) adalah <b>parit pertahanan</b> yang tidak dimiliki Planner5D maupun Coohom. Di sinilah kita menang.</p>
+      <div class="score">
+        <div class="score-item"><div class="score-num">Kuat</div><div class="score-lbl">Fitur lokal & teknis</div></div>
+        <div class="score-item"><div class="score-num">Setara</div><div class="score-lbl">AI & denah/3D</div></div>
+        <div class="score-item"><div class="score-num">Tertinggal</div><div class="score-lbl">Katalog, render farm, VR/AR</div></div>
+      </div>
+      <p>Jangan kejar Coohom di kualitas render atau Planner5D di jumlah model — itu pertarungan modal besar. <b>Perdalam keunggulan lokal</b> (katalog produk + harga lokal, 360° untuk presentasi klien, berbagi revisi) agar jadi pilihan utama arsitek, kontraktor, dan developer Indonesia.</p>
+    </div>
+  </section>
+
+  <div class="foot">
+    Analisa Kompetitif RumahDesign3D · Juni 2026 · Penilaian berdasarkan fitur publik kompetitor dan dapat berubah seiring pembaruan masing-masing platform.
+  </div>
+
+</div>
+</body>
+</html>
