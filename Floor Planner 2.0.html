@@ -42,19 +42,6 @@
 <!-- HEADER -->
 <header>
   <div class="logo">
-    <!-- SITE TOOLBAR -->
-    <div id="siteToolbar" style="padding:8px;border-bottom:1px solid #2a2d3e;display:flex;gap:4px;flex-wrap:wrap;">
-      <button class="floor-act" style="flex:1;font-size:12px;" onclick="toggleSiteEdit()">🏞️ Ubah Lahan</button>
-      <button class="floor-act" style="flex:1;font-size:12px;border-color:#c49a6c;color:#c49a6c;" onclick="toggleFenceMode()">🚧 Pagar</button>
-    </div>
-    <div id="fencePanel" style="padding:8px;border-bottom:1px solid #2a2d3e;display:none;background:#0d0f14;">
-      <div style="font-size:11px;color:#9aa0b8;margin-bottom:8px;">Klik area denah untuk tentukan jalur pagar</div>
-      <div style="display:flex;gap:4px;">
-        <button class="mini" style="flex:1;" onclick="finishFence()">✅ Selesai</button>
-        <button class="mini danger" style="flex:1;" onclick="clearFence()">🗑 Hapus</button>
-      </div>
-    </div>
-
     <div class="logo-icon">🏠</div>
     Rumah<span>Design</span>3D
     <span class="ver-badge">2.0</span>
@@ -126,6 +113,7 @@
     <button class="tool-btn" id="tool-carport" data-feat="siteplan" onclick="setTool('carport')">🚗<span class="tool-tip">Carport</span></button>
     <button class="tool-btn" id="tool-garden" data-feat="siteplan" onclick="setTool('garden')">🌳<span class="tool-tip">Taman</span></button>
     <button class="tool-btn" id="tool-pool" data-feat="siteplan" onclick="setTool('pool')">💧<span class="tool-tip">Kolam</span></button>
+    <button class="tool-btn" id="tool-fence" onclick="startFence()">🚧<span class="tool-tip">Pagar Keliling</span></button>
 
     <div class="tool-sep"></div>
     <div class="tool-group-label">MEP</div>
