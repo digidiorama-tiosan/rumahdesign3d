@@ -59,6 +59,8 @@
     <button class="btn-sm icon-btn" onclick="undo()" title="Undo (Ctrl+Z)">↩</button>
     <button class="btn-sm icon-btn" onclick="redo()" title="Redo (Ctrl+Y)">↪</button>
     <div class="sep-v"></div>
+    <button class="btn-sm" id="startWizBtn" onclick="openStartWizard()" title="Wizard desain otomatis dari ukuran tanah & budget">🚀 Mulai Desain</button>
+    <button class="btn-sm" id="scanBtn" onclick="openScanPlan()" title="Scan foto sertifikat tanah / denah kertas jadi desain digital" style="border-color:#3ecf8e;color:#3ecf8e;">📷 Scan Foto</button>
     <button class="btn-sm" onclick="openTemplates()" title="Template bangunan siap pakai">🏠 Template</button>
     <button class="btn-sm" onclick="shareDesign()" title="Bagikan desain via link">🔗 Bagikan</button>
     <button class="btn-sm" onclick="newProject()" title="Mulai proyek baru (kanvas kosong)">🆕 Baru</button>
@@ -683,5 +685,7 @@
 <script src="js/templates.js"></script>
 <script src="js/sharelink.js"></script>
 <script src="js/fence.js"></script>
+<script src="js/startwizard.js"></script>
+<script src="js/scanplan.js"></script>
 </body>
 </html>
