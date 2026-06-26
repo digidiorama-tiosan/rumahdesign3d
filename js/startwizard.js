@@ -332,6 +332,7 @@ window.refreshStartHero=function(){
         +'<div class="pills"><span class="pill">📐 Denah</span><span class="pill">🎲 3D</span><span class="pill">💰 RAB</span></div>'
         +'<button class="hbtn" onclick="openStartWizard()">🚀 Mulai Desain Rumah</button>'
         +'<a class="scanlink" onclick="openScanPlan()">📷 atau Scan foto denah / sertifikat</a>'
+        +(window.hasAutosaveSession&&window.hasAutosaveSession()?'<a class="scanlink" style="color:#9aa0b8;margin-top:8px;" onclick="continueAutosaveSession()">↩️ Lanjutkan sesi terakhir</a>':'')
         +'<span class="hsmall">Gratis · tanpa software berat · langsung dari HP</span></div>';
       wrap.appendChild(hero);
     }

@@ -65,9 +65,9 @@
     <button class="btn-sm" onclick="shareDesign()" title="Bagikan desain via link">🔗 Bagikan</button>
     <button class="btn-sm" onclick="newProject()" title="Mulai proyek baru (kanvas kosong)">🆕 Baru</button>
     <span id="buildingTypeIndicator" onclick="document.getElementById('buildingTypeModal').classList.add('show')" title="Klik untuk ganti jenis bangunan" style="cursor:pointer;font-size:12px;padding:4px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text3);">🏠 Rumah</span>
-    <button class="btn-sm" onclick="saveProject()" title="Simpan (Ctrl+S)">💾 Simpan</button>
-    <button class="btn-sm" onclick="saveAndNew()" title="Simpan lalu kosongkan kanvas">💾 Simpan & Baru</button>
-    <button class="btn-sm" onclick="loadProject()" title="Muat proyek tersimpan">📂 Muat</button>
+    <button class="btn-sm" onclick="saveProject()" title="Simpan proyek ke file (.rumah3d) — pilih folder (Ctrl+S)">💾 Simpan</button>
+    <button class="btn-sm" onclick="saveAndNew()" title="Simpan ke file lalu kosongkan kanvas">💾 Simpan & Baru</button>
+    <button class="btn-sm" onclick="loadProject()" title="Buka proyek dari file (.rumah3d)">📂 Buka File</button>
     <button class="btn-sm" id="btnCloud" onclick="openCloudProjects()" title="Proyek tersimpan di cloud" style="display:none;">☁ Cloud</button>
 
     <button class="btn-ai" onclick="openAIStudio()" title="AI Powered House Designer">✨ AI Studio</button>
@@ -687,5 +687,6 @@
 <script src="js/fence.js"></script>
 <script src="js/startwizard.js"></script>
 <script src="js/scanplan.js"></script>
+<script src="js/projectfile.js"></script>
 </body>
 </html>
