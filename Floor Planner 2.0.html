@@ -59,24 +59,34 @@
     <button class="btn-sm icon-btn" onclick="undo()" title="Undo (Ctrl+Z)">↩</button>
     <button class="btn-sm icon-btn" onclick="redo()" title="Redo (Ctrl+Y)">↪</button>
     <div class="sep-v"></div>
-    <button class="btn-sm" id="startWizBtn" onclick="openStartWizard()" title="Wizard desain otomatis dari ukuran tanah & budget">🚀 Mulai Desain</button>
-    <button class="btn-sm" id="scanBtn" onclick="openScanPlan()" title="Scan foto sertifikat tanah / denah kertas jadi desain digital" style="border-color:#3ecf8e;color:#3ecf8e;">📷 Scan Foto</button>
-    <button class="btn-sm" onclick="openTemplates()" title="Template bangunan siap pakai">🏠 Template</button>
-    <button class="btn-sm" onclick="shareDesign()" title="Bagikan desain via link">🔗 Bagikan</button>
-    <button class="btn-sm" onclick="newProject()" title="Mulai proyek baru (kanvas kosong)">🆕 Baru</button>
-    <span id="buildingTypeIndicator" onclick="document.getElementById('buildingTypeModal').classList.add('show')" title="Klik untuk ganti jenis bangunan" style="cursor:pointer;font-size:12px;padding:4px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text3);">🏠 Rumah</span>
-    <button class="btn-sm" onclick="saveProject()" title="Simpan proyek ke file (.rumah3d) — pilih folder (Ctrl+S)">💾 Simpan</button>
-    <button class="btn-sm" onclick="saveAndNew()" title="Simpan ke file lalu kosongkan kanvas">💾 Simpan & Baru</button>
-    <button class="btn-sm" onclick="loadProject()" title="Buka proyek dari file (.rumah3d)">📂 Buka File</button>
-    <button class="btn-sm" id="btnCloud" onclick="openCloudProjects()" title="Proyek tersimpan di cloud" style="display:none;">☁ Cloud</button>
 
+    <button class="btn-primary" id="startWizBtn" onclick="openStartWizard()" title="Wizard desain otomatis dari ukuran tanah & budget">🚀 Mulai Desain</button>
+    <button class="btn-sm accent-green" id="scanBtn" onclick="openScanPlan()" title="Scan foto sertifikat / denah kertas jadi desain digital">📷 Scan</button>
+    <button class="btn-sm" onclick="openTemplates()" title="Template bangunan siap pakai">🏠 Template</button>
     <button class="btn-ai" onclick="openAIStudio()" title="AI Powered House Designer">✨ AI Studio</button>
 
-    <button class="plan-badge" id="planBadge" onclick="openPlanModal()" title="Paket Anda — klik untuk lihat / upgrade"></button>
-    <a class="btn-sm icon-btn" href="Akun.html" title="Akun saya" style="text-decoration:none; display:inline-flex; align-items:center;">👤</a>
+    <div class="sep-v"></div>
 
+    <!-- MENU PROYEK -->
     <div class="menu-wrap">
-      <button class="btn-primary" onclick="toggleExportMenu(event)">📤 Ekspor ▾</button>
+      <button class="btn-sm menu-trigger" onclick="toggleMenu(event,'projectMenu')" title="Proyek: baru, simpan, buka">📁 Proyek ▾</button>
+      <div class="dropdown" id="projectMenu">
+        <div class="dropdown-label">File Proyek</div>
+        <button onclick="newProject()">🆕 Proyek Baru</button>
+        <button onclick="saveProject()">💾 Simpan ke File</button>
+        <button onclick="saveAndNew()">💾 Simpan & Mulai Baru</button>
+        <button onclick="loadProject()">📂 Buka File (.rumah3d)</button>
+        <button id="btnCloud" onclick="openCloudProjects()" style="display:none;">☁ Simpan / Buka di Cloud</button>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-label">Jenis Bangunan</div>
+        <button id="buildingTypeIndicator" onclick="document.getElementById('buildingTypeModal').classList.add('show')">🏠 Rumah — ganti jenis</button>
+        <button onclick="shareDesign()">🔗 Bagikan via Link</button>
+      </div>
+    </div>
+
+    <!-- MENU EKSPOR -->
+    <div class="menu-wrap">
+      <button class="btn-primary menu-trigger" onclick="toggleMenu(event,'exportMenu')" title="Ekspor & cetak">📤 Ekspor ▾</button>
       <div class="dropdown" id="exportMenu">
         <div class="dropdown-label">Gambar Denah</div>
         <button onclick="exportImage('png')">🖼 Ekspor PNG</button>
@@ -84,17 +94,19 @@
         <button onclick="exportPDF()" data-feat="pdf">📄 Ekspor PDF (Denah + RAB)</button>
         <div class="dropdown-sep"></div>
         <div class="dropdown-label">Gambar Kerja & CAD</div>
-        <button onclick="openDrawings()" data-feat="drawings">📐 Gambar Kerja (Denah/Tampak/Potongan)</button>
-        <button onclick="exportDXF()" data-feat="dxf">📂 Ekspor DXF (AutoCAD/DraftSight)</button>
+        <button onclick="openDrawings()" data-feat="drawings">📐 Gambar Kerja (Tampak/Potongan)</button>
+        <button onclick="exportDXF()" data-feat="dxf">📂 Ekspor DXF (AutoCAD)</button>
         <div class="dropdown-sep"></div>
-        <div class="dropdown-label">Data Proyek</div>
-        <button onclick="exportProject()">📦 Ekspor Proyek (.json)</button>
-        <button onclick="importProject()">📥 Impor Proyek</button>
+        <div class="dropdown-label">Data</div>
         <button onclick="exportRABExcel()">📊 RAB ke CSV</button>
         <div class="dropdown-sep"></div>
         <button class="danger" onclick="clearAll()">🗑 Reset Semua</button>
       </div>
     </div>
+
+    <div class="sep-v"></div>
+    <button class="plan-badge" id="planBadge" onclick="openPlanModal()" title="Paket Anda — klik untuk lihat / upgrade"></button>
+    <a class="btn-sm icon-btn" href="Akun.html" title="Akun saya" style="text-decoration:none; display:inline-flex; align-items:center;">👤</a>
   </div>
 </header>
 

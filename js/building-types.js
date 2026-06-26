@@ -116,7 +116,7 @@ function updateBuildingTypeIndicator(){
   var el=document.getElementById('buildingTypeIndicator');
   if(!el)return;
   var labels={rumah:'🏠 Rumah',toko:'🏪 Toko',masjid:'🕌 Masjid',ruko:'🏢 Ruko'};
-  el.textContent=labels[window.buildingType]||'🏠 Rumah';
+  el.textContent=(labels[window.buildingType]||'🏠 Rumah')+' — ganti jenis';
 }
 
 window.autoArrangeByBuildingType=function(){
