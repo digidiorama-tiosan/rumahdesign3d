@@ -8,9 +8,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="RumahDesign3D">
+<meta name="apple-mobile-web-app-title" content="DadiOmah">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<title>RumahDesign3D — Floor Planner 2.0</title>
+<title>DadiOmah — Desain Rumah + RAB</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -43,16 +43,16 @@
 <!-- HEADER -->
 <header>
   <div class="logo">
-    <div class="logo-icon">🏠</div>
-    Rumah<span>Design</span>3D
+    <img class="logo-img" src="icons/dadiomah-mark.png" alt="DadiOmah" width="30" height="30">
+    Dadi<span>Omah</span>
     <span class="ver-badge">2.0</span>
   </div>
 
   <div class="header-tabs">
-    <button class="tab-btn active" id="vtab-2d" onclick="setView('2d')">▦ Denah 2D</button>
-    <button class="tab-btn" id="vtab-3d" onclick="setView('3d')">🎲 Preview 3D</button>
-    <button class="tab-btn" id="vtab-int" onclick="openInterior()">🛋️ Interior</button>
-    <button class="tab-btn" id="vtab-rab" onclick="setView('rab')">📋 RAB</button>
+    <button class="tab-btn active" id="vtab-2d" onclick="setView('2d')" title="Denah 2D">▦ OmahPlan</button>
+    <button class="tab-btn" id="vtab-3d" onclick="setView('3d')" title="Visualisasi 3D">🎲 Omah3D</button>
+    <button class="tab-btn" id="vtab-int" onclick="openInterior()" title="Interior">🛋️ OmahStyle</button>
+    <button class="tab-btn" id="vtab-rab" onclick="setView('rab')" title="Estimasi Biaya (RAB)">📋 OmahCost</button>
   </div>
 
   <div class="header-actions">
@@ -63,7 +63,7 @@
     <button class="btn-primary" id="startWizBtn" onclick="openStartWizard()" title="Wizard desain otomatis dari ukuran tanah & budget">🚀 Mulai Desain</button>
     <button class="btn-sm accent-green" id="scanBtn" onclick="openScanPlan()" title="Scan foto sertifikat / denah kertas jadi desain digital">📷 Scan</button>
     <button class="btn-sm" onclick="openTemplates()" title="Template bangunan siap pakai">🏠 Template</button>
-    <button class="btn-ai" onclick="openAIStudio()" title="AI Powered House Designer">✨ AI Studio</button>
+    <button class="btn-ai" onclick="openAIStudio()" title="AI Designer">✨ OmahAI</button>
 
     <div class="sep-v"></div>
 
@@ -80,7 +80,7 @@
         <div class="dropdown-sep"></div>
         <div class="dropdown-label">Jenis Bangunan</div>
         <button id="buildingTypeIndicator" onclick="document.getElementById('buildingTypeModal').classList.add('show')">🏠 Rumah — ganti jenis</button>
-        <button onclick="shareDesign()">🔗 Bagikan via Link</button>
+        <button onclick="shareDesign()">🔗 OmahShare — Berbagi via Link</button>
       </div>
     </div>
 
@@ -473,7 +473,7 @@
   </div>
   <div class="rab-subtabs" id="rabSubtabs">
     <div class="rab-subtab active" data-rab="ringkas" onclick="setRabTab('ringkas')">Ringkas</div>
-    <div class="rab-subtab" data-rab="konstruksi" onclick="setRabTab('konstruksi')">Konstruksi (Detail)</div>
+    <div class="rab-subtab" data-rab="konstruksi" onclick="setRabTab('konstruksi')" title="Konstruksi (Detail)">OmahBuild</div>
     <div class="rab-subtab" data-rab="struktur" onclick="setRabTab('struktur')">Struktur & Atap</div>
     <div class="rab-subtab" data-rab="takeoff" onclick="setRabTab('takeoff')">Material Take-Off</div>
   </div>

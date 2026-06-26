@@ -1,6 +1,6 @@
 {
-  "name": "RumahDesign3D — Floor Planner",
-  "short_name": "RumahDesign3D",
+  "name": "DadiOmah — Desain Rumah + RAB",
+  "short_name": "DadiOmah",
   "description": "Desain rumah: denah 2D, 3D, RAB, gambar kerja, AI Studio.",
   "start_url": "./Floor%20Planner%202.0.html",
   "scope": "./",
