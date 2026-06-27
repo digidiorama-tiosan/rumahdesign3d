@@ -175,6 +175,9 @@
         <button class="zoom-btn" onclick="zoom(0.8)">−</button>
         <button class="zoom-btn" onclick="resetZoom()" style="font-size:13px" title="Pas ke layar">⊙</button>
       </div>
+
+      <button id="btnRealistic" onclick="toggleRealistic()" title="Tampilan realistis: lantai bertekstur, furnitur tampak nyata"
+        style="position:absolute;top:14px;right:14px;z-index:20;display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:11px;border:1px solid #2a2d3e;background:rgba(19,21,31,.92);color:#e8eaf2;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);backdrop-filter:blur(6px);">🎨 Realistis</button>
     </div>
 
     <!-- FLOOR BAR -->
@@ -411,6 +414,7 @@
     <!-- FURNITURE VIEW -->
     <div class="panel-view" id="pv-furn" style="flex-direction:column; padding:12px 12px 0; overflow:hidden;">
       <div class="panel-title" style="margin-bottom:8px;">Library Furnitur</div>
+      <button onclick="autoFurnishAll(window._lastFurnStyle||'Minimalis')" style="margin-bottom:10px;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#f5a623,#ff6b35);color:#1a1206;font-size:13.5px;font-weight:800;cursor:pointer;">🪄 Auto Isi Furnitur — Semua Ruang</button>
       <div class="furn-search-wrap">
         <span class="furn-search-icon">🔍</span>
         <input class="furn-search" id="furnSearch" placeholder="Cari furnitur..." oninput="renderFurnGrid()">
@@ -632,6 +636,7 @@
 
 <script src="js/state.js"></script>
 <script src="js/render.js"></script>
+<script src="js/realistic.js"></script>
 <script src="js/interact.js"></script>
 <script src="js/rooms.js"></script>
 <script src="js/site.js"></script>

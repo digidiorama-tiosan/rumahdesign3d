@@ -226,6 +226,84 @@ function wzDrawPreview(){
   if(listEl)listEl.innerHTML=listHTML||'<span style="color:#5a607a;">Tidak ada furnitur</span>';
 }
 
+// ── ALIAS & AUTO-FURNISH SEMUA RUANGAN ─────────────────────
+var FURN_ALIAS={lemari_4:'lemari_pakaian',lemari_2:'lemari_2pintu',lemari_6:'lemari_pakaian',
+  kitchen_set:'kabinet_bawah',kitchen_island:'island',toilet_duduk:'toilet',shower_area:'shower'};
+function resolveDef(id){
+  var FLib=typeof FURN_LIB!=='undefined'?FURN_LIB:[];
+  return FLib.find(function(f){return f.id===id;}) || FLib.find(function(f){return f.id===FURN_ALIAS[id];});
+}
+function presetKeyFor(type){
+  var t=(type||'').toLowerCase();
+  if(/mandi|toilet/.test(t)||/\bwc\b/.test(t)||/\bkm\b/.test(t)||t.indexOf('km/')===0) return 'Kamar Mandi';
+  if(/dapur|pantry/.test(t)) return 'Dapur';
+  if(/makan/.test(t)) return 'Ruang Makan';
+  if(/tidur|kamar utama|kamar anak/.test(t)) return 'Kamar Tidur';
+  if(/tamu|keluarga|santai|family/.test(t)) return 'Ruang Tamu';
+  return null;
+}
+function _placeInto(arr,r,id,fx,fy,opt){
+  opt=opt||{};
+  var def=resolveDef(id); if(!def)return;
+  var PX=typeof PX_PER_M!=='undefined'?PX_PER_M:20;
+  var rot=opt.rot||0;
+  var w=def.w*PX, h=def.h*PX;
+  var bw=(rot%180===0)?w:h, bh=(rot%180===0)?h:w;
+  // skala agar selalu muat di dalam ruang (tak menembus dinding)
+  var availW=Math.max(8,r.w-6), availH=Math.max(8,r.h-6);
+  var sc=Math.min(1, availW/bw, availH/bh);
+  if(sc<1){ w*=sc; h*=sc; bw*=sc; bh*=sc; }
+  var cx = opt.center ? r.x+r.w/2 : r.x+fx*r.w + w/2;
+  var cy = opt.center ? r.y+r.h/2 : r.y+fy*r.h + h/2;
+  cx=Math.max(r.x+bw/2+2, Math.min(r.x+r.w-bw/2-2, cx));
+  cy=Math.max(r.y+bh/2+2, Math.min(r.y+r.h-bh/2-2, cy));
+  arr.push({fid:Date.now()+Math.random(),defId:def.id,name:def.name,icon:def.icon,
+    x:cx-w/2, y:cy-h/2, w:w, h:h, color:def.color, rotation:rot});
+}
+function _hasFurnIn(arr,r){
+  return arr.some(function(f){ var c=f.x+f.w/2, d=f.y+f.h/2; return c>=r.x&&c<=r.x+r.w&&d>=r.y&&d<=r.y+r.h; });
+}
+window.autoFurnishAll=function(style){
+  style=style||'Minimalis';
+  if(!PRESETS['Ruang Tamu'].styles[style]) style='Minimalis';
+  if(typeof saveSnapshot==='function')saveSnapshot();
+  var fls=(typeof floors!=='undefined'&&floors.length)?floors:[{rooms:(typeof rooms!=='undefined'?rooms:[]),furnitures:(typeof furnitures!=='undefined'?furnitures:[])}];
+  var total=0;
+  fls.forEach(function(fl){
+    if(!fl.furnitures)fl.furnitures=[];
+    var arr=fl.furnitures;
+    (fl.rooms||[]).forEach(function(r){
+      if(_hasFurnIn(arr,r)) return;
+      var before=arr.length;
+      var key=presetKeyFor(r.type);
+      var t=(r.type||'').toLowerCase();
+      if(key){
+        var items=(PRESETS[key].styles[style]||PRESETS[key].styles['Minimalis']);
+        items.forEach(function(it){ _placeInto(arr,r,it.id,it.x,it.y); });
+      }else if(/garasi|carport/.test(t)){
+        var vertical=r.h>=r.w;
+        _placeInto(arr,r,'mobil',0,0,{center:true,rot:vertical?90:0});
+      }else if(/taman|garden|halaman/.test(t)){
+        _placeInto(arr,r,'tanaman_besar',0.05,0.05);
+        _placeInto(arr,r,'set_taman',0.4,0.4);
+        _placeInto(arr,r,'tanaman',0.75,0.72);
+      }else if(/teras|balkon|beranda/.test(t)){
+        _placeInto(arr,r,'kursi_taman',0.18,0.3);
+        _placeInto(arr,r,'pot_besar',0.7,0.55);
+      }else if(/kerja|kantor/.test(t)){
+        _placeInto(arr,r,'meja_kerja',0.2,0.2); _placeInto(arr,r,'kursi_kantor',0.3,0.45); _placeInto(arr,r,'rak_buku',0.7,0.1);
+      }
+      total+=(arr.length-before);
+    });
+  });
+  if(typeof syncActive==='function')syncActive();
+  if(typeof updateStats==='function')updateStats();
+  if(typeof recalcRAB==='function')recalcRAB();
+  if(typeof render==='function')render();
+  if(typeof showNotif==='function')showNotif('🪄 '+total+' furnitur ditata otomatis');
+  return total;
+};
+
 window.wzApply=function(){
   var r=(typeof rooms!=='undefined'?rooms:[]).find(function(x){return x.id==_wRoomId;});
   if(!r){if(typeof showNotif==='function')showNotif('⚠️ Ruangan tidak ditemukan');return;}
