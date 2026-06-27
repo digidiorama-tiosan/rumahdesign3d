@@ -8,7 +8,7 @@
 
 var W = {
   step: 0,
-  data: { landW:8, landH:15, budget:500000000, beds:3, style:'minimalis' }
+  data: { landW:8, landH:15, budget:500000000, beds:3, floors:1, style:'minimalis' }
 };
 
 var STYLE_LIST = [
@@ -189,10 +189,12 @@ function renderStep(){
       +'<div class="sw-budget-area" id="swBudgetHint"></div>';
     foot.innerHTML='<button class="sw-btn ghost" onclick="swBack()">←</button><button class="sw-btn primary" onclick="swNext()">Lanjut →</button>';
   } else if(W.step===2){
-    body.innerHTML='<div class="sw-q">Berapa jumlah kamar tidur?</div>'
-      +'<div class="sw-hint">Jumlah kamar mandi & lantai akan disesuaikan otomatis dengan luas tanah Anda.</div>'
+    body.innerHTML='<div class="sw-q">Kebutuhan ruang</div>'
+      +'<div class="sw-hint">Tentukan jumlah kamar tidur dan jumlah lantai rumah Anda. Jumlah kamar mandi disesuaikan otomatis.</div>'
       +'<div class="sw-step"><div class="lbl">🛏️ Kamar Tidur</div>'
-      +'<div class="sw-stepper"><button onclick="swBeds(-1)">−</button><span class="v" id="swBedsV">'+d.beds+'</span><button onclick="swBeds(1)">+</button></div></div>';
+      +'<div class="sw-stepper"><button onclick="swBeds(-1)">−</button><span class="v" id="swBedsV">'+d.beds+'</span><button onclick="swBeds(1)">+</button></div></div>'
+      +'<div class="sw-step" style="margin-top:10px;"><div class="lbl">🏢 Jumlah Lantai</div>'
+      +'<div class="sw-stepper"><button onclick="swFloors(-1)">−</button><span class="v" id="swFloorsV">'+d.floors+'</span><button onclick="swFloors(1)">+</button></div></div>';
     foot.innerHTML='<button class="sw-btn ghost" onclick="swBack()">←</button><button class="sw-btn primary" onclick="swNext()">Lanjut →</button>';
   } else if(W.step===3){
     body.innerHTML='<div class="sw-q">Pilih gaya rumah</div>'
@@ -209,6 +211,7 @@ function renderStep(){
 window.swLand=function(w,h){W.data.landW=w;W.data.landH=h;renderStep();};
 window.swBudget=function(v){W.data.budget=v;var el=document.getElementById('swBudget');if(el)el.value=v.toLocaleString('id-ID');updateBudgetHint();document.querySelectorAll('#swBody .sw-chip').forEach(function(c){c.classList.toggle('on',c.textContent.trim()===(BUDGET_PRESETS.find(function(p){return p[0]==v;})||[])[1]);});};
 window.swBeds=function(dlt){W.data.beds=Math.max(1,Math.min(6,W.data.beds+dlt));document.getElementById('swBedsV').textContent=W.data.beds;};
+window.swFloors=function(dlt){W.data.floors=Math.max(1,Math.min(3,W.data.floors+dlt));document.getElementById('swFloorsV').textContent=W.data.floors;};
 window.swStyle=function(id){W.data.style=id;document.querySelectorAll('.sw-style').forEach(function(e){e.classList.remove('on');});event.currentTarget.classList.add('on');};
 
 function readStepInputs(){
@@ -247,10 +250,7 @@ window.swGenerate=function(){
   // derive sisanya otomatis
   var baths=Math.max(1,Math.round(d.beds/2));
   var landArea=d.landW*d.landH;
-  // perkiraan luas bangunan: inti (tamu+makan+dapur+KM+garasi+teras) ~45 m² + 12 m²/kamar
-  var needed=45+d.beds*12;
-  var buildable=landArea*0.6;          // asumsi KDB 60%
-  var floorsN=Math.max(1,Math.min(3,Math.ceil(needed/Math.max(20,buildable))));
+  var floorsN=Math.max(1,Math.min(3,d.floors||1));
   var roof=(typeof styleRoof==='function')?styleRoof(d.style):'pelana';
 
   var spec={landW:d.landW,landH:d.landH,beds:d.beds,baths:baths,floors:floorsN,

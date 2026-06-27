@@ -76,6 +76,7 @@
         <button onclick="saveProject()">💾 Simpan ke File</button>
         <button onclick="saveAndNew()">💾 Simpan & Mulai Baru</button>
         <button onclick="loadProject()">📂 Buka File (.rumah3d)</button>
+        <button onclick="openProjectManager()">🗂 Proyek Saya <span id="rdProjCount" style="margin-left:auto;font-size:11px;color:var(--accent2);font-weight:700;">0 / 2</span></button>
         <button id="btnCloud" onclick="openCloudProjects()" style="display:none;">☁ Simpan / Buka di Cloud</button>
         <div class="dropdown-sep"></div>
         <div class="dropdown-label">Jenis Bangunan</div>
@@ -305,32 +306,6 @@
           <button class="land-shape-btn" onclick="startLandDraw()" title="Gambar bebas titik per titik">✏️ Gambar</button>
         </div>
         <div class="site-hint" style="margin-top:8px;">Untuk bentuk tak beraturan, klik <b>✏️ Gambar</b> lalu klik titik-titik sudut tanah di kanvas. Tutup dengan klik titik awal. Setelah jadi, pilih tool <b>Bentuk Tanah</b> lagi untuk menggeser titik.</div>
-
-        <div class="panel-title" style="margin-top:16px;">GSB — Garis Sempadan</div>
-        <label class="toggle-row" style="margin-bottom:10px;">
-          <span>Tampilkan GSB <span style="color:var(--accent2)">▦</span></span>
-          <input type="checkbox" id="gsbEnabled" checked onchange="onGsbToggle()">
-        </label>
-        <div class="prop-row">
-          <span class="prop-label">Depan (m)</span>
-          <input class="prop-input" type="number" id="gsbFront" value="3" min="0" max="20" step="0.5" oninput="onSiteInput()">
-        </div>
-        <div class="prop-row">
-          <span class="prop-label">Belakang (m)</span>
-          <input class="prop-input" type="number" id="gsbBack" value="1.5" min="0" max="20" step="0.5" oninput="onSiteInput()">
-        </div>
-        <div class="prop-row">
-          <span class="prop-label">Kiri (m)</span>
-          <input class="prop-input" type="number" id="gsbLeft" value="1" min="0" max="20" step="0.5" oninput="onSiteInput()">
-        </div>
-        <div class="prop-row">
-          <span class="prop-label">Kanan (m)</span>
-          <input class="prop-input" type="number" id="gsbRight" value="1" min="0" max="20" step="0.5" oninput="onSiteInput()">
-        </div>
-        <div class="prop-row">
-          <span class="prop-label">Area Boleh Bangun</span>
-          <span class="prop-value" id="buildableArea">— m²</span>
-        </div>
 
         <div class="panel-title" style="margin-top:16px;">Elemen Lahan</div>
         <div class="site-legend">
@@ -697,5 +672,6 @@
 <script src="js/startwizard.js"></script>
 <script src="js/scanplan.js"></script>
 <script src="js/projectfile.js"></script>
+<script src="js/projectlimits.js"></script>
 </body>
 </html>
