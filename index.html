@@ -127,11 +127,11 @@ h1 {
   mask-image: radial-gradient(70% 70% at 70% 40%, #000, transparent 80%);
 }
 .hero-house {
-  position: relative; z-index: 1; width: 100%; aspect-ratio: 4/3.1;
+  position: relative; z-index: 1; width: 100%;
   border-radius: 22px; overflow: hidden; display: block;
   box-shadow: 0 40px 100px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.06);
 }
-.hero-house img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hero-house img { width: 100%; height: auto; display: block; }
 /* CSS fallback "house" when no photo */
 .house-fallback {
   position: absolute; inset: 0; z-index: 1; border-radius: 22px; overflow: hidden;
@@ -450,41 +450,6 @@ footer {
           <rect x="285" y="210" width="44" height="60" fill="#0f1c38" stroke="#ffae3b" stroke-width="1.5"/>
           <rect x="60" y="270" width="310" height="6" fill="#4DA3FF" opacity=".5"/>
           <g stroke="#ffae3b" stroke-width="1" opacity=".7"><circle cx="120" cy="100" r="2.5" fill="#ffae3b"/></g>
-        </svg>
-      </div>
-    </div>
-
-    <!-- toggle 2D / 3D -->
-    <div class="app-toggle">
-      <button class="on">◳ 2D</button>
-      <button>◈ 3D</button>
-    </div>
-
-    <!-- floating app panel -->
-    <div class="app-panel">
-      <div class="app-rail">
-        <div class="ai on"><span class="ic">▦</span><span class="lb">Denah</span></div>
-        <div class="ai"><span class="ic">🎲</span><span class="lb">3D</span></div>
-        <div class="ai"><span class="ic">🛋️</span><span class="lb">Interior</span></div>
-        <div class="ai"><span class="ic">📋</span><span class="lb">RAB</span></div>
-        <div class="ai"><span class="ic">🌳</span><span class="lb">Taman</span></div>
-        <div class="ai"><span class="ic">✨</span><span class="lb">AI</span></div>
-      </div>
-      <div class="app-plan">
-        <svg viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg">
-          <rect x="0" y="0" width="260" height="220" fill="transparent"/>
-          <rect x="20" y="20" width="220" height="180" fill="none" stroke="#5c6b8f" stroke-width="2"/>
-          <line x1="130" y1="20" x2="130" y2="120" stroke="#5c6b8f" stroke-width="1.5"/>
-          <line x1="20" y1="120" x2="240" y2="120" stroke="#5c6b8f" stroke-width="1.5"/>
-          <line x1="160" y1="120" x2="160" y2="200" stroke="#5c6b8f" stroke-width="1.5"/>
-          <rect x="34" y="34" width="80" height="70" fill="rgba(77,163,255,.12)"/>
-          <rect x="146" y="34" width="78" height="70" fill="rgba(62,207,142,.12)"/>
-          <rect x="34" y="134" width="110" height="52" fill="rgba(245,166,35,.12)"/>
-          <text x="74" y="74" text-anchor="middle" fill="#8fa2c8" font-size="8" font-family="sans-serif">R. Tamu</text>
-          <text x="185" y="74" text-anchor="middle" fill="#8fa2c8" font-size="8" font-family="sans-serif">Kamar</text>
-          <text x="89" y="164" text-anchor="middle" fill="#8fa2c8" font-size="8" font-family="sans-serif">Dapur</text>
-          <rect x="60" y="16" width="22" height="8" fill="#0d1220"/>
-          <path d="M60 20 a22 22 0 0 1 22 0" fill="none" stroke="#6db3ff" stroke-width="1.2"/>
         </svg>
       </div>
     </div>
