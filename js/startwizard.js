@@ -247,12 +247,10 @@ window.swGenerate=function(){
   // derive sisanya otomatis
   var baths=Math.max(1,Math.round(d.beds/2));
   var landArea=d.landW*d.landH;
-  var needed=d.beds*16+60;            // perkiraan kasar m²
+  // perkiraan luas bangunan: inti (tamu+makan+dapur+KM+garasi+teras) ~45 m² + 12 m²/kamar
+  var needed=45+d.beds*12;
   var buildable=landArea*0.6;          // asumsi KDB 60%
-  var floorsN=1;
-  if(needed>buildable)floorsN=2;
-  if(needed>buildable*1.9)floorsN=3;
-  floorsN=Math.min(3,floorsN);
+  var floorsN=Math.max(1,Math.min(3,Math.ceil(needed/Math.max(20,buildable))));
   var roof=(typeof styleRoof==='function')?styleRoof(d.style):'pelana';
 
   var spec={landW:d.landW,landH:d.landH,beds:d.beds,baths:baths,floors:floorsN,
