@@ -174,6 +174,18 @@ tbody tr:hover{background:var(--surface2);}
       <span id="priceSaveStatus" style="margin-left:12px;font-size:12px;color:var(--text3);"></span>
     </div>
 
+    <!-- ── MODERASI ULASAN ── -->
+    <div class="tools" style="margin-top:32px;">
+      <h1>💬 Moderasi Ulasan</h1>
+      <button class="refresh" onclick="loadReviews()">↻ Muat ulang</button>
+    </div>
+    <div class="tbl-wrap" id="reviewsWrap" style="padding:0;">
+      <div style="padding:24px;color:var(--text3);font-size:13px;">Memuat ulasan…</div>
+    </div>
+    <div class="note" style="margin-top:8px;">
+      💡 Ulasan baru dari pengunjung masuk dengan status <b>Menunggu</b>. Klik <b>✓ Setujui</b> agar tampil di landing page, atau <b>🗑 Hapus</b> untuk membuang. Ulasan yang sudah tampil bisa di-<b>Sembunyikan</b> kapan saja.
+    </div>
+
     <div class="note">
       💡 <b>Cara kerja:</b> User mendaftar sendiri lewat halaman Akun, lalu muncul di sini.
       Anda bisa mengubah <b>Peran</b> (jadikan admin), <b>Paket</b> (upgrade manual ke Pro/Developer),
@@ -244,6 +256,48 @@ async function loadAll(){
     document.getElementById('stProj').textContent = s.projects;
     renderRows();
   }catch(e){ toast('Gagal memuat: '+e.message); }
+  loadReviews();
+}
+
+// ── Moderasi Ulasan ──
+let _reviews = [];
+function escA(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function starStr(n){let s='';for(let i=1;i<=5;i++)s+=i<=n?'★':'☆';return s;}
+async function loadReviews(){
+  const wrap=document.getElementById('reviewsWrap');if(!wrap)return;
+  try{
+    _reviews=await Cloud.adminListReviews();
+    if(!_reviews.length){wrap.innerHTML='<div style="padding:24px;color:var(--text3);font-size:13px;">Belum ada ulasan masuk.</div>';return;}
+    const pend=_reviews.filter(r=>!r.approved).length;
+    wrap.innerHTML='<table><thead><tr><th>Pengirim</th><th>Rating</th><th>Ulasan</th><th>Status</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody>'+
+      _reviews.map(r=>{
+        const d=r.created_at?new Date(r.created_at).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}):'';
+        return '<tr>'+
+          '<td><b>'+escA(r.name)+'</b>'+(r.role?'<br><span style="font-size:11px;color:var(--text3);">'+escA(r.role)+'</span>':'')+'</td>'+
+          '<td style="color:#f5a623;white-space:nowrap;">'+starStr(r.rating)+'</td>'+
+          '<td style="max-width:340px;font-size:12.5px;line-height:1.5;">'+escA(r.message)+'</td>'+
+          '<td>'+(r.approved?'<span class="pill" style="background:rgba(62,207,142,.15);color:#3ecf8e;">Tampil</span>':'<span class="pill" style="background:rgba(245,166,35,.15);color:#f5a623;">Menunggu</span>')+'</td>'+
+          '<td style="white-space:nowrap;font-size:12px;color:var(--text3);">'+d+'</td>'+
+          '<td style="white-space:nowrap;">'+
+            (r.approved
+              ? '<button class="mini" onclick="setReviewApproved(\''+r.id+'\',false)">Sembunyikan</button>'
+              : '<button class="mini" style="color:#3ecf8e;border-color:#3ecf8e;" onclick="setReviewApproved(\''+r.id+'\',true)">✓ Setujui</button>')+
+            ' <button class="mini" style="color:#e8523a;border-color:#e8523a;" onclick="delReview(\''+r.id+'\')">🗑</button>'+
+          '</td>'+
+        '</tr>';
+      }).join('')+'</tbody></table>';
+  }catch(e){
+    wrap.innerHTML='<div style="padding:24px;color:#e8523a;font-size:13px;">Gagal memuat ulasan: '+escA(e.message)+'<br><span style="color:var(--text3);">Pastikan SQL <b>supabase-reviews-schema.sql</b> sudah dijalankan.</span></div>';
+  }
+}
+async function setReviewApproved(id,approved){
+  try{ await Cloud.adminSetReviewApproved(id,approved); const r=_reviews.find(x=>x.id===id); if(r)r.approved=approved; loadReviews(); toast(approved?'✅ Ulasan ditampilkan':'Ulasan disembunyikan'); }
+  catch(e){ toast('Gagal: '+e.message); }
+}
+async function delReview(id){
+  if(!confirm('Hapus ulasan ini permanen?'))return;
+  try{ await Cloud.adminDeleteReview(id); _reviews=_reviews.filter(x=>x.id!==id); loadReviews(); toast('🗑 Ulasan dihapus'); }
+  catch(e){ toast('Gagal: '+e.message); }
 }
 
 function renderRows(){

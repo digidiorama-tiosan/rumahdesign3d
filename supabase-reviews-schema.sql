@@ -35,6 +35,15 @@ create policy "reviews read approved"
   to anon, authenticated
   using (approved = true);
 
+-- 3) ADMIN boleh melihat SEMUA ulasan (termasuk yang belum disetujui),
+--    menyetujui/menolak (update), dan menghapus.
+drop policy if exists "reviews admin all" on public.reviews;
+create policy "reviews admin all"
+  on public.reviews for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
 -- =====================================================================
 --  MODERASI (untuk Anda sebagai admin):
 --  Lihat semua ulasan masuk  → Table Editor → reviews
