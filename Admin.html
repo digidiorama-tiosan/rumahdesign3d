@@ -349,9 +349,26 @@ function renderRows(){
           <button class="mini danger" onclick="delUser('${u.id}','${esc(u.email)}')">Hapus</button>
           <button class="mini" id="savebtn_${u.id}" style="background:#3ecf8e;color:#000;border-color:#3ecf8e;" onclick="savePlanRole('${u.id}')">💾 Simpan</button>`}
         </div>
+        <div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--border);display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+          <span title="Sisa render berbayar" style="font-size:11px;color:#a78bfa;font-weight:800;">✨ ${u.renderCredits} render</span>
+          <input id="rcq_${u.id}" type="number" min="1" value="1" style="width:42px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 5px;color:var(--text);font-size:11px;">
+          <button class="mini" style="background:#a78bfa;color:#000;border-color:#a78bfa;font-size:10px;" onclick="addRender('${u.id}')">+ Tambah</button>
+        </div>
       </td>
     </tr>`;
   }).join('');
+}
+
+async function addRender(id){
+  const inp=document.getElementById('rcq_'+id);
+  const n=parseInt(inp&&inp.value)||1;
+  const u=_users.find(x=>x.id===id);
+  try{
+    const bal=await Cloud.adminAddRenderCredit(id,n);
+    if(u)u.renderCredits=bal;
+    renderRows();
+    toast('✨ +'+n+' render → '+(u?(u.name||u.email):'')+' (total '+bal+')');
+  }catch(e){ toast('Gagal: '+e.message); }
 }
 
 async function extendPlan(id){
