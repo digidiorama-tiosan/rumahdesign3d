@@ -132,6 +132,76 @@ h1 {
   box-shadow: 0 40px 100px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.06);
 }
 .hero-house img { width: 100%; height: auto; display: block; }
+
+/* ── Animated tutorial panel (overlays the baked-in panel area) ── */
+.hero-app {
+  position: absolute; right: 1.5%; bottom: 4.5%; width: 27.5%; height: 57%;
+  z-index: 4; display: flex; border-radius: 14px; overflow: hidden;
+  background: rgba(9,13,24,.92); backdrop-filter: blur(6px);
+  border: 1px solid rgba(120,160,230,.28);
+  box-shadow: 0 14px 40px rgba(0,0,0,.5);
+}
+.ha-rail { width: 30%; display: flex; flex-direction: column; gap: 2%;
+  padding: 6% 0; align-items: center; border-right: 1px solid rgba(255,255,255,.07);
+  background: rgba(13,20,38,.6); }
+.ha-item { display: flex; flex-direction: column; align-items: center; gap: 2px;
+  width: 78%; padding: 7% 0; border-radius: 7px; transition: background .3s; }
+.ha-item .d { width: 34%; aspect-ratio: 1; border-radius: 3px;
+  background: rgba(150,180,230,.45); }
+.ha-item .t { font-size: clamp(5px, .62vw, 8px); color: #8ea3c8; font-weight: 700; }
+.ha-item.on { background: rgba(77,163,255,.22); }
+.ha-item.on .d { background: #4DA3FF; }
+.ha-item.on .t { color: #cfe0ff; }
+.ha-screen { flex: 1; position: relative; }
+.ha-scr { position: absolute; inset: 0; padding: 9%; opacity: 0; }
+.ha-scr svg { width: 100%; height: 100%; overflow: visible; }
+/* screen crossfade timeline 9s */
+.ha-scr.s1 { animation: haS1 9s ease-in-out infinite; }
+.ha-scr.s2 { animation: haS2 9s ease-in-out infinite; }
+.ha-scr.s3 { animation: haS3 9s ease-in-out infinite; }
+@keyframes haS1 { 0%,28%{opacity:1} 33%,95%{opacity:0} 100%{opacity:1} }
+@keyframes haS2 { 0%,33%{opacity:0} 38%,58%{opacity:1} 63%,100%{opacity:0} }
+@keyframes haS3 { 0%,63%{opacity:0} 68%,92%{opacity:1} 97%,100%{opacity:0} }
+/* rail active highlight cycling */
+.ha-item.i1 { animation: haR1 9s ease-in-out infinite; }
+.ha-item.i2 { animation: haR2 9s ease-in-out infinite; }
+.ha-item.i3 { animation: haR3 9s ease-in-out infinite; }
+@keyframes haR1 { 0%,30%{background:rgba(77,163,255,.22)} 31%,100%{background:transparent} }
+@keyframes haR2 { 0%,35%{background:transparent} 38%,60%{background:rgba(77,163,255,.22)} 62%,100%{background:transparent} }
+@keyframes haR3 { 0%,65%{background:transparent} 68%,92%{background:rgba(77,163,255,.22)} 95%,100%{background:transparent} }
+.ha-item.i1 .d { animation: haRd1 9s ease-in-out infinite; }
+.ha-item.i2 .d { animation: haRd2 9s ease-in-out infinite; }
+.ha-item.i3 .d { animation: haRd3 9s ease-in-out infinite; }
+@keyframes haRd1 { 0%,30%{background:#4DA3FF} 31%,100%{background:rgba(150,180,230,.45)} }
+@keyframes haRd2 { 0%,35%{background:rgba(150,180,230,.45)} 38%,60%{background:#4DA3FF} 62%,100%{background:rgba(150,180,230,.45)} }
+@keyframes haRd3 { 0%,65%{background:rgba(150,180,230,.45)} 68%,92%{background:#4DA3FF} 95%,100%{background:rgba(150,180,230,.45)} }
+/* room draw-in */
+.ha-room { stroke:#5c79b0; stroke-width:2; fill:rgba(77,163,255,.08);
+  stroke-dasharray:200; stroke-dashoffset:200; animation: haDraw 2.6s ease forwards; }
+.ha-room.r2 { animation-delay:.4s; fill:rgba(62,207,142,.1); }
+.ha-room.r3 { animation-delay:.8s; fill:rgba(245,166,35,.1); }
+.ha-room.r4 { animation-delay:1.2s; fill:rgba(167,139,250,.1); }
+@keyframes haDraw { to { stroke-dashoffset:0; } }
+/* moving cursor */
+.ha-cursor { position:absolute; width:9%; aspect-ratio:1; z-index:6; left:18%; top:20%;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.6)); animation: haCur 9s ease-in-out infinite; }
+.ha-cursor svg { width:100%; height:100%; }
+@keyframes haCur {
+  0%   { left:55%; top:55%; transform:scale(1); }
+  10%  { left:12%; top:14%; }
+  28%  { left:12%; top:14%; transform:scale(1); }
+  31%  { transform:scale(.8); }
+  33%  { left:12%; top:30%; transform:scale(1); }
+  60%  { left:12%; top:30%; transform:scale(1); }
+  63%  { transform:scale(.8); }
+  66%  { left:12%; top:46%; transform:scale(1); }
+  92%  { left:55%; top:60%; }
+  100% { left:55%; top:55%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ha-scr.s1{opacity:1} .ha-scr.s2,.ha-scr.s3{opacity:0}
+  .ha-room{animation:none;stroke-dashoffset:0} .ha-cursor{animation:none;display:none}
+}
 /* CSS fallback "house" when no photo */
 .house-fallback {
   position: absolute; inset: 0; z-index: 1; border-radius: 22px; overflow: hidden;
@@ -451,6 +521,45 @@ footer {
           <rect x="60" y="270" width="310" height="6" fill="#4DA3FF" opacity=".5"/>
           <g stroke="#ffae3b" stroke-width="1" opacity=".7"><circle cx="120" cy="100" r="2.5" fill="#ffae3b"/></g>
         </svg>
+      </div>
+    </div>
+    <div class="hero-app" aria-hidden="true">
+      <div class="ha-rail">
+        <div class="ha-item i1"><span class="d"></span><span class="t">Denah</span></div>
+        <div class="ha-item i2"><span class="d"></span><span class="t">3D</span></div>
+        <div class="ha-item i3"><span class="d"></span><span class="t">Interior</span></div>
+        <div class="ha-item"><span class="d"></span><span class="t">RAB</span></div>
+        <div class="ha-item"><span class="d"></span><span class="t">Taman</span></div>
+      </div>
+      <div class="ha-screen">
+        <div class="ha-scr s1">
+          <svg viewBox="0 0 120 110" preserveAspectRatio="xMidYMid meet">
+            <rect class="ha-room"    x="6"  y="6"  width="54" height="46" rx="2"/>
+            <rect class="ha-room r2" x="64" y="6"  width="50" height="46" rx="2"/>
+            <rect class="ha-room r3" x="6"  y="56" width="44" height="48" rx="2"/>
+            <rect class="ha-room r4" x="54" y="56" width="60" height="48" rx="2"/>
+          </svg>
+        </div>
+        <div class="ha-scr s2">
+          <svg viewBox="0 0 120 110" preserveAspectRatio="xMidYMid meet" fill="none" stroke="#6db3ff" stroke-width="2" stroke-linejoin="round">
+            <path d="M22 70 L22 42 L60 22 L98 42 L98 70 L60 90 Z" fill="rgba(77,163,255,.12)"/>
+            <path d="M22 42 L60 60 L98 42 M60 60 L60 90"/>
+            <path d="M36 56 L36 78 L50 85 L50 63 Z" fill="rgba(77,163,255,.2)" stroke="#9cc7ff" stroke-width="1.4"/>
+          </svg>
+        </div>
+        <div class="ha-scr s3">
+          <svg viewBox="0 0 120 110" preserveAspectRatio="xMidYMid meet">
+            <rect x="6" y="6" width="108" height="98" rx="3" fill="rgba(77,163,255,.06)" stroke="#5c79b0" stroke-width="1.5"/>
+            <rect x="16" y="60" width="40" height="20" rx="3" fill="#3a5a9e"/>
+            <rect x="20" y="50" width="32" height="12" rx="2" fill="#4a6db0"/>
+            <circle cx="92" cy="30" r="9" fill="rgba(245,166,35,.5)" stroke="#ffae3b" stroke-width="1.4"/>
+            <rect x="74" y="68" width="34" height="22" rx="3" fill="#2f6b4a"/>
+            <rect x="64" y="20" width="10" height="20" rx="2" fill="#7a5a3a"/>
+          </svg>
+        </div>
+        <div class="ha-cursor">
+          <svg viewBox="0 0 24 24" fill="#fff" stroke="#1a2235" stroke-width="1.2"><path d="M4 2 L4 20 L9 15 L12.5 22 L15 21 L11.5 14 L19 14 Z"/></svg>
+        </div>
       </div>
     </div>
   </div>
