@@ -25,56 +25,200 @@ document.addEventListener('keydown',function(e){
   else handled=false;
   if(handled){e.preventDefault();if(typeof updateCameraPosition==='function')updateCameraPosition();}
 });
-function onWalkKey(e){const k=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(k)){walkState.keys[k]=true;e.preventDefault();}if(k==='escape')exitWalkMode();}function onWalkKeyUp(e){walkState.keys[e.key.toLowerCase()]=false;}function applyWalkLook(){const cp=Math.cos(walkState.pitch),fx=Math.sin(walkState.yaw)*cp,fy=Math.sin(walkState.pitch),fz=-Math.cos(walkState.yaw)*cp;threeCamera.lookAt(threeCamera.position.x+fx,threeCamera.position.y+fy,threeCamera.position.z+fz);}function buildWalkCollision(){walkCollide=[];const f=floors[currentFloorIndex];if(!f)return;const Wx=x=>x*SCALE-sceneCenter.cx,Wz=y=>y*SCALE-sceneCenter.cz;function edgeSolids(p0,p1,openings){const lenM=Math.hypot(p1.x-p0.x,p1.y-p0.y)/PX_PER_M;if(lenM<0.05)return;const gaps=openings.map(o=>{const hw=(o.w/lenM)/2;return[Math.max(0,o.c-hw),Math.min(1,o.c+hw)];}).sort((a,b)=>a[0]-b[0]);let cur=0;const segs=[];gaps.forEach(g=>{if(g[0]>cur+0.001)segs.push([cur,g[0]]);cur=Math.max(cur,g[1]);});if(cur<0.999)segs.push([cur,1]);segs.forEach(([s,e])=>{const ax=p0.x+(p1.x-p0.x)*s,ay=p0.y+(p1.y-p0.y)*s,bx=p0.x+(p1.x-p0.x)*e,by=p0.y+(p1.y-p0.y)*e;walkCollide.push({x1:Wx(ax),z1:Wz(ay),x2:Wx(bx),z2:Wz(by)});});}f.rooms.forEach(r=>{['n','s','e','w'].forEach(edge=>{const dE=f.doors.filter(d=>d.roomId===r.id&&d.edge===edge).map(d=>({c:d.pos,w:d.width}));let p0,p1;if(edge==='n'){p0={x:r.x,y:r.y};p1={x:r.x+r.w,y:r.y};}else if(edge==='s'){p0={x:r.x,y:r.y+r.h};p1={x:r.x+r.w,y:r.y+r.h};}else if(edge==='w'){p0={x:r.x,y:r.y};p1={x:r.x,y:r.y+r.h};}else{p0={x:r.x+r.w,y:r.y};p1={x:r.x+r.w,y:r.y+r.h};}edgeSolids(p0,p1,dE);});});(f.wallSegs||[]).forEach(s=>{const dE=f.doors.filter(d=>d.segId===s.id).map(d=>({c:d.pos,w:d.width}));edgeSolids({x:s.a.x,y:s.a.y},{x:s.b.x,y:s.b.y},dE);});}function walkClear(x,z){for(let i=0;i<walkCollide.length;i++){const s=walkCollide[i];const dx=s.x2-s.x1,dz=s.z2-s.z1,L2=dx*dx+dz*dz;let t=L2?((x-s.x1)*dx+(z-s.z1)*dz)/L2:0;t=Math.max(0,Math.min(1,t));const px=s.x1+dx*t,pz=s.z1+dz*t;if(Math.hypot(x-px,z-pz)<WALK_RADIUS)return false;}return true;}function updateWalk(dt){const ls=1-Math.exp(-20*dt);walkState.yaw+=(walkState.targetYaw-walkState.yaw)*ls;walkState.pitch+=(walkState.targetPitch-walkState.pitch)*ls;if(walkState.lock){var _pmov=(walkState.keys&&(walkState.keys['w']||walkState.keys['a']||walkState.keys['s']||walkState.keys['d']||walkState.keys['arrowup']||walkState.keys['arrowdown']||walkState.keys['arrowleft']||walkState.keys['arrowright']))||(walkState.joy&&(walkState.joy.f||walkState.joy.s));if(_pmov&&window._panoAuto){window._panoAuto=false;var _pb=document.getElementById('panoAutoBtn');if(_pb){_pb.textContent='▶ Putar Otomatis';_pb.style.background='#252836';_pb.style.color='#e2e8f0';}}if(window._panoAuto)walkState.targetYaw+=0.004;}const k=walkState.keys;const fast=k['shift']?1.9:1;const fHx=Math.sin(walkState.yaw),fHz=-Math.cos(walkState.yaw);const rx=Math.cos(walkState.yaw),rz=Math.sin(walkState.yaw);let mx=0,mz=0;if(k['w']||k['arrowup']){mx+=fHx;mz+=fHz;}if(k['s']||k['arrowdown']){mx-=fHx;mz-=fHz;}if(k['d']||k['arrowright']){mx+=rx;mz+=rz;}if(k['a']||k['arrowleft']){mx-=rx;mz-=rz;}if(walkState.joy&&(walkState.joy.f||walkState.joy.s)){mx+=fHx*walkState.joy.f+rx*walkState.joy.s;mz+=fHz*walkState.joy.f+rz*walkState.joy.s;}const len=Math.hypot(mx,mz);const target=walkState.speed*fast;const tvx=len>0?(mx/len)*target:0;const tvz=len>0?(mz/len)*target:0;const acc=1-Math.exp(-10*dt);walkState.vel.x+=(tvx-walkState.vel.x)*acc;walkState.vel.z+=(tvz-walkState.vel.z)*acc;const nx=threeCamera.position.x+walkState.vel.x*dt;const nz=threeCamera.position.z+walkState.vel.z*dt;if(walkClear(nx,threeCamera.position.z))threeCamera.position.x=nx;else walkState.vel.x*=0.25;if(walkClear(threeCamera.position.x,nz))threeCamera.position.z=nz;else walkState.vel.z*=0.25;const WALL_H=parseFloat(val('wallHeight')||3);const baseY=(showAllFloors?currentFloorIndex:0)*WALL_H;const speedNow=Math.hypot(walkState.vel.x,walkState.vel.z);const bob=speedNow>0.3?Math.sin(performance.now()*0.011)*0.025:0;threeCamera.position.y=baseY+walkState.eyeY+bob;applyWalkLook();}
-/* ── PANORAMA 360° ──────────────────────────────────────── */
-window._panoAuto=true;let _panoFov=null;
-function togglePanorama(){if(typeof walkState!=='undefined'&&walkState.lock)exitPanorama();else enterPanorama();}
-function enterPanorama(){
-  if(!threeRenderer){if(typeof showNotif==='function')showNotif('⚠️ Buka Preview 3D dulu');return;}
-  if(nav3dMode==='walk'&&!walkState.lock)exitWalkMode();
-  enterWalkMode();
-  walkState.lock=true;window._panoAuto=false;
-  const b=sceneBoundsWorld();const WALL_H=parseFloat(val('wallHeight')||3);
-  const baseY=(showAllFloors?currentFloorIndex:0)*WALL_H;
-  threeCamera.position.set((b.minX+b.maxX)/2,baseY+walkState.eyeY,(b.minZ+b.maxZ)/2);
-  walkState.yaw=walkState.targetYaw=0;walkState.pitch=walkState.targetPitch=0;
-  _panoFov=threeCamera.fov;threeCamera.fov=82;threeCamera.updateProjectionMatrix();
-  applyWalkLook();
-  document.body.classList.add('pano-on');
-  flagBtn('btn3dPano',true);flagBtn('btn3dWalk',false);
-  _showPanoBar();
-  if(typeof showNotif==='function')showNotif('🌐 Mode 360° — seret untuk melihat · tekan W/A/S/D atau geser joystick untuk berjalan & masuk ke ruangan lain');
+function onWalkKey(e){const k=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(k)){walkState.keys[k]=true;e.preventDefault();}if(k==='escape')exitWalkMode();}function onWalkKeyUp(e){walkState.keys[e.key.toLowerCase()]=false;}function applyWalkLook(){const cp=Math.cos(walkState.pitch),fx=Math.sin(walkState.yaw)*cp,fy=Math.sin(walkState.pitch),fz=-Math.cos(walkState.yaw)*cp;threeCamera.lookAt(threeCamera.position.x+fx,threeCamera.position.y+fy,threeCamera.position.z+fz);}function buildWalkCollision(){walkCollide=[];const f=floors[currentFloorIndex];if(!f)return;const Wx=x=>x*SCALE-sceneCenter.cx,Wz=y=>y*SCALE-sceneCenter.cz;function edgeSolids(p0,p1,openings){const lenM=Math.hypot(p1.x-p0.x,p1.y-p0.y)/PX_PER_M;if(lenM<0.05)return;const gaps=openings.map(o=>{const hw=(o.w/lenM)/2;return[Math.max(0,o.c-hw),Math.min(1,o.c+hw)];}).sort((a,b)=>a[0]-b[0]);let cur=0;const segs=[];gaps.forEach(g=>{if(g[0]>cur+0.001)segs.push([cur,g[0]]);cur=Math.max(cur,g[1]);});if(cur<0.999)segs.push([cur,1]);segs.forEach(([s,e])=>{const ax=p0.x+(p1.x-p0.x)*s,ay=p0.y+(p1.y-p0.y)*s,bx=p0.x+(p1.x-p0.x)*e,by=p0.y+(p1.y-p0.y)*e;walkCollide.push({x1:Wx(ax),z1:Wz(ay),x2:Wx(bx),z2:Wz(by)});});}f.rooms.forEach(r=>{['n','s','e','w'].forEach(edge=>{const dE=f.doors.filter(d=>d.roomId===r.id&&d.edge===edge).map(d=>({c:d.pos,w:d.width}));let p0,p1;if(edge==='n'){p0={x:r.x,y:r.y};p1={x:r.x+r.w,y:r.y};}else if(edge==='s'){p0={x:r.x,y:r.y+r.h};p1={x:r.x+r.w,y:r.y+r.h};}else if(edge==='w'){p0={x:r.x,y:r.y};p1={x:r.x,y:r.y+r.h};}else{p0={x:r.x+r.w,y:r.y};p1={x:r.x+r.w,y:r.y+r.h};}edgeSolids(p0,p1,dE);});});(f.wallSegs||[]).forEach(s=>{const dE=f.doors.filter(d=>d.segId===s.id).map(d=>({c:d.pos,w:d.width}));edgeSolids({x:s.a.x,y:s.a.y},{x:s.b.x,y:s.b.y},dE);});}function walkClear(x,z){for(let i=0;i<walkCollide.length;i++){const s=walkCollide[i];const dx=s.x2-s.x1,dz=s.z2-s.z1,L2=dx*dx+dz*dz;let t=L2?((x-s.x1)*dx+(z-s.z1)*dz)/L2:0;t=Math.max(0,Math.min(1,t));const px=s.x1+dx*t,pz=s.z1+dz*t;if(Math.hypot(x-px,z-pz)<WALK_RADIUS)return false;}return true;}function updateWalk(dt){if(walkState.tour&&typeof _tour!=="undefined"&&_tour.active&&!_tour.paused){updateTour(dt);return;}const ls=1-Math.exp(-20*dt);walkState.yaw+=(walkState.targetYaw-walkState.yaw)*ls;walkState.pitch+=(walkState.targetPitch-walkState.pitch)*ls;if(walkState.lock){var _pmov=(walkState.keys&&(walkState.keys['w']||walkState.keys['a']||walkState.keys['s']||walkState.keys['d']||walkState.keys['arrowup']||walkState.keys['arrowdown']||walkState.keys['arrowleft']||walkState.keys['arrowright']))||(walkState.joy&&(walkState.joy.f||walkState.joy.s));if(_pmov&&window._panoAuto){window._panoAuto=false;var _pb=document.getElementById('panoAutoBtn');if(_pb){_pb.textContent='▶ Putar Otomatis';_pb.style.background='#252836';_pb.style.color='#e2e8f0';}}if(window._panoAuto)walkState.targetYaw+=0.004;}const k=walkState.keys;const fast=k['shift']?1.9:1;const fHx=Math.sin(walkState.yaw),fHz=-Math.cos(walkState.yaw);const rx=Math.cos(walkState.yaw),rz=Math.sin(walkState.yaw);let mx=0,mz=0;if(k['w']||k['arrowup']){mx+=fHx;mz+=fHz;}if(k['s']||k['arrowdown']){mx-=fHx;mz-=fHz;}if(k['d']||k['arrowright']){mx+=rx;mz+=rz;}if(k['a']||k['arrowleft']){mx-=rx;mz-=rz;}if(walkState.joy&&(walkState.joy.f||walkState.joy.s)){mx+=fHx*walkState.joy.f+rx*walkState.joy.s;mz+=fHz*walkState.joy.f+rz*walkState.joy.s;}const len=Math.hypot(mx,mz);const target=walkState.speed*fast;const tvx=len>0?(mx/len)*target:0;const tvz=len>0?(mz/len)*target:0;const acc=1-Math.exp(-10*dt);walkState.vel.x+=(tvx-walkState.vel.x)*acc;walkState.vel.z+=(tvz-walkState.vel.z)*acc;const nx=threeCamera.position.x+walkState.vel.x*dt;const nz=threeCamera.position.z+walkState.vel.z*dt;if(walkClear(nx,threeCamera.position.z))threeCamera.position.x=nx;else walkState.vel.x*=0.25;if(walkClear(threeCamera.position.x,nz))threeCamera.position.z=nz;else walkState.vel.z*=0.25;const WALL_H=parseFloat(val('wallHeight')||3);const baseY=(showAllFloors?currentFloorIndex:0)*WALL_H;const speedNow=Math.hypot(walkState.vel.x,walkState.vel.z);const bob=speedNow>0.3?Math.sin(performance.now()*0.011)*0.025:0;threeCamera.position.y=baseY+walkState.eyeY+bob;applyWalkLook();}
+/* ── TUR VIRTUAL · guided cinematic walkthrough ───────────── */
+let _tour={active:false,paused:false,wps:[],entry:null,i:0,phase:'travel',t:0,dur:2,from:{x:0,z:0},aimYaw:0,lookBase:0,_baseY:0};
+let _panoFov=null;
+
+function _smooth(u){u=Math.max(0,Math.min(1,u));return u*u*(3-2*u);}
+function _yawTo(dx,dz){return Math.atan2(dx,-dz);}
+function _angNorm(a){while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return a;}
+
+/* public toggles (kept names for existing onclick) */
+function togglePanorama(){if(_tour.active)exitTour();else enterTour();}
+function enterPanorama(){enterTour();}
+function exitPanorama(){exitTour();}
+
+function _tourPriority(n){n=(n||'').toLowerCase();
+  if(n.includes('teras')||n.includes('foyer')||n.includes('entrance')||n.includes('lobby'))return 0;
+  if(n.includes('tamu')||n.includes('living')||n.includes('keluarga'))return 1;
+  if(n.includes('makan')||n.includes('dapur')||n.includes('dining')||n.includes('kitchen'))return 2;
+  if(n.includes('tidur')||n.includes('kamar')||n.includes('bed'))return 3;
+  return 4;
 }
-function exitPanorama(){
-  walkState.lock=false;window._panoAuto=false;
-  if(_panoFov){threeCamera.fov=_panoFov;threeCamera.updateProjectionMatrix();_panoFov=null;}
-  document.body.classList.remove('pano-on');
+function buildTourPath(){
+  const WALL_H=parseFloat(val('wallHeight')||3);
+  _tour._baseY=(showAllFloors?currentFloorIndex:0)*WALL_H;
+  const f=activeFloor();
+  const Wx=px=>px*SCALE-sceneCenter.cx,Wz=py=>py*SCALE-sceneCenter.cz;
+  let rooms=(f.rooms||[]).map(r=>({name:r.type||'Ruangan',x:Wx(r.x+r.w/2),z:Wz(r.y+r.h/2)})).filter(r=>isFinite(r.x)&&isFinite(r.z));
+  const b=sceneBoundsWorld();
+  if(!rooms.length){_tour.entry={x:0,z:b.maxZ+2,name:'Pintu Masuk',entry:true};_tour.wps=[];return;}
+  // start room = highest priority (living room / entrance); tiebreak: closest to an exterior edge
+  const edgeDist=r=>Math.min(r.x-b.minX,b.maxX-r.x,r.z-b.minZ,b.maxZ-r.z);
+  let start=rooms[0];
+  rooms.forEach(r=>{const pa=_tourPriority(r.name),ps=_tourPriority(start.name);if(pa<ps||(pa===ps&&edgeDist(r)<edgeDist(start)))start=r;});
+  // place entry just OUTSIDE the bbox on whichever edge the start room hugs → we "walk in" toward it
+  const dL=start.x-b.minX,dR=b.maxX-start.x,dT=start.z-b.minZ,dB=b.maxZ-start.z;
+  const m=Math.min(dL,dR,dT,dB);let entry;
+  if(m===dL)entry={x:b.minX-2.2,z:start.z};
+  else if(m===dR)entry={x:b.maxX+2.2,z:start.z};
+  else if(m===dT)entry={x:start.x,z:b.minZ-2.2};
+  else entry={x:start.x,z:b.maxZ+2.2};
+  entry.name='Pintu Masuk';entry.entry=true;
+  // order: start room first, then nearest-neighbour through the rest
+  const remaining=rooms.filter(r=>r!==start),ordered=[start];let p=start;
+  while(remaining.length){
+    let bi=0,bd=Infinity;
+    for(let j=0;j<remaining.length;j++){const rr=remaining[j];const d=Math.hypot(rr.x-p.x,rr.z-p.z);if(d<bd){bd=d;bi=j;}}
+    p=remaining.splice(bi,1)[0];ordered.push(p);
+  }
+  _tour.entry=entry;_tour.wps=ordered;
+}
+
+function enterTour(){
+  if(!threeRenderer){if(typeof showNotif==='function')showNotif('⚠️ Buka Preview 3D dulu');return;}
+  if(nav3dMode==='walk')exitWalkMode();
+  nav3dMode='walk';
+  walkState.tour=true;walkState.lock=false;
+  walkState.keys={};walkState.vel={x:0,z:0};walkState.joy={f:0,s:0};
+  walkState.pitch=0;walkState.targetPitch=0;
+  buildWalkCollision();
+  buildTourPath();
+  if(!_tour.wps.length){if(typeof showNotif==='function')showNotif('⚠️ Belum ada ruangan untuk ditelusuri');walkState.tour=false;nav3dMode='orbit';return;}
+  setupWalkJoystick();
+  const baseY=_tour._baseY;
+  threeCamera.position.set(_tour.entry.x,baseY+walkState.eyeY,_tour.entry.z);
+  const first=_tour.wps[0];
+  walkState.yaw=walkState.targetYaw=_yawTo(first.x-_tour.entry.x,first.z-_tour.entry.z);
+  applyWalkLook();
+  _panoFov=threeCamera.fov;threeCamera.fov=72;threeCamera.updateProjectionMatrix();
+  _tour.active=true;_tour.paused=false;_tour.i=0;
+  _tourStartTravel();
+  if(threeRenderer&&threeRenderer.domElement){
+    threeRenderer.domElement.addEventListener('mousedown',_tourTakeover);
+    threeRenderer.domElement.addEventListener('touchstart',_tourTakeover,{passive:true});
+  }
+  document.addEventListener('mousemove',onWalkMouse);
+  document.addEventListener('keydown',onTourKey);
+  document.addEventListener('keyup',onWalkKeyUp);
+  document.getElementById('walkOverlay')&&document.getElementById('walkOverlay').classList.add('show');
+  if(document.getElementById('view3d-hint'))document.getElementById('view3d-hint').style.display='none';
+  document.body.classList.add('tour-on');
+  flagBtn('btn3dPano',true);flagBtn('btn3dWalk',false);
+  _showTourBar();_updateTourBar();
+}
+
+function _teardownTourListeners(){
+  if(threeRenderer&&threeRenderer.domElement){
+    threeRenderer.domElement.removeEventListener('mousedown',_tourTakeover);
+    threeRenderer.domElement.removeEventListener('touchstart',_tourTakeover);
+  }
+  document.removeEventListener('mousemove',onWalkMouse);
+  document.removeEventListener('keydown',onTourKey);
+  document.removeEventListener('keyup',onWalkKeyUp);
+}
+
+function exitTour(){
+  _tour.active=false;_tour.paused=false;walkState.tour=false;
+  walkState.keys={};walkState.joy={f:0,s:0};walkState.vel={x:0,z:0};
+  _teardownTourListeners();
+  _hideTourBar();
+  document.body.classList.remove('tour-on','tour-paused');
   flagBtn('btn3dPano',false);
-  _hidePanoBar();
+  if(_panoFov){threeCamera.fov=_panoFov;threeCamera.updateProjectionMatrix();_panoFov=null;}
   exitWalkMode();
 }
-function _showPanoBar(){
-  if(document.getElementById('panoBar'))return;
-  var host=document.getElementById('view3d')||document.body;
-  var bar=document.createElement('div');bar.id='panoBar';
-  bar.style.cssText='position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:60;display:flex;gap:8px;align-items:center;background:rgba(13,15,20,.94);border:1px solid #2a2d3e;border-radius:30px;padding:8px 14px;box-shadow:0 6px 24px rgba(0,0,0,.5);';
-  bar.innerHTML='<span style="color:#f5a623;font-weight:700;font-size:13px;">🌐 360°</span>'+
-    '<span style="color:#9aa0b8;font-size:11px;">WASD / joystick = jalan</span>'+
-    '<button id="panoAutoBtn" onclick="panoToggleAuto()" style="background:#252836;color:#e2e8f0;border:1px solid #3a3d4e;border-radius:16px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">▶ Putar Otomatis</button>'+
-    '<button onclick="panoCapture()" style="background:#252836;color:#e2e8f0;border:1px solid #3a3d4e;border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">📸 Simpan</button>'+
-    '<button onclick="exitPanorama()" style="background:#e8523a;color:#fff;border:none;border-radius:16px;padding:6px 12px;font-size:12px;cursor:pointer;">✕ Keluar</button>';
+
+function _tourStartTravel(){
+  _tour.phase='travel';_tour.t=0;
+  _tour.from={x:threeCamera.position.x,z:threeCamera.position.z};
+  const tgt=_tour.wps[_tour.i];
+  const d=Math.hypot(tgt.x-_tour.from.x,tgt.z-_tour.from.z);
+  _tour.dur=Math.max(1.4,Math.min(5,d/1.8));
+  _tour.aimYaw=d>0.05?_yawTo(tgt.x-_tour.from.x,tgt.z-_tour.from.z):walkState.yaw;
+}
+function _tourStartLook(){
+  _tour.phase='look';_tour.t=0;_tour.dur=5.4;
+  _tour.lookBase=walkState.yaw;
+  _updateTourBar();
+}
+
+function updateTour(dt){
+  const ls=1-Math.exp(-9*dt);
+  const baseY=_tour._baseY,tgt=_tour.wps[_tour.i];
+  _tour.t+=dt;
+  if(_tour.phase==='travel'){
+    const u=_smooth(_tour.t/_tour.dur);
+    threeCamera.position.x=_tour.from.x+(tgt.x-_tour.from.x)*u;
+    threeCamera.position.z=_tour.from.z+(tgt.z-_tour.from.z)*u;
+    walkState.targetYaw=_tour.aimYaw;
+    walkState.yaw+=_angNorm(walkState.targetYaw-walkState.yaw)*ls;
+    const bob=u<0.985?Math.sin(performance.now()*0.009)*0.02:0;
+    threeCamera.position.y=baseY+walkState.eyeY+bob;
+    if(_tour.t>=_tour.dur)_tourStartLook();
+  }else{
+    const u=_tour.t/_tour.dur;
+    walkState.yaw=_tour.lookBase+Math.sin(u*Math.PI*2)*2.2;
+    walkState.targetYaw=walkState.yaw;
+    threeCamera.position.y=baseY+walkState.eyeY;
+    if(_tour.t>=_tour.dur){_tour.i=(_tour.i+1)%_tour.wps.length;_tourStartTravel();_updateTourBar();}
+  }
+  walkState.pitch+=(walkState.targetPitch-walkState.pitch)*ls;
+  applyWalkLook();
+}
+
+/* takeover / controls */
+function _tourTakeover(){if(_tour.active&&!_tour.paused)_tourPause();}
+function onTourKey(e){
+  const k=e.key.toLowerCase();
+  if(k==='escape'){exitTour();return;}
+  if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(k)){
+    if(_tour.active&&!_tour.paused)_tourPause();
+    walkState.keys[k]=true;e.preventDefault();
+  }
+}
+function _tourPause(){
+  _tour.paused=true;
+  walkState.keys={};walkState.vel={x:0,z:0};
+  document.body.classList.add('tour-paused');
+  _updateTourBar();
+}
+function _tourResume(){
+  _tour.paused=false;
+  walkState.keys={};walkState.vel={x:0,z:0};walkState.joy={f:0,s:0};
+  document.body.classList.remove('tour-paused');
+  _tourStartTravel();
+  _updateTourBar();
+}
+function tourTogglePause(){if(!_tour.active)return;if(_tour.paused)_tourResume();else _tourPause();}
+function tourNext(){if(!_tour.active)return;_tour.i=(_tour.i+1)%_tour.wps.length;_tour.paused=false;document.body.classList.remove('tour-paused');walkState.keys={};walkState.vel={x:0,z:0};walkState.joy={f:0,s:0};_tourStartTravel();_updateTourBar();}
+function tourPrev(){if(!_tour.active)return;_tour.i=(_tour.i-1+_tour.wps.length)%_tour.wps.length;_tour.paused=false;document.body.classList.remove('tour-paused');walkState.keys={};walkState.vel={x:0,z:0};walkState.joy={f:0,s:0};_tourStartTravel();_updateTourBar();}
+
+function _showTourBar(){
+  if(document.getElementById('tourBar'))return;
+  const host=document.getElementById('view3d')||document.body;
+  const bar=document.createElement('div');bar.id='tourBar';
+  bar.innerHTML='<div class="tb-head"><span class="tb-dot"></span><span class="tb-room" id="tbRoom">—</span><span class="tb-prog" id="tbProg"></span></div>'+
+    '<div class="tb-hint" id="tbHint">Tur otomatis berjalan · seret / WASD untuk ambil alih</div>'+
+    '<div class="tb-ctrls">'+
+      '<button onclick="tourPrev()" title="Ruangan sebelumnya">⏮</button>'+
+      '<button id="tbPlay" class="tb-play" onclick="tourTogglePause()" title="Jeda / Lanjut">⏸</button>'+
+      '<button onclick="tourNext()" title="Ruangan berikutnya">⏭</button>'+
+      '<button class="tb-exit" onclick="exitTour()" title="Keluar tur">✕</button>'+
+    '</div>';
   host.appendChild(bar);
 }
-function _hidePanoBar(){var b=document.getElementById('panoBar');if(b)b.remove();}
-function panoToggleAuto(){window._panoAuto=!window._panoAuto;var b=document.getElementById('panoAutoBtn');if(b){b.textContent=window._panoAuto?'⏸ Putar Otomatis':'▶ Putar Otomatis';b.style.background=window._panoAuto?'#f5a623':'#252836';b.style.color=window._panoAuto?'#000':'#e2e8f0';}}
-function panoCapture(){
-  if(!threeRenderer)return;
-  threeRenderer.render(threeScene,threeCamera);
-  try{
-    var url=threeRenderer.domElement.toDataURL('image/png');
-    var a=document.createElement('a');a.href=url;a.download='panorama360.png';a.click();
-    if(typeof showNotif==='function')showNotif('📸 Panorama tersimpan');
-  }catch(e){if(typeof showNotif==='function')showNotif('⚠️ Gagal simpan: '+e.message);}
+function _hideTourBar(){const b=document.getElementById('tourBar');if(b)b.remove();}
+function _updateTourBar(){
+  const wp=_tour.wps[_tour.i];if(!wp)return;
+  const rn=document.getElementById('tbRoom');if(rn)rn.textContent=wp.name;
+  const pg=document.getElementById('tbProg');if(pg)pg.textContent=(_tour.i+1)+' / '+_tour.wps.length;
+  const pb=document.getElementById('tbPlay');if(pb)pb.textContent=_tour.paused?'▶':'⏸';
+  const hn=document.getElementById('tbHint');if(hn)hn.textContent=_tour.paused?'Mode bebas · seret untuk melihat · ▶ untuk lanjut tur':'Tur otomatis berjalan · seret / WASD untuk ambil alih';
+  document.body.classList.toggle('tour-playing',!_tour.paused);
 }
+
 window.togglePanorama=togglePanorama;window.enterPanorama=enterPanorama;window.exitPanorama=exitPanorama;
-window.panoToggleAuto=panoToggleAuto;window.panoCapture=panoCapture;
+window.enterTour=enterTour;window.exitTour=exitTour;
+window.tourTogglePause=tourTogglePause;window.tourNext=tourNext;window.tourPrev=tourPrev;

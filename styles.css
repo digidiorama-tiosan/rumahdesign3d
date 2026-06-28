@@ -540,6 +540,26 @@ header {
   #walkOverlay.show #walkJoystick { display: block; }
   .walk-hint-touch { display: inline; }
 }
+/* hide joystick during AUTO tour playback; show only when paused (free roam) */
+body.tour-on:not(.tour-paused) #walkJoystick { display: none !important; }
+
+/* TUR VIRTUAL bar */
+#tourBar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; align-items: center; gap: 9px; background: rgba(13,15,20,0.94); border: 1px solid #2a2d3e; border-radius: 18px; padding: 13px 16px 12px; box-shadow: 0 10px 34px rgba(0,0,0,0.55); min-width: 280px; max-width: 92vw; }
+#tourBar .tb-head { display: flex; align-items: center; gap: 9px; }
+#tourBar .tb-dot { width: 9px; height: 9px; border-radius: 50%; background: #f5a623; box-shadow: 0 0 0 0 rgba(245,166,35,0.55); animation: tbpulse 1.7s ease-out infinite; }
+body.tour-paused #tourBar .tb-dot { background: #6b7180; animation: none; box-shadow: none; }
+@keyframes tbpulse { 0% { box-shadow: 0 0 0 0 rgba(245,166,35,0.5); } 70%,100% { box-shadow: 0 0 0 8px rgba(245,166,35,0); } }
+#tourBar .tb-room { font-size: 15px; font-weight: 800; color: #f4f6fb; letter-spacing: .2px; }
+#tourBar .tb-prog { font-size: 11px; font-weight: 700; color: #9aa0b8; font-family: 'Space Mono', monospace; margin-left: 2px; }
+#tourBar .tb-hint { font-size: 11px; color: #8a90a6; text-align: center; max-width: 320px; line-height: 1.35; }
+#tourBar .tb-ctrls { display: flex; align-items: center; gap: 8px; }
+#tourBar .tb-ctrls button { background: #252836; color: #e2e8f0; border: 1px solid #3a3d4e; border-radius: 13px; min-width: 42px; height: 36px; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .12s, border-color .12s; }
+#tourBar .tb-ctrls button:hover { background: #30374a; border-color: #4a4f63; }
+#tourBar .tb-ctrls .tb-play { background: #f5a623; color: #121620; border-color: #f5a623; font-weight: 800; min-width: 52px; }
+#tourBar .tb-ctrls .tb-play:hover { background: #ffb733; }
+#tourBar .tb-ctrls .tb-exit { color: #ff9c8c; }
+#tourBar .tb-ctrls .tb-exit:hover { background: #3a2624; border-color: #6b3a34; }
+@media (max-width: 680px){ #tourBar { bottom: 14px; min-width: 240px; padding: 11px 13px 10px; } #tourBar .tb-hint { font-size: 10px; } }
 
 /* NOTIF */
 .notif { position: fixed; top: 64px; right: 16px; background: var(--surface2); border: 1px solid var(--green); border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 600; color: var(--green); z-index: 2000; transform: translateY(-10px); opacity: 0; transition: all 0.3s; pointer-events: none; }

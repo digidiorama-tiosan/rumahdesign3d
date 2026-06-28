@@ -27,7 +27,11 @@
     .right-panel { width: clamp(196px, 19vw, 290px) !important; flex-shrink: 0; }
   }
 </style>
-<style id="__pano-style">body.pano-on #walkOverlay{display:none!important;}body.pano-on #view3d-hint{display:none!important;}</style>
+<style id="__pano-style">body.pano-on #walkOverlay{display:none!important;}body.pano-on #view3d-hint{display:none!important;}
+body.tour-on #view3d-hint{display:none!important;}
+body.tour-on .walk-hint,body.tour-on .walk-crosshair{display:none!important;}
+body.tour-on #walkOverlay{pointer-events:none;}
+@media (pointer:coarse){body.tour-on.tour-paused #walkOverlay.show #walkJoystick{display:block;}}</style>
 </head>
 <body>
 
@@ -472,7 +476,7 @@
         <button class="btn-sm" id="btn3dFloors" onclick="toggle3DAllFloors()" title="Tampilkan semua lantai bertumpuk">🏢 Semua Lantai</button>
         <button class="btn-sm" id="btn3dEnv" onclick="toggle3DEnv()" title="Lingkungan luar: rumput, pohon, jalan">🌳 Lingkungan</button>
         <button class="btn-sm" id="btn3dWalk" onclick="toggle3DWalk()" title="Tur jalan first-person (WASD + mouse)">🚶 Tur Jalan</button>
-        <button class="btn-sm" id="btn3dPano" onclick="togglePanorama()" title="Panorama 360° — berdiri di tengah & lihat sekeliling">🌐 360°</button>
+        <button class="btn-sm" id="btn3dPano" onclick="togglePanorama()" title="Tur Virtual — kamera otomatis berjalan masuk & berkeliling tiap ruangan">🎬 Tur Virtual</button>
         <button class="btn-sm" onclick="renderPhoto()" title="Simpan render foto dari tampilan 3D saat ini">📸 Render Foto</button>
         <button class="btn-sm" onclick="openAIRender('three-canvas-container')" title="Render fotorealistik dengan AI (OpenAI)" style="border-color:#a78bfa; color:#c4b5fd;">✨ AI Render</button>
         <button class="btn-sm" onclick="reset3DCamera()" title="Reset kamera">⊙ Reset</button>
