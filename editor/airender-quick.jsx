@@ -21,7 +21,8 @@
 
   // Penguncian denah + realisme — disuntikkan ke semua prompt (hidden)
   const LOCK = `This 2D floor plan is the SINGLE SOURCE OF TRUTH: preserve the EXACT same room layout, positions, sizes, proportions and building orientation; do NOT rotate, mirror, swap, add or remove any room; if aesthetics ever conflict with the plan, follow the plan. `;
-  const REALISM = `Construction: brick + plaster walls 10-15 cm thick, ~3 m ceiling height, doors ~210 cm tall, windows proportional to each room's function. Materials must be textured, never flat: exterior combining exposed red brick and smooth grey plaster, black matte (doff) aluminium window & door frames, matte ceramic / vinyl floors, dark charcoal roof tiles on a gable roof at a realistic 30-35 degree pitch, a steel-frame flat-roof carport. Keep a consistent, realistic scale between all rooms. Use global illumination and soft natural shadows. `;
+  const REALISM = `Construction: brick + plaster walls 10-15 cm thick, ~3 m ceiling height, doors ~210 cm tall, windows proportional to each room's function. Materials must be textured, never flat: exterior combining exposed red brick and smooth grey plaster, black matte (doff) aluminium window & door frames, matte ceramic / vinyl floors, dark charcoal roof tiles on a gable roof at a realistic 30-35 degree pitch, a steel-frame flat-roof carport. Use real-scale furniture without changing any room size. Keep a consistent, realistic scale between all rooms. Use physically based rendering (PBR) materials, global illumination, soft natural shadows and subtle realistic reflections. `;
+  const STRICT = `STRICT MODE: do not redesign, reinterpret or approximate — match the plan EXACTLY; the 2D plan is the blueprint reference and the output must align with its spatial arrangement; the facade/3D MUST follow the interior room division (asymmetric if the plan is asymmetric); never add a window or opening that does not correspond to a real room; if necessary, reduce aesthetic quality to keep layout accuracy. `;
 
   // hidden — never surfaced in UI
   function buildPrompt(d, kind) {
@@ -32,20 +33,20 @@
     const featStr = feats.length ? (' Include ' + feats.join(', ') + '.') : '';
     const beds = (d.beds || 2) + ' bedrooms';
     if (kind === '3d') {
-      return `Convert this top-down 2D architectural floor plan into a realistic 3D isometric cutaway render, bird's-eye view at ~45 degrees, with the roof partially removed to reveal the furnished interior. `
-        + LOCK
-        + `The rooms are connected by OPEN DOORWAYS and a central hallway/corridor running from the front entrance to the rooms — show walkable circulation with real door openings in the interior walls; do NOT seal rooms as fully closed boxes. `
-        + `Room layout (the FRONT of the house is at the bottom): kitchen and dining span the BACK with the cooking counter at the back-right, second bedroom at the middle-left, bathroom at the middle-right, third bedroom on the right just behind the living room, master bedroom at the FRONT-left, living room at the FRONT-right, an open carport in the front-left yard, terrace at the front centre and garden at the front. `
-        + `A ${d.w}x${d.l} meter ${storeyStr} ${style} with ${beds}. Furnish each room realistically (beds, wardrobes, sofa, coffee table, dining set, kitchen counter, toilet). `
+      return `Convert this top-down 2D architectural floor plan into a realistic 3D isometric cutaway render, isometric camera at a 30-45 degree angle, with the roof partially removed to reveal the furnished interior; clean architectural look, not cartoon. `
+        + LOCK + STRICT
+        + `The rooms are connected by OPEN DOORWAYS and a central hallway/corridor running from the front entrance to the rooms — keep door positions and inter-room access exactly as in the plan; do NOT seal rooms as fully closed boxes. `
+        + `Room layout (the FRONT of the house is at the bottom): kitchen and dining span the BACK with the cooking counter at the back-right, second bedroom at the middle-left, bathroom at the middle-right, third bedroom on the right just behind the living room, master bedroom at the FRONT-left, living room at the FRONT-right, an open carport clearly on the RIGHT side of the front, terrace at the front centre and garden at the front. `
+        + `A ${d.w}x${d.l} meter ${storeyStr} ${style} with ${beds}. Furnish each room with real-scale furniture (beds, wardrobes, sofa, coffee table, dining set, kitchen counter, toilet). `
         + `Add boundary walls, concrete driveway, neighbour houses and street context with parked cars.${featStr} `
         + REALISM
-        + `Bright daylight, professional architectural 3D visualization, ultra detailed, photorealistic.`;
+        + `Realistic sunlight plus ambient bounce light, professional architectural 3D visualization, ultra detailed, photorealistic.`;
     }
-    return `Convert this simple front-elevation massing into a photorealistic straight-on FRONT VIEW (front facade, "tampak depan") of a ${d.w} meter wide ${storeyStr} ${style}, with ${beds}. `
-      + `Frontal eye-level camera directly facing the facade, facade parallel to the image. Layout MUST match: an open carport with a car on the LEFT, the main entrance door and living-room windows on the RIGHT, a low front fence and a small front garden. `
-      + LOCK
+    return `Convert this simple front-elevation massing into an ultra-realistic straight-on FRONT VIEW (front facade, "tampak depan") of a ${d.w} meter wide ${storeyStr} ${style}, with ${beds}. `
+      + `Frontal eye-level camera directly facing the facade, facade parallel to the image. Facade requirements (proportions MUST follow the interior room division, asymmetric if the plan is asymmetric): the FRONT-LEFT bedroom MUST have a window; the LIVING ROOM MUST have a large main window/opening; the open carport with a car must be clearly visible on the RIGHT side; the main entrance is at the centre. `
+      + LOCK + STRICT
       + REALISM
-      + `Bright midday sunlight, clear blue sky, sharp shadows. Professional real-estate architectural photography, ultra realistic, high detail.`;
+      + `Environment: real grass lawn and a low minimalist fence with a few plants. Warm golden-hour / bright realistic daylight, natural soft shadows, subtle reflections. Real textures: exposed brick, plaster and steel. Professional real-estate architectural photography, ultra realistic, high detail.`;
   }
 
   // top-down 2D floor-plan schematic → sumber akurat untuk 3D cutaway (meniru FloorPlan)
@@ -79,10 +80,10 @@
     room(53, 30, 47, 16, '#cfe0e6'); furn(60, 33, 18, 9, '#ffffff');  // KM + kloset (tengah-kanan)
     room(53, 46, 47, 24, '#ece5d8'); furn(60, 52, 22, 12, '#f3f0ea'); // KT3 + kasur (kanan, di belakang ruang tamu)
     room(53, 70, 47, 30, '#ece5d8'); furn(74, 78, 18, 16, '#cfd3d6'); // Ruang Tamu + sofa (depan-kanan)
-    // teras (depan tengah) + carport (depan kiri, di halaman)
-    x.fillStyle = '#e6ddcd'; x.fillRect(pxl + pw * 0.40, pyt + hh, pw * 0.30, (ph - hh) * 0.42);
-    x.fillStyle = '#cfccc6'; x.fillRect(pxl + pw * 0.03, pyt + hh, pw * 0.30, (ph - hh) * 0.72);
-    x.fillStyle = '#2c3138'; x.fillRect(pxl + pw * 0.08, pyt + hh + (ph - hh) * 0.12, pw * 0.20, (ph - hh) * 0.46);
+    // teras (depan tengah) + carport (depan KANAN, di halaman)
+    x.fillStyle = '#e6ddcd'; x.fillRect(pxl + pw * 0.30, pyt + hh, pw * 0.30, (ph - hh) * 0.42);
+    x.fillStyle = '#cfccc6'; x.fillRect(pxl + pw * 0.66, pyt + hh, pw * 0.31, (ph - hh) * 0.72);
+    x.fillStyle = '#2c3138'; x.fillRect(pxl + pw * 0.71, pyt + hh + (ph - hh) * 0.12, pw * 0.20, (ph - hh) * 0.46);
     // pintu (jeda dinding) ke koridor — supaya AI tahu ada sirkulasi, bukan kotak tertutup
     x.fillStyle = '#efe9df';
     const door = (rx, ry, rw, rh) => x.fillRect(RX(rx), RY(ry), RW(rw), RH(rh));
@@ -96,36 +97,39 @@
     return c.toDataURL('image/png');
   }
 
-  // tampak depan (front elevation) → sumber untuk Render AI
+  // tampak depan (front elevation) → sumber untuk Render AI (carport KANAN)
   function drawFront(d, size) {
     const W = size, H = Math.round(size * 2 / 3);
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const x = c.getContext('2d');
     const two = d.needs && d.needs.has('2lantai');
-    let sky = x.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#bcd9ef'); sky.addColorStop(1, '#eaf4fb');
+    let sky = x.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#f6d7a4'); sky.addColorStop(1, '#fbeccd');
     x.fillStyle = sky; x.fillRect(0, 0, W, H);
     const gy = H * 0.72;
-    x.fillStyle = '#cfcabf'; x.fillRect(0, gy, W, H - gy);            // driveway/trotoar
-    x.fillStyle = '#9cc06a'; x.fillRect(0, gy, W * 0.40, H * 0.09);   // rumput depan
+    x.fillStyle = '#cfcabf'; x.fillRect(0, gy, W, H - gy);             // driveway/trotoar
+    x.fillStyle = '#9cc06a'; x.fillRect(0, gy, W * 0.55, H * 0.09);    // rumput depan (kiri)
     const bh = (two ? 0.46 : 0.34) * H, by = gy - bh;
-    const fx0 = W * 0.40, fx1 = W * 0.82;                             // fasad utama (kanan)
+    const fx0 = W * 0.15, fx1 = W * 0.58;                             // fasad utama (kiri-tengah)
     x.fillStyle = '#efe9df'; x.fillRect(fx0, by, fx1 - fx0, bh);
-    // carport KIRI (konsisten dgn garasi kiri di denah/3D)
-    x.fillStyle = '#3a3a3a'; x.fillRect(W * 0.14, by + bh * 0.20, fx0 - W * 0.14, H * 0.045);
-    x.fillStyle = '#cfccc6'; x.fillRect(W * 0.15, by + bh * 0.24, W * 0.012, gy - (by + bh * 0.24));
-    x.fillStyle = '#cfccc6'; x.fillRect(fx0 - W * 0.02, by + bh * 0.24, W * 0.012, gy - (by + bh * 0.24));
-    // mobil
-    const carY = gy - H * 0.10; x.fillStyle = '#b9bcc0'; x.fillRect(W * 0.17, carY, W * 0.19, H * 0.09);
-    x.fillStyle = '#2c3138'; x.fillRect(W * 0.19, carY + H * 0.012, W * 0.15, H * 0.04);
-    // atap pelana di fasad utama
-    x.fillStyle = '#5a4636'; x.beginPath(); x.moveTo(fx0 - 8, by); x.lineTo((fx0 + fx1) / 2, by - H * 0.13); x.lineTo(fx1 + 8, by); x.closePath(); x.fill();
-    // pintu + jendela
-    x.fillStyle = '#5b4630'; x.fillRect(fx0 + (fx1 - fx0) * 0.10, gy - bh * 0.5, (fx1 - fx0) * 0.16, bh * 0.5);
-    x.fillStyle = '#9fc4dd';
-    x.fillRect(fx0 + (fx1 - fx0) * 0.40, by + bh * 0.32, (fx1 - fx0) * 0.20, bh * 0.30);
-    x.fillRect(fx0 + (fx1 - fx0) * 0.68, by + bh * 0.32, (fx1 - fx0) * 0.20, bh * 0.30);
-    // tanaman depan
-    x.fillStyle = '#5f8d4e'; [0.06, 0.30].forEach(fxp => { x.beginPath(); x.arc(W * fxp, gy - H * 0.02, W * 0.026, 0, 7); x.fill(); });
+    x.fillStyle = '#9a6b52'; x.fillRect(fx0, by, (fx1 - fx0) * 0.42, bh); // bata ekspos (kiri)
+    // carport KANAN
+    x.fillStyle = '#3a3a3a'; x.fillRect(fx1, by + bh * 0.22, W * 0.30, H * 0.045);
+    x.fillStyle = '#cfccc6'; x.fillRect(fx1 + W * 0.006, by + bh * 0.26, W * 0.012, gy - (by + bh * 0.26));
+    x.fillStyle = '#cfccc6'; x.fillRect(fx1 + W * 0.27, by + bh * 0.26, W * 0.012, gy - (by + bh * 0.26));
+    const carY = gy - H * 0.10; x.fillStyle = '#b9bcc0'; x.fillRect(fx1 + W * 0.02, carY, W * 0.21, H * 0.09);
+    x.fillStyle = '#2c3138'; x.fillRect(fx1 + W * 0.04, carY + H * 0.012, W * 0.16, H * 0.04);
+    // atap pelana
+    x.fillStyle = '#3a3a3a'; x.beginPath(); x.moveTo(fx0 - 8, by); x.lineTo((fx0 + fx1) / 2, by - H * 0.13); x.lineTo(fx1 + 8, by); x.closePath(); x.fill();
+    // jendela KT Utama (kiri)
+    x.fillStyle = '#9fc4dd'; x.fillRect(fx0 + (fx1 - fx0) * 0.10, by + bh * 0.34, (fx1 - fx0) * 0.22, bh * 0.30);
+    // pintu masuk (tengah)
+    x.fillStyle = '#5b4630'; x.fillRect(fx0 + (fx1 - fx0) * 0.42, gy - bh * 0.52, (fx1 - fx0) * 0.14, bh * 0.52);
+    // jendela utama ruang tamu (kanan fasad, lebih besar)
+    x.fillStyle = '#9fc4dd'; x.fillRect(fx0 + (fx1 - fx0) * 0.62, by + bh * 0.30, (fx1 - fx0) * 0.30, bh * 0.40);
+    // pagar minimalis + tanaman
+    x.strokeStyle = '#2c2c2c'; x.lineWidth = Math.max(1, W * 0.004);
+    for (let p = W * 0.04; p < W * 0.52; p += W * 0.03) { x.beginPath(); x.moveTo(p, gy - H * 0.05); x.lineTo(p, gy); x.stroke(); }
+    x.fillStyle = '#5f8d4e'; [0.06, 0.12].forEach(fxp => { x.beginPath(); x.arc(W * fxp, gy - H * 0.02, W * 0.022, 0, 7); x.fill(); });
     return c.toDataURL('image/png');
   }
 

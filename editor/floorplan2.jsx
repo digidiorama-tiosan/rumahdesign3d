@@ -167,13 +167,13 @@
             </div>
 
             {/* TERAS */}
-            <div style={{ position: 'absolute', left: '40%', width: '34%', top: '87.5%', height: '7%', background: FLOOR2, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.08)' }}>
+            <div style={{ position: 'absolute', left: '30%', width: '30%', top: '87.5%', height: '7%', background: FLOOR2, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.08)' }}>
               <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 'clamp(6px,.85vw,10px)', fontWeight: 800, color: '#6a6256' }}>{compact ? '' : 'TERAS'}</div>
             </div>
             {/* steps */}
-            <div style={{ position: 'absolute', left: '50%', top: '94.5%', width: '8%', height: '5.5%', transform: 'translateX(-50%)', background: `repeating-linear-gradient(90deg,#cfc7b8 0 4px,#bdb4a3 4px 8px)` }}></div>
-            {/* CARPORT (halaman depan, kiri) */}
-            <div style={{ position: 'absolute', left: '2%', width: '32%', top: '87.5%', height: '11.5%', background: '#cfccc6', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.14)' }}>
+            <div style={{ position: 'absolute', left: '42%', top: '94.5%', width: '8%', height: '5.5%', transform: 'translateX(-50%)', background: `repeating-linear-gradient(90deg,#cfc7b8 0 4px,#bdb4a3 4px 8px)` }}></div>
+            {/* CARPORT (halaman depan, KANAN) */}
+            <div style={{ position: 'absolute', right: '2%', width: '32%', top: '87.5%', height: '11.5%', background: '#cfccc6', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.14)' }}>
               <Car />
               {!compact && <div style={{ position: 'absolute', left: 4, top: 3, fontSize: 'clamp(5px,.75vw,9px)', fontWeight: 800, color: '#5a5249', zIndex: 4 }}>CARPORT</div>}
             </div>
