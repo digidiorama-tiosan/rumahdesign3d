@@ -30,15 +30,17 @@
     if (kind === '3d') {
       return `Convert this top-down 2D architectural floor plan into a realistic 3D isometric cutaway render, bird's-eye view at ~45 degrees, with the roof partially removed to reveal the furnished interior. `
         + `CRITICAL: preserve the EXACT same room layout, positions, sizes and wall arrangement shown in the floor plan. `
+        + `The rooms are connected by OPEN DOORWAYS and a central hallway/corridor running from the front entrance to the rooms — show walkable circulation with real door openings in the interior walls; do NOT seal rooms as fully closed boxes. `
         + `Room layout: master bedroom at top-left, kitchen and dining at top-right, second bedroom at middle-left, bathroom at middle-right, third bedroom just below the bathroom, garage with a car at bottom-left, living room at bottom-right, front terrace and garden at the front. `
         + `A ${d.w}x${d.l} meter ${storeyStr} ${style} with ${beds}. Furnish each room realistically (beds, wardrobes, sofa, coffee table, dining set, kitchen counter, toilet). `
         + `Add boundary walls, concrete driveway, neighbour houses and street context with parked cars.${featStr} `
         + `Bright daylight, soft realistic shadows, professional architectural 3D visualization, ultra detailed, photorealistic.`;
     }
-    return `Convert this 3D massing screenshot into a photorealistic architectural exterior render of a ${d.w}x${d.l} meter ${storeyStr} ${style}, with ${beds}. `
-      + `Keep the exact same layout, building position, proportions and camera viewpoint.${featStr} `
-      + `Realistic materials: painted plaster walls, roof tiles, glass windows, real grass and tropical plants, concrete driveway. `
-      + `Bright midday sunlight, clear sky, sharp shadows. Professional architectural photography, high detail, ultra realistic.`;
+    return `Convert this simple front-elevation massing into a photorealistic straight-on FRONT VIEW (front facade, "tampak depan") of a ${d.w} meter wide ${storeyStr} ${style}, with ${beds}. `
+      + `Frontal eye-level camera directly facing the facade, facade parallel to the image. Layout MUST match: an open carport with a car on the LEFT, the main entrance door and living-room windows on the RIGHT, a low front fence and a small front garden. `
+      + `Keep the same proportions and element positions.${featStr} `
+      + `Realistic materials: plaster and/or brick walls, roof tiles, framed glass windows, concrete driveway, real grass and tropical plants. `
+      + `Bright midday sunlight, clear blue sky, sharp shadows. Professional real-estate architectural photography, ultra realistic, high detail.`;
   }
 
   // top-down 2D floor-plan schematic → sumber akurat untuk 3D cutaway (meniru FloorPlan)
@@ -74,6 +76,49 @@
     room(53, 73, 47, 27, '#ece5d8'); furn(74, 80, 18, 14, '#cfd3d6'); // Ruang Tamu + sofa
     // teras
     x.fillStyle = '#e6ddcd'; x.fillRect(pxl + pw * 0.40, pyt + hh, pw * 0.34, (ph - hh) * 0.42);
+    // pintu (jeda dinding) ke koridor — supaya AI tahu ada sirkulasi, bukan kotak tertutup
+    x.fillStyle = '#efe9df';
+    const door = (rx, ry, rw, rh) => x.fillRect(RX(rx), RY(ry), RW(rw), RH(rh));
+    door(45.5, 27, 3.2, 9);  // KT Utama → koridor
+    door(45.5, 47, 3.2, 9);  // KT2 → koridor
+    door(51.3, 27, 3.2, 9);  // Dapur → koridor
+    door(51.3, 43, 3.2, 7);  // KM → koridor
+    door(51.3, 59, 3.2, 9);  // KT3 → koridor
+    door(51.3, 82, 3.2, 9);  // Ruang Tamu → koridor
+    door(20, 60, 14, 3.2);   // Garasi → dalam rumah
+    return c.toDataURL('image/png');
+  }
+
+  // tampak depan (front elevation) → sumber untuk Render AI
+  function drawFront(d, size) {
+    const W = size, H = Math.round(size * 2 / 3);
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    const two = d.needs && d.needs.has('2lantai');
+    let sky = x.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#bcd9ef'); sky.addColorStop(1, '#eaf4fb');
+    x.fillStyle = sky; x.fillRect(0, 0, W, H);
+    const gy = H * 0.72;
+    x.fillStyle = '#cfcabf'; x.fillRect(0, gy, W, H - gy);            // driveway/trotoar
+    x.fillStyle = '#9cc06a'; x.fillRect(0, gy, W * 0.40, H * 0.09);   // rumput depan
+    const bh = (two ? 0.46 : 0.34) * H, by = gy - bh;
+    const fx0 = W * 0.40, fx1 = W * 0.82;                             // fasad utama (kanan)
+    x.fillStyle = '#efe9df'; x.fillRect(fx0, by, fx1 - fx0, bh);
+    // carport KIRI (konsisten dgn garasi kiri di denah/3D)
+    x.fillStyle = '#3a3a3a'; x.fillRect(W * 0.14, by + bh * 0.20, fx0 - W * 0.14, H * 0.045);
+    x.fillStyle = '#cfccc6'; x.fillRect(W * 0.15, by + bh * 0.24, W * 0.012, gy - (by + bh * 0.24));
+    x.fillStyle = '#cfccc6'; x.fillRect(fx0 - W * 0.02, by + bh * 0.24, W * 0.012, gy - (by + bh * 0.24));
+    // mobil
+    const carY = gy - H * 0.10; x.fillStyle = '#b9bcc0'; x.fillRect(W * 0.17, carY, W * 0.19, H * 0.09);
+    x.fillStyle = '#2c3138'; x.fillRect(W * 0.19, carY + H * 0.012, W * 0.15, H * 0.04);
+    // atap pelana di fasad utama
+    x.fillStyle = '#5a4636'; x.beginPath(); x.moveTo(fx0 - 8, by); x.lineTo((fx0 + fx1) / 2, by - H * 0.13); x.lineTo(fx1 + 8, by); x.closePath(); x.fill();
+    // pintu + jendela
+    x.fillStyle = '#5b4630'; x.fillRect(fx0 + (fx1 - fx0) * 0.10, gy - bh * 0.5, (fx1 - fx0) * 0.16, bh * 0.5);
+    x.fillStyle = '#9fc4dd';
+    x.fillRect(fx0 + (fx1 - fx0) * 0.40, by + bh * 0.32, (fx1 - fx0) * 0.20, bh * 0.30);
+    x.fillRect(fx0 + (fx1 - fx0) * 0.68, by + bh * 0.32, (fx1 - fx0) * 0.20, bh * 0.30);
+    // tanaman depan
+    x.fillStyle = '#5f8d4e'; [0.06, 0.30].forEach(fxp => { x.beginPath(); x.arc(W * fxp, gy - H * 0.02, W * 0.026, 0, 7); x.fill(); });
     return c.toDataURL('image/png');
   }
 
@@ -116,12 +161,12 @@
     const C = cloud();
     if (!available()) { const e = new Error('DEMO'); e.demo = true; throw e; }
     const size = '1536x1024';
-    const imageBase64 = kind === '3d' ? drawPlan(d, 1024) : drawSource(d, 1024);
+    const imageBase64 = kind === '3d' ? drawPlan(d, 1024) : drawFront(d, 1024);
     const prompt = buildPrompt(d, kind);
     const data = await C.invokeAIRender({ imageBase64, prompt, size });
     if (!data || !data.image) throw new Error('Respons render kosong');
     return data.image;
   }
 
-  window.QuickRender = { generate, available, _buildPrompt: buildPrompt, _drawPlan: drawPlan };
+  window.QuickRender = { generate, available, _buildPrompt: buildPrompt, _drawPlan: drawPlan, _drawFront: drawFront };
 })();
