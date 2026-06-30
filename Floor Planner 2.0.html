@@ -608,6 +608,7 @@ body.tour-on #walkOverlay{pointer-events:none;}
     </div>
     <div class="ai-body">
       <div class="ai-nav">
+        <div class="ai-nav-item" data-ai="quickstudio" onclick="openQuickStudio()" style="background:linear-gradient(150deg,#8C73FF,#6E54F0); margin-bottom:8px;"><span class="ain-ic">⚡</span><div><div class="ain-t" style="color:#fff;">Studio Cepat <span style="font-size:9px;font-weight:800;letter-spacing:.06em;background:rgba(255,255,255,.22);color:#fff;padding:2px 6px;border-radius:99px;vertical-align:middle;">BARU</span></div><div class="ain-s" style="color:rgba(255,255,255,.82);">Wizard → denah, 3D &amp; render AI otomatis</div></div></div>
         <div class="ai-nav-item active" data-ai="layout" onclick="aiNav('layout')"><span class="ain-ic">🏗️</span><div><div class="ain-t">AI Auto Layout</div><div class="ain-s">Tanah + kebutuhan → denah</div></div></div>
         <div class="ai-nav-item" data-ai="assistant" onclick="aiNav('assistant')"><span class="ain-ic">💬</span><div><div class="ain-t">AI Design Assistant</div><div class="ain-s">Prompt → rumah lengkap</div></div></div>
         <div class="ai-nav-item" data-ai="optimizer" onclick="aiNav('optimizer')"><span class="ain-ic">💰</span><div><div class="ain-t">AI RAB Optimizer</div><div class="ain-s">Saran hemat biaya</div></div></div>
@@ -639,6 +640,28 @@ body.tour-on #walkOverlay{pointer-events:none;}
     </div>
   </div>
 </div>
+
+<!-- QUICK STUDIO (panel full-screen di dalam OmahAI) -->
+<div id="quickStudioOverlay" style="position:fixed; inset:0; z-index:100000; background:#161820; display:none;">
+  <iframe id="quickStudioFrame" title="DadiOmah Studio Cepat" allow="clipboard-write" style="width:100%; height:100%; border:none; display:block;"></iframe>
+</div>
+<script>
+function openQuickStudio(){
+  try{ if(typeof closeAIStudio==='function') closeAIStudio(); }catch(e){}
+  var ov=document.getElementById('quickStudioOverlay');
+  var fr=document.getElementById('quickStudioFrame');
+  if(!fr.getAttribute('src')) fr.setAttribute('src','DadiOmah%20Editor.html');
+  ov.style.display='block';
+  document.body.style.overflow='hidden';
+}
+function closeQuickStudio(){
+  var ov=document.getElementById('quickStudioOverlay');
+  if(ov) ov.style.display='none';
+  document.body.style.overflow='';
+}
+window.addEventListener('message', function(e){ if(e&&e.data==='close-quick-studio') closeQuickStudio(); });
+window.addEventListener('keydown', function(e){ if(e.key==='Escape'){ var ov=document.getElementById('quickStudioOverlay'); if(ov&&ov.style.display==='block') closeQuickStudio(); } });
+</script>
 
 <div class="furn-ghost" id="furnGhost"></div>
 <div class="notif" id="notif"></div>

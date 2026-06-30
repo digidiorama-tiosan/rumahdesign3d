@@ -1,0 +1,123 @@
+/* ============================================================
+   DadiOmah — EDITOR chrome (panel full-screen, tema terang)
+   Depends on redesign.css tokens. Canva-like, bukan CAD.
+   ============================================================ */
+
+.ed {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  color: var(--ink);
+}
+
+/* ---- HEADER (DadiOmah) ---- */
+.ed-head {
+  height: 60px; flex: 0 0 60px;
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  box-shadow: var(--sh-sm); z-index: 30;
+}
+.ed-brand { display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:-.02em; font-size:18px; }
+.ed-brand .logo { width:32px;height:32px;border-radius:9px; background:linear-gradient(150deg,#FF9A4D,var(--brand) 55%,var(--brand-strong));
+  display:grid;place-items:center;color:#fff; box-shadow: var(--sh-brand); }
+.ed-brand b { color: var(--ink); } .ed-brand span { color: var(--brand); }
+.ed-proj { display:flex; flex-direction:column; line-height:1.15; padding-left:14px; border-left:1px solid var(--line); }
+.ed-proj .nm { font-weight:700; font-size:14px; }
+.ed-proj .mt { font-size:11.5px; color:var(--ink-faint); font-weight:700; letter-spacing:.04em; }
+.ed-head .spacer { flex:1; }
+
+/* mode toggle */
+.mode-toggle { display:inline-flex; background:var(--bg-2); border-radius:var(--r-pill); padding:4px; box-shadow: inset 0 0 0 1px var(--line-2); }
+.mode-toggle button { display:flex;align-items:center;gap:7px; padding:8px 15px; border-radius:var(--r-pill); font-weight:700; font-size:13px; color:var(--ink-soft); }
+.mode-toggle button.on { background:var(--surface); color:var(--ink); box-shadow: var(--sh-sm); }
+.mode-toggle button.on.ai { color: var(--brand-strong); }
+
+.ed-close { width:38px;height:38px;border-radius:50%; display:grid;place-items:center; color:var(--ink-soft); background:var(--bg-2); }
+.ed-close:hover { background:#e7ddd0; color:var(--ink); }
+
+/* ---- BODY: rail | canvas | panel ---- */
+.ed-body { flex:1; display:grid; grid-template-columns: 92px 1fr 340px; grid-template-rows: minmax(0,1fr); min-height:0; overflow:hidden; }
+
+/* ---- LEFT RAIL (grouped tools) ---- */
+.ed-rail { background:var(--surface); border-right:1px solid var(--line); padding:12px 8px; overflow-y:auto; min-height:0; display:flex; flex-direction:column; gap:4px; }
+.rail-group-label { font-size:9.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); padding:10px 4px 4px; text-align:center; }
+.rail-btn { display:flex; flex-direction:column; align-items:center; gap:5px; padding:10px 4px; border-radius:var(--r-sm); color:var(--ink-soft); font-weight:700; font-size:11px; transition:.12s; }
+.rail-btn:hover { background:var(--bg-2); color:var(--ink); }
+.rail-btn.on { background:var(--brand-soft); color:var(--brand-strong); }
+.rail-btn .ri { width:38px;height:38px;border-radius:11px; display:grid;place-items:center; background:var(--bg-2); transition:.12s; }
+.rail-btn.on .ri { background:var(--brand); color:#fff; box-shadow: var(--sh-brand); }
+.rail-btn.ai .ri { background:var(--violet-soft); color:var(--violet); }
+.rail-btn.ai.on .ri { background:linear-gradient(150deg,#8C73FF,var(--violet)); color:#fff; box-shadow:0 8px 20px -6px rgba(110,84,240,.5); }
+.rail-sep { height:1px; background:var(--line); margin:8px 10px; }
+
+/* ---- CENTER CANVAS ---- */
+.ed-canvas-wrap { display:flex; flex-direction:column; min-width:0; min-height:0; overflow:hidden; padding:16px 18px; gap:14px; }
+.canvas-tabs { display:flex; align-items:center; gap:10px; }
+.ctab { display:inline-flex; align-items:center; gap:9px; padding:10px 18px; border-radius:var(--r-pill); font-weight:700; font-size:14px;
+  background:var(--surface); color:var(--ink-soft); box-shadow: inset 0 0 0 1px var(--line-2); transition:.13s; }
+.ctab:hover { color:var(--ink); }
+.ctab.on { background:var(--ink); color:#fff; box-shadow:none; }
+.ctab.hero { position:relative; }
+.ctab.on.hero { background:linear-gradient(150deg,#8C73FF,var(--violet)); }
+.ctab .hbadge { font-size:9px; font-weight:800; letter-spacing:.06em; background:var(--violet); color:#fff; padding:2px 6px; border-radius:99px; }
+.ctab.on .hbadge { background:rgba(255,255,255,.25); }
+
+.ed-stage { flex:1; border-radius:var(--r-xl); overflow:hidden; position:relative; box-shadow: var(--sh-lg); min-height:0; background:#0f1622; }
+.stage-tools { position:absolute; top:14px; right:14px; z-index:10; display:flex; gap:8px; }
+.stage-tools .st { width:40px;height:40px;border-radius:11px; display:grid;place-items:center; background:rgba(255,255,255,.92); color:var(--ink); box-shadow:var(--sh-md); backdrop-filter:blur(6px); }
+.stage-tools .st:hover { background:#fff; }
+.stage-hint { position:absolute; left:14px; top:14px; z-index:10; display:flex;align-items:center;gap:8px; padding:8px 14px; border-radius:var(--r-pill);
+  background:rgba(255,255,255,.92); box-shadow:var(--sh-md); font-weight:700; font-size:12.5px; backdrop-filter:blur(6px); }
+
+.canvas-foot { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.foot-stat { display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border-radius:var(--r-pill); background:var(--surface);
+  box-shadow:var(--sh-sm); font-weight:700; font-size:13px; }
+.foot-stat .fk { color:var(--ink-faint); font-weight:600; }
+
+/* ---- RIGHT PANEL (contextual) ---- */
+.ed-panel { background:var(--surface); border-left:1px solid var(--line); padding:18px 16px; overflow-y:auto; min-height:0; }
+.panel-h { display:flex; align-items:center; gap:9px; font-weight:800; font-size:15px; letter-spacing:-.01em; margin-bottom:4px; }
+.panel-sub { font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 16px; line-height:1.45; }
+.panel-sec-h { font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); margin:20px 0 11px; }
+
+/* AI hero panel */
+.ai-hero { border-radius:var(--r-md); padding:16px; background:linear-gradient(160deg, var(--violet-soft), #fff); box-shadow: inset 0 0 0 1px #e3dcff; margin-bottom:8px; }
+.ai-hero .ttl { display:flex; align-items:center; gap:9px; font-weight:800; font-size:15px; color:var(--violet-ink); }
+
+/* prompt chips reuse .helper from redesign.css */
+.regen-row { display:flex; gap:9px; margin-top:14px; }
+
+/* style preset list (compact) */
+.preset-list { display:grid; gap:10px; }
+.preset { display:flex; align-items:center; gap:12px; padding:8px; border-radius:var(--r-sm); cursor:pointer; box-shadow: inset 0 0 0 1.5px var(--line-2); transition:.13s; }
+.preset:hover { box-shadow: inset 0 0 0 1.5px var(--brand); }
+.preset.on { box-shadow: inset 0 0 0 2px var(--brand); background:#FFF8F1; }
+.preset .pv { width:56px;height:40px;border-radius:8px;flex:0 0 auto; }
+.preset b { font-size:13.5px; } .preset small { display:block; color:var(--ink-faint); font-size:11.5px; font-weight:600; }
+
+/* cost panel */
+.cost-big { font-size:30px; font-weight:800; letter-spacing:-.02em; color:var(--brand); }
+.cost-rows { margin-top:14px; }
+.cost-row { display:flex; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+.cost-row:last-child { border:none; } .cost-row b { font-weight:800; }
+
+/* simple property rows */
+.prop { margin-bottom:16px; }
+.prop label { display:block; font-weight:700; font-size:13px; margin-bottom:8px; }
+
+/* ---- WELCOME WIZARD overlay ---- */
+.welcome { position:absolute; inset:0; z-index:50; background:rgba(33,27,22,.34); backdrop-filter:blur(6px); display:grid; place-items:center; padding:24px; }
+.welcome-card { width:min(720px,100%); max-height:92%; overflow-y:auto; background:var(--surface); border-radius:var(--r-xl); box-shadow:var(--sh-lg); padding:30px 34px; }
+.welcome-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.wel-progress { display:flex; align-items:center; gap:12px; margin:18px 0 26px; }
+
+/* progress overlay */
+.prog-overlay { position:absolute; inset:0; z-index:60; background:rgba(247,243,238,.96); backdrop-filter:blur(8px); display:grid; place-items:center; padding:24px; }
+
+@media (max-width:1080px){
+  .ed-body { grid-template-columns: 72px 1fr; }
+  .ed-panel { display:none; }
+}
