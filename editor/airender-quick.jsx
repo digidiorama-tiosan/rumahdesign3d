@@ -22,18 +22,59 @@
   // hidden — never surfaced in UI
   function buildPrompt(d, kind) {
     const style = STYLE_EN[d.gaya] || STYLE_EN['Minimalis Modern'];
-    const feats = [...(d.needs || [])].map(k => FEAT_EN[k]).filter(Boolean);
+    const two = d.needs && d.needs.has('2lantai');
+    const storeyStr = two ? 'two-storey' : 'single-storey';
+    const feats = [...(d.needs || [])].filter(k => k !== '2lantai').map(k => FEAT_EN[k]).filter(Boolean);
     const featStr = feats.length ? (' Include ' + feats.join(', ') + '.') : '';
     const beds = (d.beds || 2) + ' bedrooms';
     if (kind === '3d') {
-      return `Convert this massing model into a realistic 3D isometric architectural cutaway render (top-down birds-eye, ~45°) of a ${d.w}x${d.l} meter ${style}, with ${beds}. `
-        + `Show interior room layout from above with furniture, surrounded by neighbour houses, street with parked cars, boundary walls and garden.${featStr} `
-        + `Keep the same footprint and proportions. Bright daylight, soft shadows, professional 3D visualization, ultra detailed, photorealistic.`;
+      return `Convert this top-down 2D architectural floor plan into a realistic 3D isometric cutaway render, bird's-eye view at ~45 degrees, with the roof partially removed to reveal the furnished interior. `
+        + `CRITICAL: preserve the EXACT same room layout, positions, sizes and wall arrangement shown in the floor plan. `
+        + `Room layout: master bedroom at top-left, kitchen and dining at top-right, second bedroom at middle-left, bathroom at middle-right, third bedroom just below the bathroom, garage with a car at bottom-left, living room at bottom-right, front terrace and garden at the front. `
+        + `A ${d.w}x${d.l} meter ${storeyStr} ${style} with ${beds}. Furnish each room realistically (beds, wardrobes, sofa, coffee table, dining set, kitchen counter, toilet). `
+        + `Add boundary walls, concrete driveway, neighbour houses and street context with parked cars.${featStr} `
+        + `Bright daylight, soft realistic shadows, professional architectural 3D visualization, ultra detailed, photorealistic.`;
     }
-    return `Convert this 3D massing screenshot into a photorealistic architectural exterior render of a ${d.w}x${d.l} meter ${style}, with ${beds}. `
+    return `Convert this 3D massing screenshot into a photorealistic architectural exterior render of a ${d.w}x${d.l} meter ${storeyStr} ${style}, with ${beds}. `
       + `Keep the exact same layout, building position, proportions and camera viewpoint.${featStr} `
       + `Realistic materials: painted plaster walls, roof tiles, glass windows, real grass and tropical plants, concrete driveway. `
       + `Bright midday sunlight, clear sky, sharp shadows. Professional architectural photography, high detail, ultra realistic.`;
+  }
+
+  // top-down 2D floor-plan schematic → sumber akurat untuk 3D cutaway (meniru FloorPlan)
+  function drawPlan(d, size) {
+    const W = size, H = Math.round(size * 2 / 3);
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    x.fillStyle = '#fbfaf7'; x.fillRect(0, 0, W, H);
+    const ratio = (d.w || 6) / ((d.l || 12) * 1.18);
+    const ph = H * 0.9, pw = ph * ratio, pxl = (W - pw) / 2, pyt = (H - ph) / 2;
+    const hh = ph * 0.85; // tinggi rumah; sisanya taman depan
+    // taman depan
+    x.fillStyle = '#7aa64f'; x.fillRect(pxl, pyt + hh, pw, ph - hh);
+    x.fillStyle = '#5d8a3f';
+    [0.16, 0.34, 0.66, 0.86].forEach(fx => { x.beginPath(); x.arc(pxl + pw * fx, pyt + hh + (ph - hh) * 0.5, pw * 0.045, 0, 7); x.fill(); });
+    // dinding luar + lantai interior
+    x.fillStyle = '#23211e'; x.fillRect(pxl, pyt, pw, hh);
+    const m = pw * 0.02, ix = pxl + m, iy = pyt + m, iw = pw - m * 2, ih = hh - m * 2;
+    x.fillStyle = '#ece5d8'; x.fillRect(ix, iy, iw, ih);
+    const RX = (p) => ix + iw * p / 100, RY = (p) => iy + ih * p / 100, RW = (w) => iw * w / 100, RH = (h) => ih * h / 100;
+    const room = (rx, ry, rw, rh, fill) => { x.fillStyle = fill; x.fillRect(RX(rx), RY(ry), RW(rw), RH(rh)); x.strokeStyle = '#8d8473'; x.lineWidth = Math.max(1, pw * 0.004); x.strokeRect(RX(rx), RY(ry), RW(rw), RH(rh)); };
+    const furn = (rx, ry, rw, rh, fill) => { x.fillStyle = fill; x.fillRect(RX(rx), RY(ry), RW(rw), RH(rh)); };
+    // koridor tengah
+    x.fillStyle = '#e6ddcd'; x.fillRect(RX(47), iy, RW(6), ih);
+    // KIRI
+    room(0, 0, 47, 38, '#ece5d8'); furn(8, 6, 31, 16, '#f3f0ea');     // KT Utama + kasur
+    room(0, 38, 47, 24, '#e6ddcd'); furn(8, 43, 22, 12, '#f3f0ea');   // KT2 + kasur
+    room(0, 62, 47, 38, '#cfccc6'); furn(12, 70, 23, 24, '#2c3138');  // Garasi + mobil
+    // KANAN
+    room(53, 0, 47, 38, '#e6ddcd'); furn(60, 16, 26, 14, '#a07d4d');  // Dapur + meja makan
+    room(53, 38, 47, 15, '#cfe0e6'); furn(60, 42, 18, 8, '#ffffff');  // KM + kloset
+    room(53, 53, 47, 20, '#ece5d8'); furn(60, 58, 22, 11, '#f3f0ea'); // KT3 + kasur
+    room(53, 73, 47, 27, '#ece5d8'); furn(74, 80, 18, 14, '#cfd3d6'); // Ruang Tamu + sofa
+    // teras
+    x.fillStyle = '#e6ddcd'; x.fillRect(pxl + pw * 0.40, pyt + hh, pw * 0.34, (ph - hh) * 0.42);
+    return c.toDataURL('image/png');
   }
 
   // crude isometric massing → source image for images/edits (like THREE snapshot)
@@ -74,13 +115,13 @@
   async function generate(d, kind) {
     const C = cloud();
     if (!available()) { const e = new Error('DEMO'); e.demo = true; throw e; }
-    const size = kind === '3d' ? '1536x1024' : '1536x1024';
-    const imageBase64 = drawSource(d, 1024);
+    const size = '1536x1024';
+    const imageBase64 = kind === '3d' ? drawPlan(d, 1024) : drawSource(d, 1024);
     const prompt = buildPrompt(d, kind);
     const data = await C.invokeAIRender({ imageBase64, prompt, size });
     if (!data || !data.image) throw new Error('Respons render kosong');
     return data.image;
   }
 
-  window.QuickRender = { generate, available, _buildPrompt: buildPrompt };
+  window.QuickRender = { generate, available, _buildPrompt: buildPrompt, _drawPlan: drawPlan };
 })();
