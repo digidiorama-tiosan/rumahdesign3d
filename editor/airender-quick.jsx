@@ -9,7 +9,7 @@
   const STYLE_EN = {
     'Minimalis Modern': 'modern minimalist Indonesian house, flat roof, clean white & grey plaster facade, large glass windows',
     'Japandi': 'Japandi style house, warm wood accents, muted earthy tones, low pitched roof, calm minimal landscaping',
-    'Industrial': 'industrial style house, exposed brick and raw concrete, dark metal frames, mono-pitch roof',
+    'Industrial': 'modern minimalist industrial Indonesian house, exposed red brick combined with smooth grey plaster, black matte aluminium frames, dark charcoal gable roof, steel-frame carport',
     'Scandinavian': 'Scandinavian style house, white walls with natural timber cladding, gable roof, bright airy look',
     'Tropical': 'modern tropical Indonesian house, terracotta clay roof tiles, warm render walls, lush tropical garden',
   };
@@ -18,6 +18,10 @@
     carport: 'covered carport with a car', '2lantai': 'two-storey building',
     musholla: 'small prayer room', kolam: 'a swimming pool',
   };
+
+  // Penguncian denah + realisme — disuntikkan ke semua prompt (hidden)
+  const LOCK = `This 2D floor plan is the SINGLE SOURCE OF TRUTH: preserve the EXACT same room layout, positions, sizes, proportions and building orientation; do NOT rotate, mirror, swap, add or remove any room; if aesthetics ever conflict with the plan, follow the plan. `;
+  const REALISM = `Construction: brick + plaster walls 10-15 cm thick, ~3 m ceiling height, doors ~210 cm tall, windows proportional to each room's function. Materials must be textured, never flat: exterior combining exposed red brick and smooth grey plaster, black matte (doff) aluminium window & door frames, matte ceramic / vinyl floors, dark charcoal roof tiles on a gable roof at a realistic 30-35 degree pitch, a steel-frame flat-roof carport. Keep a consistent, realistic scale between all rooms. Use global illumination and soft natural shadows. `;
 
   // hidden — never surfaced in UI
   function buildPrompt(d, kind) {
@@ -29,17 +33,18 @@
     const beds = (d.beds || 2) + ' bedrooms';
     if (kind === '3d') {
       return `Convert this top-down 2D architectural floor plan into a realistic 3D isometric cutaway render, bird's-eye view at ~45 degrees, with the roof partially removed to reveal the furnished interior. `
-        + `CRITICAL: preserve the EXACT same room layout, positions, sizes and wall arrangement shown in the floor plan. `
+        + LOCK
         + `The rooms are connected by OPEN DOORWAYS and a central hallway/corridor running from the front entrance to the rooms — show walkable circulation with real door openings in the interior walls; do NOT seal rooms as fully closed boxes. `
-        + `Room layout: master bedroom at top-left, kitchen and dining at top-right, second bedroom at middle-left, bathroom at middle-right, third bedroom just below the bathroom, garage with a car at bottom-left, living room at bottom-right, front terrace and garden at the front. `
+        + `Room layout (the FRONT of the house is at the bottom): kitchen and dining span the BACK with the cooking counter at the back-right, second bedroom at the middle-left, bathroom at the middle-right, third bedroom on the right just behind the living room, master bedroom at the FRONT-left, living room at the FRONT-right, an open carport in the front-left yard, terrace at the front centre and garden at the front. `
         + `A ${d.w}x${d.l} meter ${storeyStr} ${style} with ${beds}. Furnish each room realistically (beds, wardrobes, sofa, coffee table, dining set, kitchen counter, toilet). `
         + `Add boundary walls, concrete driveway, neighbour houses and street context with parked cars.${featStr} `
-        + `Bright daylight, soft realistic shadows, professional architectural 3D visualization, ultra detailed, photorealistic.`;
+        + REALISM
+        + `Bright daylight, professional architectural 3D visualization, ultra detailed, photorealistic.`;
     }
     return `Convert this simple front-elevation massing into a photorealistic straight-on FRONT VIEW (front facade, "tampak depan") of a ${d.w} meter wide ${storeyStr} ${style}, with ${beds}. `
       + `Frontal eye-level camera directly facing the facade, facade parallel to the image. Layout MUST match: an open carport with a car on the LEFT, the main entrance door and living-room windows on the RIGHT, a low front fence and a small front garden. `
-      + `Keep the same proportions and element positions.${featStr} `
-      + `Realistic materials: plaster and/or brick walls, roof tiles, framed glass windows, concrete driveway, real grass and tropical plants. `
+      + LOCK
+      + REALISM
       + `Bright midday sunlight, clear blue sky, sharp shadows. Professional real-estate architectural photography, ultra realistic, high detail.`;
   }
 
@@ -63,29 +68,31 @@
     const RX = (p) => ix + iw * p / 100, RY = (p) => iy + ih * p / 100, RW = (w) => iw * w / 100, RH = (h) => ih * h / 100;
     const room = (rx, ry, rw, rh, fill) => { x.fillStyle = fill; x.fillRect(RX(rx), RY(ry), RW(rw), RH(rh)); x.strokeStyle = '#8d8473'; x.lineWidth = Math.max(1, pw * 0.004); x.strokeRect(RX(rx), RY(ry), RW(rw), RH(rh)); };
     const furn = (rx, ry, rw, rh, fill) => { x.fillStyle = fill; x.fillRect(RX(rx), RY(ry), RW(rw), RH(rh)); };
-    // koridor tengah
-    x.fillStyle = '#e6ddcd'; x.fillRect(RX(47), iy, RW(6), ih);
+    // koridor tengah (tengah → depan)
+    x.fillStyle = '#e6ddcd'; x.fillRect(RX(47), RY(30), RW(6), RH(70));
+    // DAPUR belakang (lebar penuh; counter masak kanan)
+    room(0, 0, 100, 30, '#e6ddcd'); furn(70, 6, 26, 14, '#a07d4d'); furn(4, 5, 30, 7, '#cfcabf');
     // KIRI
-    room(0, 0, 47, 38, '#ece5d8'); furn(8, 6, 31, 16, '#f3f0ea');     // KT Utama + kasur
-    room(0, 38, 47, 24, '#e6ddcd'); furn(8, 43, 22, 12, '#f3f0ea');   // KT2 + kasur
-    room(0, 62, 47, 38, '#cfccc6'); furn(12, 70, 23, 24, '#2c3138');  // Garasi + mobil
+    room(0, 30, 47, 30, '#e6ddcd'); furn(8, 36, 22, 14, '#f3f0ea');   // KT2 + kasur (tengah-kiri)
+    room(0, 60, 47, 40, '#ece5d8'); furn(8, 66, 31, 18, '#f3f0ea');   // KT Utama + kasur (depan-kiri)
     // KANAN
-    room(53, 0, 47, 38, '#e6ddcd'); furn(60, 16, 26, 14, '#a07d4d');  // Dapur + meja makan
-    room(53, 38, 47, 15, '#cfe0e6'); furn(60, 42, 18, 8, '#ffffff');  // KM + kloset
-    room(53, 53, 47, 20, '#ece5d8'); furn(60, 58, 22, 11, '#f3f0ea'); // KT3 + kasur
-    room(53, 73, 47, 27, '#ece5d8'); furn(74, 80, 18, 14, '#cfd3d6'); // Ruang Tamu + sofa
-    // teras
-    x.fillStyle = '#e6ddcd'; x.fillRect(pxl + pw * 0.40, pyt + hh, pw * 0.34, (ph - hh) * 0.42);
+    room(53, 30, 47, 16, '#cfe0e6'); furn(60, 33, 18, 9, '#ffffff');  // KM + kloset (tengah-kanan)
+    room(53, 46, 47, 24, '#ece5d8'); furn(60, 52, 22, 12, '#f3f0ea'); // KT3 + kasur (kanan, di belakang ruang tamu)
+    room(53, 70, 47, 30, '#ece5d8'); furn(74, 78, 18, 16, '#cfd3d6'); // Ruang Tamu + sofa (depan-kanan)
+    // teras (depan tengah) + carport (depan kiri, di halaman)
+    x.fillStyle = '#e6ddcd'; x.fillRect(pxl + pw * 0.40, pyt + hh, pw * 0.30, (ph - hh) * 0.42);
+    x.fillStyle = '#cfccc6'; x.fillRect(pxl + pw * 0.03, pyt + hh, pw * 0.30, (ph - hh) * 0.72);
+    x.fillStyle = '#2c3138'; x.fillRect(pxl + pw * 0.08, pyt + hh + (ph - hh) * 0.12, pw * 0.20, (ph - hh) * 0.46);
     // pintu (jeda dinding) ke koridor — supaya AI tahu ada sirkulasi, bukan kotak tertutup
     x.fillStyle = '#efe9df';
     const door = (rx, ry, rw, rh) => x.fillRect(RX(rx), RY(ry), RW(rw), RH(rh));
-    door(45.5, 27, 3.2, 9);  // KT Utama → koridor
-    door(45.5, 47, 3.2, 9);  // KT2 → koridor
-    door(51.3, 27, 3.2, 9);  // Dapur → koridor
-    door(51.3, 43, 3.2, 7);  // KM → koridor
-    door(51.3, 59, 3.2, 9);  // KT3 → koridor
-    door(51.3, 82, 3.2, 9);  // Ruang Tamu → koridor
-    door(20, 60, 14, 3.2);   // Garasi → dalam rumah
+    door(45.5, 20, 3.2, 8);  // Dapur(belakang) ↔ koridor
+    door(51.3, 20, 3.2, 8);
+    door(45.5, 42, 3.2, 9);  // KT2 → koridor
+    door(45.5, 76, 3.2, 9);  // KT Utama → koridor (depan-kiri)
+    door(51.3, 36, 3.2, 7);  // KM → koridor
+    door(51.3, 56, 3.2, 9);  // KT3 → koridor
+    door(51.3, 84, 3.2, 9);  // Ruang Tamu → koridor (depan-kanan)
     return c.toDataURL('image/png');
   }
 

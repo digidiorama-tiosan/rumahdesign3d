@@ -386,7 +386,7 @@ function EditorApp() {
   const [phase, setPhase] = useState('welcome'); // welcome | progress | editor
   const [mode, setMode] = useState('quick'); // quick | pro
   const [toastMsg, setToastMsg] = useState(null);
-  const [design, setDesign] = useState({ jenis: 'Rumah Tinggal', w: 8, l: 12, budget: 500000000, gaya: 'Minimalis Modern', needs: new Set(['carport', 'taman']), beds: 2 });
+  const [design, setDesign] = useState({ jenis: 'Rumah Tinggal', w: 6, l: 10, budget: 500000000, gaya: 'Industrial', needs: new Set(['carport', 'taman']), beds: 3 });
   const toast = (m) => { setToastMsg(m); clearTimeout(window.__et); window.__et = setTimeout(() => setToastMsg(null), 2300); };
 
   return (

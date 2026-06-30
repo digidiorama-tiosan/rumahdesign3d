@@ -128,7 +128,7 @@
             {/* right segments */}
             <div style={{ position: 'absolute', top: 0, bottom: '12.5%', right: -26, width: 14, borderTop: `1px solid ${DIMC}`, borderBottom: `1px solid ${DIMC}` }}>
               <div style={{ position: 'absolute', right: 7, top: 0, bottom: 0, width: 1, background: DIMC }}></div>
-              {[['4.00', '16%'], ['1.50', '40%'], ['2.50', '56%'], ['4.00', '82%']].map(([t, p], i) => (
+              {[['3.00', '14%'], ['1.50', '37%'], ['2.50', '55%'], ['3.00', '82%']].map(([t, p], i) => (
                 <DimText key={i} style={{ right: -2, top: p, transform: 'translate(50%,-50%) rotate(-90deg)' }}>{t}</DimText>
               ))}
             </div>
@@ -147,22 +147,22 @@
             <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: '87.5%', background: WALL, borderRadius: 2 }}>
               {/* interior inset */}
               <div style={{ position: 'absolute', inset: '2.4% 1.6%', background: FLOOR }}>
-                {/* corridor center */}
-                <div style={{ position: 'absolute', left: '47%', top: 0, width: '6%', bottom: 0, background: FLOOR2 }}></div>
+                {/* DAPUR — belakang, lebar penuh (belakang-kanan = area masak) */}
+                <Room x={0} y={0} w={100} h={30} bg={FLOOR2} label="DAPUR" dim="3.00 x 4.00"><Kitchen /><Dining /></Room>
+                {/* corridor center (tengah → depan) */}
+                <div style={{ position: 'absolute', left: '47%', top: '30%', width: '6%', bottom: 0, background: FLOOR2 }}></div>
 
                 {/* LEFT column */}
-                <Room x={0} y={0} w={47} h={38} bg={FLOOR} label="KAMAR TIDUR UTAMA" dim="3.00 x 4.00"><Bed wide /><Wardrobe /></Room>
-                <Room x={0} y={38} w={47} h={24} bg={FLOOR2} label="KAMAR TIDUR 2" dim="3.00 x 2.50"><Bed /><Wardrobe /></Room>
-                <Room x={0} y={62} w={47} h={38} bg={GARAGE} label="GARASI" dim="3.00 x 4.00"><Car /></Room>
+                <Room x={0} y={30} w={47} h={30} bg={FLOOR2} label="KAMAR TIDUR 2" dim="3.00 x 2.50"><Bed /><Wardrobe /></Room>
+                <Room x={0} y={60} w={47} h={40} bg={FLOOR} label="KAMAR TIDUR UTAMA" dim="3.00 x 4.00"><Bed wide /><Wardrobe /></Room>
 
                 {/* RIGHT column */}
-                <Room x={53} y={0} w={47} h={38} bg={FLOOR2} label="DAPUR" dim="3.00 x 4.00"><Kitchen /><Dining /></Room>
-                <Room x={53} y={38} w={47} h={15} bg={TILE} tile label="KAMAR MANDI" dim="2.00 x 1.50"><Toilet /></Room>
-                <Room x={53} y={53} w={47} h={20} bg={FLOOR} label="KAMAR TIDUR 3" dim="3.00 x 2.50"><Bed /><Desk /></Room>
-                <Room x={53} y={73} w={47} h={27} bg={FLOOR} label="RUANG TAMU" dim="3.00 x 4.00"><Sofa /></Room>
+                <Room x={53} y={30} w={47} h={16} bg={TILE} tile label="KAMAR MANDI" dim="2.00 x 1.50"><Toilet /></Room>
+                <Room x={53} y={46} w={47} h={24} bg={FLOOR} label="KAMAR TIDUR 3" dim="3.00 x 2.50"><Bed /><Desk /></Room>
+                <Room x={53} y={70} w={47} h={30} bg={FLOOR} label="RUANG TAMU" dim="3.00 x 4.00"><Sofa /></Room>
 
                 {/* doors (arcs) */}
-                <Arc x="46%" y="6%" /><Arc x="46%" y="44%" /><Arc x="49%" y="80%" />
+                <Arc x="46%" y="34%" /><Arc x="46%" y="64%" /><Arc x="49%" y="74%" />
               </div>
             </div>
 
@@ -172,6 +172,11 @@
             </div>
             {/* steps */}
             <div style={{ position: 'absolute', left: '50%', top: '94.5%', width: '8%', height: '5.5%', transform: 'translateX(-50%)', background: `repeating-linear-gradient(90deg,#cfc7b8 0 4px,#bdb4a3 4px 8px)` }}></div>
+            {/* CARPORT (halaman depan, kiri) */}
+            <div style={{ position: 'absolute', left: '2%', width: '32%', top: '87.5%', height: '11.5%', background: '#cfccc6', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.14)' }}>
+              <Car />
+              {!compact && <div style={{ position: 'absolute', left: 4, top: 3, fontSize: 'clamp(5px,.75vw,9px)', fontWeight: 800, color: '#5a5249', zIndex: 4 }}>CARPORT</div>}
+            </div>
           </div>
 
           {/* scale bar */}
