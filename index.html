@@ -146,7 +146,7 @@ nav.scrolled{
 
 h1.hero-h{
   font-family:'Cormorant Garamond',serif;font-weight:600;
-  font-size:clamp(3rem,7.5vw,6.6rem);line-height:.98;letter-spacing:-.01em;color:#fff;
+  font-size:clamp(2.6rem,min(7.5vw,10.5vh),6.6rem);line-height:.98;letter-spacing:-.01em;color:#fff;
   margin-bottom:26px;text-shadow:0 4px 40px rgba(0,0,0,.5);
 }
 h1.hero-h .it{font-style:italic;color:var(--gold-lt);}
@@ -308,7 +308,25 @@ footer{background:var(--bg2);border-top:1px solid var(--line);
   .scene-inner.end .eyebrow{flex-direction:row;}
   .scene-inner.end .lead,.scene-inner.end .cta-row,.scene-inner.end .trust{margin-left:0;justify-content:flex-start;}
   .dots{right:14px;}
-  h1.hero-h{font-size:clamp(2.8rem,13vw,4.4rem);}
+  h1.hero-h{font-size:clamp(2.6rem,min(13vw,10vh),4.4rem);}
+}
+
+/* short viewports: let each scene grow so nothing gets clipped */
+@media (max-height:820px){
+  .scene{height:auto;min-height:100vh;}
+  .scene-inner{min-height:100vh;height:auto;box-sizing:border-box;
+    padding-top:104px;padding-bottom:56px;}
+  h1.hero-h{margin-bottom:16px;}
+  .eyebrow{margin-bottom:14px;}
+  .cta-row{margin-top:22px;}
+  .lead{font-size:clamp(1rem,1.4vw,1.15rem);line-height:1.5;}
+}
+@media (max-height:680px){
+  .btn-lg{padding:13px 28px;}
+  .cue{display:none;}
+  .eyebrow{margin-bottom:10px;}
+  h1.hero-h{margin-bottom:12px;}
+  .cta-row{margin-top:18px;}
 }
 </style>
 </head>
