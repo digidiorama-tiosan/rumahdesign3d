@@ -208,10 +208,25 @@ function Editor({ design, setDesign, mode, setMode, toast, onNewDesign }) {
   const [aiBusy, setAiBusy] = useState(false);
   const [aiDemo, setAiDemo] = useState(false);
   const [aiUpsell, setAiUpsell] = useState(false);
+  const [aiCost, setAiCost] = useState(null);
+  const [aiCostBusy, setAiCostBusy] = useState(false);
+  const [costQuality, setCostQuality] = useState('menengah');
   const openPlan = () => { try { (window.openPlanModal || (window.parent && window.parent.openPlanModal) || function () { toast('Upgrade ke paket Pro untuk memakai Render AI.'); })(); } catch (e) { toast('Upgrade ke paket Pro untuk memakai Render AI.'); } };
   const cost = estCost(d), ok = d.budget >= cost;
   const designKey = `${d.gaya}|${d.w}x${d.l}|${d.beds}|${[...d.needs].sort().join(',')}|${night ? 'n' : 'd'}`;
-  useEffect(() => { setAiImg({}); }, [designKey]);
+  useEffect(() => { setAiImg({}); setAiCost(null); }, [designKey]);
+  const genCost = async () => {
+    if (!window.AICost) return;
+    setAiCostBusy(true);
+    try {
+      const est = await window.AICost.estimate(d, { quality: costQuality });
+      setAiCost(est);
+      if (est.note === 'provider') toast('Estimasi AI sedang tak tersedia — memakai perkiraan cepat.');
+      else if (est.source === 'ai') toast('Estimasi AI selesai ✨');
+      else toast('Perkiraan cepat dihitung (AI aktif di situs saat login).');
+    } catch (e) { toast('Estimasi gagal: ' + (e.message || e)); }
+    finally { setAiCostBusy(false); }
+  };
   const genAI = async (kind) => {
     if (!window.QuickRender) return;
     setAiBusy(true);
@@ -341,16 +356,71 @@ function Editor({ design, setDesign, mode, setMode, toast, onNewDesign }) {
 
         {tool === 'cost' && <React.Fragment>
           <div className="panel-h"><Icon name="wallet" size={18} /> Estimasi Biaya (RAB)</div>
-          <p className="panel-sub">Dihitung otomatis dari luas &amp; material gaya {STYLES[d.gaya].label}.</p>
-          <div className="cost-big">{rp(cost)}</div>
-          <div className="budget-tag" style={{ marginTop: 10, background: ok ? 'var(--mint-soft)' : '#fdeede', color: ok ? 'var(--mint-ink)' : 'var(--brand-ink)' }}>
-            <Icon name={ok ? 'check' : 'bolt'} size={14} /> Budget {rpShort(d.budget)} · {ok ? 'cukup' : 'kurang ' + rpShort(cost - d.budget)}</div>
-          <div className="cost-rows">
-            <div className="cost-row"><span>Struktur &amp; pondasi</span><b>{rpShort(cost * .34)}</b></div>
-            <div className="cost-row"><span>Dinding &amp; atap</span><b>{rpShort(cost * .28)}</b></div>
-            <div className="cost-row"><span>Finishing</span><b>{rpShort(cost * .22)}</b></div>
-            <div className="cost-row"><span>MEP &amp; lain-lain</span><b>{rpShort(cost * .16)}</b></div>
+          <p className="panel-sub">Perkiraan otomatis dari luas &amp; material gaya {STYLES[d.gaya].label}. Gunakan <b>Estimasi AI</b> untuk rincian &amp; rentang lebih akurat.</p>
+
+          <div className="panel-sec-h">Kualitas finishing</div>
+          <div className="seg" style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+            {['ekonomis', 'menengah', 'premium'].map(q => (
+              <button key={q} onClick={() => setCostQuality(q)}
+                style={{ flex: 1, padding: '8px 6px', borderRadius: 9, cursor: 'pointer', fontSize: 12, fontWeight: 700, textTransform: 'capitalize',
+                  border: '1.5px solid ' + (costQuality === q ? 'var(--brand)' : 'var(--line)'),
+                  background: costQuality === q ? 'var(--brand-soft)' : 'transparent',
+                  color: costQuality === q ? 'var(--brand-ink)' : 'var(--ink-2)' }}>{q}</button>
+            ))}
           </div>
+          <Btn variant="violet" size="sm" icon={aiCostBusy ? 'refresh' : 'wand'} disabled={aiCostBusy} style={{ width: '100%' }} onClick={genCost}>
+            {aiCostBusy ? 'AI menghitung…' : (aiCost ? 'Hitung ulang dengan AI' : 'Estimasi dengan AI')}</Btn>
+
+          {!aiCost && <React.Fragment>
+            <div className="cost-big" style={{ marginTop: 16 }}>{rp(cost)}</div>
+            <div className="budget-tag" style={{ marginTop: 10, background: ok ? 'var(--mint-soft)' : '#fdeede', color: ok ? 'var(--mint-ink)' : 'var(--brand-ink)' }}>
+              <Icon name={ok ? 'check' : 'bolt'} size={14} /> Budget {rpShort(d.budget)} · {ok ? 'cukup' : 'kurang ' + rpShort(cost - d.budget)}</div>
+            <div className="cost-rows">
+              <div className="cost-row"><span>Struktur &amp; pondasi</span><b>{rpShort(cost * .34)}</b></div>
+              <div className="cost-row"><span>Dinding &amp; atap</span><b>{rpShort(cost * .28)}</b></div>
+              <div className="cost-row"><span>Finishing</span><b>{rpShort(cost * .22)}</b></div>
+              <div className="cost-row"><span>MEP &amp; lain-lain</span><b>{rpShort(cost * .16)}</b></div>
+            </div>
+          </React.Fragment>}
+
+          {aiCost && (() => {
+            const mid = (aiCost.total_low + aiCost.total_high) / 2;
+            const okAI = d.budget >= mid;
+            const maxAmt = Math.max.apply(null, aiCost.items.map(i => i.amount || 0)) || 1;
+            return <React.Fragment>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, margin: '16px 0 4px' }}>
+                <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', padding: '3px 9px', borderRadius: 99,
+                  background: aiCost.source === 'ai' ? 'var(--violet-soft, #efeaff)' : 'var(--surface-2, #f1efe9)',
+                  color: aiCost.source === 'ai' ? '#6E54F0' : 'var(--ink-2)' }}>
+                  {aiCost.source === 'ai' ? '✨ Estimasi AI' : 'Perkiraan cepat'}</span>
+                <span style={{ fontSize: 11, color: 'var(--ink-3, #9a9)', fontWeight: 600 }}>≈ {aiCost.buildArea} m²</span>
+              </div>
+              <div className="cost-big" style={{ fontSize: 22 }}>{rpShort(aiCost.total_low)} – {rpShort(aiCost.total_high)}</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-2)', fontWeight: 600, marginTop: 2 }}>
+                {rp(aiCost.per_m2_low)}–{rp(aiCost.per_m2_high)} / m²</div>
+              <div className="budget-tag" style={{ marginTop: 10, background: okAI ? 'var(--mint-soft)' : '#fdeede', color: okAI ? 'var(--mint-ink)' : 'var(--brand-ink)' }}>
+                <Icon name={okAI ? 'check' : 'bolt'} size={14} /> Budget {rpShort(d.budget)} · {okAI ? 'cukup (vs rata-rata)' : 'kurang ' + rpShort(mid - d.budget)}</div>
+              <div className="cost-rows">
+                {aiCost.items.map((it, i) => (
+                  <div key={i} style={{ marginBottom: 9 }}>
+                    <div className="cost-row" style={{ marginBottom: 3 }}><span>{it.name}</span><b>{rpShort(it.amount)}</b></div>
+                    <div style={{ height: 4, borderRadius: 3, background: 'var(--line)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: Math.max(4, Math.round((it.amount / maxAmt) * 100)) + '%', background: 'linear-gradient(90deg,#6E54F0,#9a86ff)' }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {aiCost.summary && <p style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--ink-2)', marginTop: 6 }}>{aiCost.summary}</p>}
+              {aiCost.assumptions && aiCost.assumptions.length > 0 && <div style={{ marginTop: 10 }}>
+                <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--ink-3,#9a9)', marginBottom: 5 }}>Asumsi</div>
+                {aiCost.assumptions.map((a, i) => (
+                  <div key={i} style={{ fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.5, paddingLeft: 12, position: 'relative', marginBottom: 3 }}>
+                    <span style={{ position: 'absolute', left: 0, color: 'var(--brand)' }}>·</span>{a}</div>
+                ))}
+              </div>}
+            </React.Fragment>;
+          })()}
+
           <Btn variant="ghost" size="sm" icon="download" style={{ marginTop: 16, width: '100%' }} onClick={() => toast('Export RAB ke PDF…')}>Export RAB PDF</Btn>
         </React.Fragment>}
 
