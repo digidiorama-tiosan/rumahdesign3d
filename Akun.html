@@ -131,7 +131,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
       <div class="auth-foot">Sudah punya akun? <a href="#" onclick="showAuth('login');return false;">Masuk</a></div>
     </div>
 
-    <div class="demo-note" id="authDemoNote">🔒 Mode <b>demo</b> — cloud belum aktif, jadi login apa pun masuk ke dashboard contoh &amp; proyek tersimpan di browser ini saja. Mau login asli + simpan ke cloud? Klik <a href="#" onclick="showCloudSetup();return false;" style="color:var(--violet);">Aktifkan Cloud</a>.</div>
+    <div class="demo-note hidden" id="authDemoNote">🔒 Mode <b>demo</b> — cloud belum aktif, jadi login apa pun masuk ke dashboard contoh &amp; proyek tersimpan di browser ini saja. Mau login asli + simpan ke cloud? Klik <a href="#" onclick="showCloudSetup();return false;" style="color:var(--violet);">Aktifkan Cloud</a>.</div>
   </div>
 
   <!-- DASHBOARD -->
@@ -204,7 +204,7 @@ function saveSupabaseCfg(){
   } catch(e){ stat.innerHTML = '⚠️ Gagal menyimpan: '+e.message; stat.style.color='var(--accent2)'; }
 }
 
-// Jika cloud belum aktif, tonjolkan kartu setup; auth demo tetap bisa diakses.
+// Kartu setup Cloud & banner demo disembunyikan (Supabase sudah tertanam di aplikasi).
 if (!CLOUD_ON) {
   document.addEventListener('DOMContentLoaded', ()=>{ /* keep auth visible; setup reachable via link */ });
 }
