@@ -97,7 +97,25 @@ tbody tr:hover{background:var(--surface2);}
   table{min-width:680px;}
   .search{width:100%;}
   .tools h1{width:100%;}
+  .an-grid{grid-template-columns:1fr;}
 }
+
+/* tabs */
+.tabbar{display:flex;gap:6px;margin:4px 0 22px;border-bottom:1px solid var(--border);}
+.tabbtn{background:none;border:none;color:var(--text2);font-family:inherit;font-size:14px;font-weight:700;padding:11px 2px;margin-right:22px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.tabbtn:hover{color:var(--text);}
+.tabbtn.on{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* analytics chart */
+.chart{display:flex;align-items:flex-end;gap:7px;height:210px;}
+.chart .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;justify-content:flex-end;height:100%;}
+.chart .bar .col{width:100%;max-width:36px;background:linear-gradient(180deg,var(--accent),var(--accent2));border-radius:6px 6px 0 0;min-height:3px;}
+.chart .bar .col.z{background:var(--surface2);}
+.chart .bar .n{font-size:11px;font-weight:700;color:var(--text2);font-family:'Space Mono',monospace;}
+.chart .bar .d{font-size:10px;color:var(--text3);white-space:nowrap;}
+.an-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.an-grid td{text-align:right;font-weight:700;font-family:'Space Mono',monospace;}
+.an-grid td.lbl{text-align:left;font-weight:600;font-family:inherit;}
 </style>
 </head>
 <body>
@@ -115,6 +133,12 @@ tbody tr:hover{background:var(--surface2);}
 
   <!-- PANEL -->
   <div id="panel" style="display:none;">
+    <div class="tabbar">
+      <button class="tabbtn on" data-tab="manage" onclick="switchTab('manage')">👥 Manajemen</button>
+      <button class="tabbtn" data-tab="analytics" onclick="switchTab('analytics')">📊 Analytics</button>
+    </div>
+
+    <div id="tabManage">
     <div class="stat-row">
       <div class="stat"><div class="stat-v" id="stTotal">–</div><div class="stat-k">Total User</div></div>
       <div class="stat v"><div class="stat-v" id="stAdmin">–</div><div class="stat-k">Admin</div></div>
@@ -194,6 +218,43 @@ tbody tr:hover{background:var(--surface2);}
       tetap ada — menghapus akun login sepenuhnya butuh tombol di <b>Supabase → Authentication → Users</b>,
       atau Edge Function (opsional, bisa ditambahkan nanti).
     </div>
+    </div><!-- /tabManage -->
+
+    <!-- ── TAB ANALYTICS ── -->
+    <div id="tabAnalytics" style="display:none;">
+      <div class="stat-row">
+        <div class="stat b"><div class="stat-v" id="anToday">–</div><div class="stat-k">Kunjungan hari ini</div></div>
+        <div class="stat"><div class="stat-v" id="an7">–</div><div class="stat-k">7 hari terakhir</div></div>
+        <div class="stat g"><div class="stat-v" id="an30">–</div><div class="stat-k">30 hari terakhir</div></div>
+        <div class="stat v"><div class="stat-v" id="anUniq">–</div><div class="stat-k">Pengunjung unik (30h)</div></div>
+        <div class="stat r"><div class="stat-v" id="anTotal">–</div><div class="stat-k">Total tercatat</div></div>
+      </div>
+
+      <div class="tools">
+        <h1>📈 Kunjungan 14 Hari Terakhir</h1>
+        <button class="refresh" onclick="loadAnalytics()">↻ Muat ulang</button>
+      </div>
+      <div class="tbl-wrap" style="padding:22px 20px 18px;">
+        <div class="chart" id="anChart"><div class="empty" style="width:100%;">Memuat…</div></div>
+      </div>
+
+      <div class="an-grid">
+        <div>
+          <div class="tools" style="margin-top:24px;"><h1>🔥 Halaman Terpopuler</h1></div>
+          <div class="tbl-wrap" id="anPages"><div class="empty">Memuat…</div></div>
+        </div>
+        <div>
+          <div class="tools" style="margin-top:24px;"><h1>🌐 Sumber Trafik</h1></div>
+          <div class="tbl-wrap" id="anRefs"><div class="empty">Memuat…</div></div>
+        </div>
+      </div>
+
+      <div class="note" style="margin-top:16px;">
+        💡 Data dikumpulkan sendiri oleh DadiOmah dan disimpan di database Supabase-mu — tidak perlu buka Vercel.
+        Jalankan SQL <b>supabase-analytics-schema.sql</b> sekali di Supabase agar pencatatan aktif.
+        Satu kunjungan per halaman dihitung tiap 30 menit per pengunjung.
+      </div>
+    </div><!-- /tabAnalytics -->
   </div>
 </div>
 
@@ -447,6 +508,79 @@ async function delUser(id, email){
 
 boot();
 
+// ── Tabs + Analytics ───────────────────────────────────────
+let _anLoaded = false;
+function switchTab(name){
+  document.getElementById('tabManage').style.display    = name==='manage'    ? 'block' : 'none';
+  document.getElementById('tabAnalytics').style.display = name==='analytics' ? 'block' : 'none';
+  document.querySelectorAll('.tabbtn').forEach(b=>b.classList.toggle('on', b.dataset.tab===name));
+  if (name==='analytics' && !_anLoaded) loadAnalytics();
+}
+
+function _pageName(p){
+  const map = {'/':'Beranda','/index.html':'Beranda','/DadiOmah Landing.html':'Landing',
+    '/Floor Planner 2.0.html':'Floor Planner','/Akun.html':'Akun','/RumahDesign3D-mobile.html':'App Mobile'};
+  if (map[p]) return map[p];
+  try { return decodeURIComponent(p.replace(/^\//,'').replace(/\.html$/i,'')) || p; } catch(e){ return p; }
+}
+
+async function loadAnalytics(){
+  const chart = document.getElementById('anChart');
+  try{
+    const rows = await Cloud.adminAnalytics(30);
+    const dayKey = d => new Date(d).toISOString().slice(0,10);
+    const todayK = dayKey(Date.now());
+    const t7 = Date.now() - 7*864e5;
+    let today=0, c7=0; const uniq=new Set();
+    const byDay={}, byPath={}, byRef={};
+    rows.forEach(r=>{
+      const t = new Date(r.created_at).getTime();
+      if (t>=t7) c7++;
+      const dk = dayKey(t);
+      if (dk===todayK) today++;
+      uniq.add(r.visitor_id||'?');
+      byDay[dk] = (byDay[dk]||0)+1;
+      const pth = r.path||'/'; byPath[pth]=(byPath[pth]||0)+1;
+      let ref='Langsung';
+      if (r.referrer){ try{ ref=new URL(r.referrer).hostname.replace(/^www\./,''); }catch(e){ ref='lainnya'; } }
+      if (ref===location.hostname) ref='Internal';
+      byRef[ref]=(byRef[ref]||0)+1;
+    });
+    document.getElementById('anToday').textContent = today;
+    document.getElementById('an7').textContent     = c7;
+    document.getElementById('an30').textContent    = rows.length;
+    document.getElementById('anUniq').textContent  = uniq.size;
+    document.getElementById('anTotal').textContent = rows.length;
+
+    // 14-day bar chart
+    const days=[]; for(let i=13;i>=0;i--) days.push(dayKey(Date.now()-i*864e5));
+    const max = Math.max(1, ...days.map(d=>byDay[d]||0));
+    chart.innerHTML = days.map(d=>{
+      const v=byDay[d]||0, h=Math.round(v/max*100), dd=new Date(d);
+      return '<div class="bar"><div class="n">'+v+'</div><div class="col'+(v?'':' z')+'" style="height:'+h+'%"></div><div class="d">'+dd.getDate()+'/'+(dd.getMonth()+1)+'</div></div>';
+    }).join('');
+
+    // top pages
+    const topP = Object.entries(byPath).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    document.getElementById('anPages').innerHTML = topP.length
+      ? '<table><thead><tr><th>Halaman</th><th style="text-align:right;">Kunjungan</th></tr></thead><tbody>'+
+        topP.map(([p,c])=>'<tr><td class="lbl">'+esc(_pageName(p))+'<div class="u-email">'+esc(p)+'</div></td><td>'+c+'</td></tr>').join('')+'</tbody></table>'
+      : '<div class="empty">Belum ada data.</div>';
+
+    // referrers
+    const topR = Object.entries(byRef).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    document.getElementById('anRefs').innerHTML = topR.length
+      ? '<table><thead><tr><th>Sumber</th><th style="text-align:right;">Kunjungan</th></tr></thead><tbody>'+
+        topR.map(([p,c])=>'<tr><td class="lbl">'+esc(p)+'</td><td>'+c+'</td></tr>').join('')+'</tbody></table>'
+      : '<div class="empty">Belum ada data.</div>';
+
+    _anLoaded = true;
+  }catch(e){
+    chart.innerHTML = '<div class="empty" style="width:100%;">Gagal memuat analytics: '+esc(e.message)+
+      '<br><span style="color:var(--text3);">Pastikan SQL <b>supabase-analytics-schema.sql</b> sudah dijalankan di Supabase.</span></div>';
+  }
+}
+
 // ── Harga ──────────────────────────────────────────────────
 const PRICE_KEY = 'rumah3d_admin_prices';
 const DEFAULT_PRICES = { pro: 25000, dev: 50000, render: 2000 };
@@ -502,5 +636,6 @@ async function saveOAIKey(){
   }catch(e){ toast('Gagal: '+e.message); }
 }
 </script>
+
 </body>
 </html>
