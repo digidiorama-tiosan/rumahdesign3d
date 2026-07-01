@@ -49,8 +49,10 @@ user **login** saat memakai AI Render (kuota terikat akun).
    **platform.openai.com → API keys** (diawali `sk-...`) → **Simpan**.
 3. Status berubah jadi **"✅ Key sudah diatur"**.
 
-> Akun OpenAI Anda harus punya akses **Images API (gpt-image-1)** dan
+> Akun OpenAI Anda harus punya akses **Images API (gpt-image-1-mini)** dan
 > **organisasi terverifikasi**. Biaya render ditagih ke akun OpenAI Anda.
+> Disarankan aktifkan **auto-recharge** di billing OpenAI agar saldo tidak
+> keburu habis (pelanggan tetap aman: kuota tidak terpotong bila provider gagal).
 
 ---
 
@@ -70,3 +72,24 @@ user **login** saat memakai AI Render (kuota terikat akun).
   webhook Midtrans/Xendit yang menambah `credits` SETELAH pembayaran lunas.
   (Hapus akses RPC demo agar tidak bisa diakali.)
 - Jika render gagal "Edge Function belum di-deploy" → ulangi langkah 2.
+
+---
+
+## Update model / pesan error (tanpa SQL)
+Kalau Anda hanya memperbarui **kode** fungsi (mis. ganti model ke
+`gpt-image-1-mini`, ubah ukuran, atau pesan error), **tidak perlu** menjalankan
+SQL apa pun — cukup **redeploy** fungsi `ai-render` (langkah 2). Database tidak
+berubah. Model saat ini: **gpt-image-1-mini**, ukuran default **1024x1024**,
+quality **medium**. Bila kredit OpenAI habis, fungsi membalas pesan ramah dan
+kuota pelanggan **tidak** terpotong.
+
+---
+
+## Estimasi Biaya AI (Edge Function `ai-cost`)
+Fitur "Estimasi dengan AI" (RAB) memakai edge function terpisah **`ai-cost`**
+(OpenAI `gpt-4o-mini`, key admin yang sama). Deploy caranya **sama** seperti
+`ai-render` (Edge Functions → nama fungsi `ai-cost` → tempel isi
+`supabase/functions/ai-cost/index.ts` → Deploy). **Tanpa SQL tambahan.**
+- Wajib login; biaya teks sangat kecil → tanpa kuota.
+- Di situs ter-deploy memakai AI; di preview memakai `window.claude`; bila
+  keduanya tak ada → otomatis fallback ke perkiraan rumus (tetap tampil).
