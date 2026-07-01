@@ -175,16 +175,24 @@ const RAIL = [
   { k: 'file', label: 'File', i: 'doc' },
 ];
 
-function GenCTA({ kind, busy, demo, onGen }) {
+function GenCTA({ kind, busy, demo, upsell, onGen, onUpgrade }) {
+  const msg = upsell
+    ? 'Render AI khusus paket Pro & Developer — upgrade untuk membuat render foto realistis'
+    : demo ? 'Mode contoh · render asli aktif di situs (login + kuota)'
+    : (kind === '3d' ? 'Pratinjau cepat — buat versi 3D realistis dengan AI' : 'Pratinjau cepat — hasilkan foto realistis dengan AI');
   return (
     <div style={{ position: 'absolute', left: '50%', bottom: 18, transform: 'translateX(-50%)', zIndex: 9, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, width: 'max-content', maxWidth: '90%' }}>
       <div style={{ background: 'rgba(33,27,22,.8)', color: '#fff', fontSize: 11.5, fontWeight: 700, padding: '6px 13px', borderRadius: 99, backdropFilter: 'blur(4px)', textAlign: 'center' }}>
-        {demo ? 'Mode contoh · render asli aktif di situs (login + kuota)' : (kind === '3d' ? 'Pratinjau cepat — buat versi 3D realistis dengan AI' : 'Pratinjau cepat — hasilkan foto realistis dengan AI')}
+        {msg}
       </div>
-      <button className="btn btn-violet btn-lg" disabled={busy} onClick={onGen}>
-        {busy ? <Icon name="refresh" size={18} className="spin" /> : <Icon name="wand" size={18} />}
-        {busy ? 'AI me-render…' : (kind === '3d' ? 'Buat 3D Realistis (AI)' : 'Render Foto Realistis (AI)')}
-      </button>
+      {upsell
+        ? <button className="btn btn-violet btn-lg" onClick={onUpgrade}>
+            <Icon name="bolt" size={18} /> Upgrade ke Pro
+          </button>
+        : <button className="btn btn-violet btn-lg" disabled={busy} onClick={onGen}>
+            {busy ? <Icon name="refresh" size={18} className="spin" /> : <Icon name="wand" size={18} />}
+            {busy ? 'AI me-render…' : (kind === '3d' ? 'Buat 3D Realistis (AI)' : 'Render Foto Realistis (AI)')}
+          </button>}
     </div>
   );
 }
@@ -199,6 +207,8 @@ function Editor({ design, setDesign, mode, setMode, toast, onNewDesign }) {
   const [aiImg, setAiImg] = useState({});
   const [aiBusy, setAiBusy] = useState(false);
   const [aiDemo, setAiDemo] = useState(false);
+  const [aiUpsell, setAiUpsell] = useState(false);
+  const openPlan = () => { try { (window.openPlanModal || (window.parent && window.parent.openPlanModal) || function () { toast('Upgrade ke paket Pro untuk memakai Render AI.'); })(); } catch (e) { toast('Upgrade ke paket Pro untuk memakai Render AI.'); } };
   const cost = estCost(d), ok = d.budget >= cost;
   const designKey = `${d.gaya}|${d.w}x${d.l}|${d.beds}|${[...d.needs].sort().join(',')}|${night ? 'n' : 'd'}`;
   useEffect(() => { setAiImg({}); }, [designKey]);
@@ -207,9 +217,11 @@ function Editor({ design, setDesign, mode, setMode, toast, onNewDesign }) {
     setAiBusy(true);
     try {
       const url = await window.QuickRender.generate(d, kind);
-      setAiImg(a => ({ ...a, [kind]: url })); setAiDemo(false); toast('Render AI fotorealistik selesai ✨');
+      setAiImg(a => ({ ...a, [kind]: url })); setAiDemo(false); setAiUpsell(false); toast('Render AI fotorealistik selesai ✨');
     } catch (e) {
-      if (e && e.demo) { setAiDemo(true); toast('Mode contoh — render asli aktif di situs (login + kuota).'); }
+      if (e && e.upgrade) { setAiUpsell(true); toast('Render AI khusus paket Pro & Developer.'); openPlan(); }
+      else if (e && e.provider) { toast(e.message || 'Layanan Render AI sedang tidak tersedia. Kuota Anda tidak terpotong — coba lagi nanti.'); }
+      else if (e && e.demo) { setAiDemo(true); toast('Mode contoh — render asli aktif di situs (login + kuota).'); }
       else { toast('Render gagal: ' + (e.message || e)); }
     } finally { setAiBusy(false); }
   };
@@ -270,10 +282,10 @@ function Editor({ design, setDesign, mode, setMode, toast, onNewDesign }) {
           {tab === 'denah' && <FloorPlan width={d.w} length={d.l} rooms={{ beds: d.beds }} />}
           {tab === '3d' && (aiImg['3d']
             ? <img src={aiImg['3d']} alt="3D realistis" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <React.Fragment><Iso3D style={d.gaya} features={d.needs} /><GenCTA kind="3d" busy={aiBusy} demo={aiDemo} onGen={() => genAI('3d')} /></React.Fragment>)}
+            : <React.Fragment><Iso3D style={d.gaya} features={d.needs} /><GenCTA kind="3d" busy={aiBusy} demo={aiDemo} upsell={aiUpsell} onGen={() => genAI('3d')} onUpgrade={openPlan} /></React.Fragment>)}
           {tab === 'render' && (aiImg.render
             ? <img src={aiImg.render} alt="Render AI" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <React.Fragment><AIRender style={d.gaya} features={d.needs} night={night} /><GenCTA kind="render" busy={aiBusy} demo={aiDemo} onGen={() => genAI('render')} /></React.Fragment>)}
+            : <React.Fragment><AIRender style={d.gaya} features={d.needs} night={night} /><GenCTA kind="render" busy={aiBusy} demo={aiDemo} upsell={aiUpsell} onGen={() => genAI('render')} onUpgrade={openPlan} /></React.Fragment>)}
         </div>
 
         <div className="canvas-foot">

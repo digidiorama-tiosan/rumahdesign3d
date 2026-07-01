@@ -4,7 +4,8 @@
 // Memproses AI Render fotorealistik DENGAN AMAN:
 //   • API key OpenAI dibaca dari tabel app_settings (diisi admin) — tidak
 //     pernah dikirim ke browser user.
-//   • Kuota dicek di server: Pro = 1×/bulan, Dev = 3×/bulan (reset bulanan).
+//   • Kuota dicek di server: Free = 0 (tidak bisa render), Pro = 1×/bulan,
+//     Dev = 3×/bulan (reset bulanan). Model: gpt-image-1-mini.
 //   • Kalau kuota gratis habis tapi punya kredit berbayar → pakai 1 kredit.
 //   • Kalau habis total → balas 402 QUOTA_EMPTY (app menampilkan tombol beli).
 //
@@ -93,15 +94,16 @@ serve(async (req) => {
     const key = settings?.openai_key;
     if (!key) return json({ error: "Admin belum mengatur API key OpenAI di Panel Admin." }, 503);
 
-    const { imageBase64, prompt, size } = body || {};
+    const { imageBase64, prompt, size, quality } = body || {};
     if (!imageBase64 || !prompt) return json({ error: "Data render tidak lengkap." }, 400);
 
     // panggil OpenAI images/edits
     const fd = new FormData();
-    fd.append("model", "gpt-image-1");
+    fd.append("model", "gpt-image-1-mini");
     fd.append("image", b64ToBlob(imageBase64, "image/png"), "scene.png");
     fd.append("prompt", String(prompt));
-    fd.append("size", String(size || "1536x1024"));
+    fd.append("size", String(size || "1024x1024"));
+    fd.append("quality", String(quality || "medium"));
     fd.append("n", "1");
 
     const oai = await fetch("https://api.openai.com/v1/images/edits", {
@@ -111,6 +113,17 @@ serve(async (req) => {
     });
     const oaiData = await oai.json().catch(() => ({}));
     if (!oai.ok) {
+      const eMsg = oaiData?.error?.message || "";
+      const eType = (oaiData?.error?.type || "") + " " + (oaiData?.error?.code || "");
+      // Kredit/kuota OpenAI (admin) habis → pemotongan kuota BELUM terjadi (hanya setelah sukses),
+      // jadi kuota render pelanggan tetap aman. Balas pesan ramah + kode khusus.
+      const providerOut = oai.status === 429 || /quota|billing|insufficient|exceeded|hard_limit|payment/i.test(eType + " " + eMsg);
+      if (providerOut) {
+        return json({
+          code: "PROVIDER_QUOTA",
+          error: "Maaf, layanan Render AI sedang tidak tersedia sementara. Kuota render Anda TIDAK terpotong dan tetap aman — silakan coba lagi beberapa menit lagi.",
+        }, 503);
+      }
       return json({ error: oaiData?.error?.message || ("OpenAI HTTP " + oai.status) }, 502);
     }
     const b64 = oaiData?.data?.[0]?.b64_json;

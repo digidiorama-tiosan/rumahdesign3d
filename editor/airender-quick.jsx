@@ -2,7 +2,7 @@
 /* ============================================================
    Quick AI Render — sambung ke backend yang sama dgn
    "AI Render Fotorealistik" (Cloud.invokeAIRender → Edge
-   Function 'ai-render' → OpenAI gpt-image-1, API KEY ADMIN).
+   Function 'ai-render' → OpenAI gpt-image-1-mini, API KEY ADMIN).
    Prompt dibangun otomatis & TIDAK ditampilkan ke user.
    ============================================================ */
 (function () {
@@ -167,14 +167,38 @@
     return null;
   }
   function available() { const C = cloud(); return !!(C && C.isLoggedIn && C.isLoggedIn() && C.invokeAIRender); }
+  // plan user (free/pro/dev) dari host — utk cegat Free sebelum panggil server
+  function planNow() {
+    try { if (typeof window.getPlan === 'function') return window.getPlan(); } catch (e) {}
+    try { if (window.parent && typeof window.parent.getPlan === 'function') return window.parent.getPlan(); } catch (e) {}
+    try { return localStorage.getItem('rumah3d_user_plan') || 'free'; } catch (e) {}
+    return 'free';
+  }
 
   async function generate(d, kind) {
     const C = cloud();
     if (!available()) { const e = new Error('DEMO'); e.demo = true; throw e; }
-    const size = '1536x1024';
+    // Render AI khusus Pro & Developer — Free dicegat lebih awal (server juga menolak)
+    if (planNow() === 'free') { const e = new Error('UPGRADE'); e.upgrade = true; e.plan = 'free'; throw e; }
+    const size = '1024x1024';
     const imageBase64 = kind === '3d' ? drawPlan(d, 1024) : drawFront(d, 1024);
     const prompt = buildPrompt(d, kind);
-    const data = await C.invokeAIRender({ imageBase64, prompt, size });
+    let data;
+    try {
+      data = await C.invokeAIRender({ imageBase64, prompt, size });
+    } catch (err) {
+      const code = err && err.body && err.body.error;
+      const bcode = err && err.body && err.body.code;
+      if (err && (err.status === 402 || code === 'QUOTA_EMPTY')) {
+        const e = new Error('UPGRADE'); e.upgrade = true; e.plan = (err.body && err.body.plan) || planNow(); throw e;
+      }
+      // Kredit OpenAI (admin) habis — kuota pelanggan tidak terpotong
+      if (err && (err.status === 503 || bcode === 'PROVIDER_QUOTA')) {
+        const e = new Error((err.body && err.body.error) || 'Layanan Render AI sedang tidak tersedia. Kuota Anda tidak terpotong — coba lagi nanti.');
+        e.provider = true; throw e;
+      }
+      throw err;
+    }
     if (!data || !data.image) throw new Error('Respons render kosong');
     return data.image;
   }
